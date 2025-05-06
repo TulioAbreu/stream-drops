@@ -1,0 +1,1 @@
+export const STORAGE_KEY_LOGIN_STORAGE = 'login-storage';
