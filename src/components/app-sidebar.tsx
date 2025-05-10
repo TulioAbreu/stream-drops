@@ -27,12 +27,12 @@ const items: NavbarItem[] = [
     {
         title: "DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY",
         icon: <UserRoundCheck />,
-        url: "/dashboard",
+        url: "/dashboard/follower-giveaway",
     },
     {
         title: "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY",
         icon: <Ticket />,
-        url: "/dashboard",
+        url: "/dashboard/",
     },
 ]
 

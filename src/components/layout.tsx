@@ -5,11 +5,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return (
         <SidebarProvider>
             <AppSidebar />
-            <main>
+            <main className="flex flex-col h-screen flex-grow min-h-screen">
                 <SidebarTrigger />
-                <div className="p-8">
-                    {children}
-                </div>
+                {children}
             </main>
         </SidebarProvider>
     )
