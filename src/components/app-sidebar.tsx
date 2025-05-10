@@ -8,17 +8,15 @@ import {
     SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
-    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
-    SidebarMenuAction,
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { T, type I18NKeys } from "@/i18n";
+import { useTranslation } from "@/i18n";
 
 interface NavbarItem {
-    title: typeof I18NKeys[number];
+    title: string;
     icon: React.ReactNode;
     url: string;
 }
@@ -37,6 +35,8 @@ const items: NavbarItem[] = [
 ]
 
 export function AppSidebar() {
+    const { t } = useTranslation();
+
     return (
         <Sidebar>
             <SidebarHeader />
@@ -49,7 +49,7 @@ export function AppSidebar() {
                                     <SidebarMenuButton asChild>
                                         <a href={item.url}>
                                             {item.icon}
-                                            <span>{T[item.title]}</span>
+                                            <span>{t(item.title)}</span>
                                         </a>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

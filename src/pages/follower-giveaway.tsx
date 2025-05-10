@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { SubscriberTier, SubscriberTierLabels } from "@/domain/SubscriberTier";
-import { T } from "@/i18n";
-import { useEffect } from "react";
+import { useTranslation } from "@/i18n";
 import { useForm } from "react-hook-form";
 
 interface FollowerGiveawayForm {
@@ -20,6 +19,7 @@ interface FollowerGiveawayForm {
 }
 
 export function FollowerGiveaway() {
+    const { t } = useTranslation();
     const form = useForm<FollowerGiveawayForm>({
         defaultValues: {
             title: "",
@@ -41,22 +41,22 @@ export function FollowerGiveaway() {
             <div className="flex flex-col items-center justify-center flex-grow">
                 <Card className="rounded w-[600px]">
                     <CardHeader>
-                        <CardTitle>{T["FOLLOWER_GIVEAWAY_TITLE"]}</CardTitle>
-                        <CardDescription>{T["FOLLOWER_GIVEAWAY_DESCRIPTION"]}</CardDescription>
+                        <CardTitle>{t("FOLLOWER_GIVEAWAY_TITLE")}</CardTitle>
+                        <CardDescription>{t("FOLLOWER_GIVEAWAY_DESCRIPTION")}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Form {...form}>
                             <form className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-2">
-                                    <Label>Título do Sorteio</Label>
-                                    <Input placeholder="Título do Sorteio" />
+                                    <Label>{t("FOLLOWER_GIVEAWAY_FORM_TITLE_FIELD")}</Label>
+                                    <Input placeholder={t("FOLLOWER_GIVEAWAY_FORM_TITLE_FIELD")} />
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    <Label>Descrição do Sorteio</Label>
-                                    <Textarea placeholder="Descrição do Sorteio" className="resize-none" />
+                                    <Label>{t("FOLLOWER_GIVEAWAY_FORM_DESCRIPTION_FIELD")}</Label>
+                                    <Textarea placeholder={t("FOLLOWER_GIVEAWAY_FORM_DESCRIPTION_FIELD")} className="resize-none" />
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    <Label>Requerimento de Sub</Label>
+                                    <Label>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIPTION_REQUIREMENT_FIELD")}</Label>
                                     <FormField
                                         control={form.control}
                                         name="requiredSubscriber"
@@ -85,8 +85,8 @@ export function FollowerGiveaway() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Tier</TableHead>
-                                                <TableHead>Multiplicador</TableHead>
+                                                <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
+                                                <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIPTION_SUBSCRIBER_LUCK_TABLE_HEADER")}</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         {Object.values(SubscriberTier).filter((tier) => tier >= requiredSubscriber).map((tierValue) => (
