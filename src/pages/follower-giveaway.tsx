@@ -5,10 +5,14 @@ import { Form, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { SubscriberTier, SubscriberTierLabels } from "@/domain/SubscriberTier";
+import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { useTranslation } from "@/i18n";
+import type { BroadcasterSubscriber } from "@/service/twitch/types";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 interface FollowerGiveawayForm {
@@ -20,6 +24,10 @@ interface FollowerGiveawayForm {
 
 export function FollowerGiveaway() {
     const { t } = useTranslation();
+    const { twitchApiClient, userData } = useTwitchApi();
+    const [users, setUsers] = useState<BroadcasterSubscriber[] | null>(null);
+    const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
+
     const form = useForm<FollowerGiveawayForm>({
         defaultValues: {
             title: "",
@@ -35,15 +43,37 @@ export function FollowerGiveaway() {
 
     const requiredSubscriber = form.watch("requiredSubscriber");
 
-    const onClickSearchParticipants = () => {
+    const onClickSearchParticipants = async () => {
+        if (!twitchApiClient || !userData) {
+            return;
+        }
 
+        setIsLoadingUsers(true);
+        const subscriptions: BroadcasterSubscriber[] = [];
+        let nextPage = undefined;
+        do {
+            const response = await twitchApiClient.getBroadcasterSubscriptions({
+                broadcaster_id: userData?.id,
+                first: "100",
+                after: nextPage,
+            });
+            if (response.isErr()) {
+                console.error("Error fetching subscriptions:", response.error);
+                return;
+            } else {
+                subscriptions.push(...response.value.data);
+                nextPage = response.value.pagination.cursor;
+            }
+        } while (nextPage);
+        setIsLoadingUsers(false);
+        setUsers(subscriptions);
     };
 
     return (
         <Layout>
-            <div className="flex flex-row items-center justify-center flex-grow gap-4">
-                <div className="flex flex-row gap-4">
-                    <Card className="rounded w-[600px]">
+            <div className="flex flex-row justify-center flex-grow gap-4">
+                <div className="flex flex-col gap-4 w-full p-8 sm:flex-row">
+                    <Card className="rounded w-[60%] min-w-[400px]">
                         <CardHeader>
                             <CardTitle>{t("FOLLOWER_GIVEAWAY_TITLE")}</CardTitle>
                             <CardDescription>{t("FOLLOWER_GIVEAWAY_DESCRIPTION")}</CardDescription>
@@ -112,11 +142,39 @@ export function FollowerGiveaway() {
                             </Form>
                         </CardContent>
                         <CardFooter className="flex justify-end">
-                            <Button>{t("FOLLOWER_GIVEAWAY_FORM_FIND_PARTICIPANTS_BUTTON")}</Button>
+                            <Button onClick={onClickSearchParticipants}>{t("FOLLOWER_GIVEAWAY_FORM_FIND_PARTICIPANTS_BUTTON")}</Button>
                         </CardFooter>
                     </Card>
-                    <Card className="rounded w-[400px]">
-                    </Card>
+                    {(isLoadingUsers || users) && (
+                        <Card className="rounded w-[40%] p-4">
+                            {isLoadingUsers ? (
+                                <div>
+
+                                </div>
+                            ) : (
+                                users && users.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-full">
+                                        <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
+                                    </div>
+                                ) : (
+                                    users && (
+                                        <Table className="w-full">
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            {users.map((user) => (
+                                                <TableRow key={user.user_id}>
+                                                    <TableCell>{user.user_name}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </Table>
+                                    )
+                                )
+                            )}
+                        </Card>
+                    )}
                 </div>
             </div>
         </Layout>
