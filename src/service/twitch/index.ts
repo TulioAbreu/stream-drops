@@ -1,6 +1,6 @@
-import axios from "axios";
-import { getBroadcasterSubscriptions, type GetTwitchBroadcasterSubscriptionsParams } from "./get-broadcaster-subscriptions";
-import { getTwitchUsers, type GetTwitchUsersParams } from "./get-users";
+import axios, { AxiosError } from "axios";
+import { ok, err, Result } from "neverthrow";
+import type { GetTwitchBroadcasterSubscriptionsParams, GetTwitchBroadcasterSubscriptionsResponse, GetTwitchUsersParams, GetTwitchUsersResponse } from "./types";
 
 interface TwitchApiClientParams {
     clientId: string;
@@ -22,7 +22,30 @@ export function makeTwitchApiClient(params: TwitchApiClientParams) {
     });
 
     return {
-        getBroadcasterSubscriptions: (params: GetTwitchBroadcasterSubscriptionsParams) => getBroadcasterSubscriptions(apiClient, params),
-        getUsers: (params: GetTwitchUsersParams) => getTwitchUsers(apiClient, params)
+        getBroadcasterSubscriptions: async (params: GetTwitchBroadcasterSubscriptionsParams): Promise<Result<GetTwitchBroadcasterSubscriptionsResponse, AxiosError>> => {
+            try {
+                const response = await apiClient.get<GetTwitchBroadcasterSubscriptionsResponse>("/subscriptions", {
+                    params: {
+                        ...params,
+                        first: params.first ?? "100",
+                    },
+                });
+                return ok(response.data);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        },
+        getUsers: async (params: GetTwitchUsersParams): Promise<Result<GetTwitchUsersResponse, AxiosError>> => {
+            try {
+                const response = await apiClient.get<GetTwitchUsersResponse>("/users", {
+                    params: {
+                        ...params,
+                    },
+                });
+                return ok(response.data);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        }
     };
 }
