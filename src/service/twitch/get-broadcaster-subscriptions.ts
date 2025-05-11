@@ -2,7 +2,7 @@ import { AxiosError, type AxiosInstance } from "axios";
 import { err, ok, Result } from "neverthrow";
 import type { TwitchPagination, TwitchSubscriptionTier } from "./types";
 
-export type GetBroadcasterSubscriptionsParams = {
+export type GetTwitchBroadcasterSubscriptionsParams = {
     broadcaster_id: string;
     user_id?: string;
     first?: string;
@@ -10,7 +10,7 @@ export type GetBroadcasterSubscriptionsParams = {
     before?: string;
 }
 
-export type GetBroadcasterSubscriptionsResponse = TwitchPagination<{
+export type GetTwitchBroadcasterSubscriptionsResponse = TwitchPagination<{
     broadcaster_id: string;
     broadcaster_login: string;
     broadcaster_name: string;
@@ -26,10 +26,10 @@ export type GetBroadcasterSubscriptionsResponse = TwitchPagination<{
 
 export async function getBroadcasterSubscriptions(
     client: AxiosInstance,
-    params: GetBroadcasterSubscriptionsParams
-): Promise<Result<GetBroadcasterSubscriptionsResponse, Error>> {
+    params: GetTwitchBroadcasterSubscriptionsParams
+): Promise<Result<GetTwitchBroadcasterSubscriptionsResponse, Error>> {
     try {
-        const response = await client.get<GetBroadcasterSubscriptionsResponse>("/subscriptions", {
+        const response = await client.get<GetTwitchBroadcasterSubscriptionsResponse>("/subscriptions", {
             params: {
                 ...params,
                 first: params.first ?? "100",

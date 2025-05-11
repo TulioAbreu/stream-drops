@@ -1,5 +1,6 @@
 import axios from "axios";
-import { getBroadcasterSubscriptions, type GetBroadcasterSubscriptionsParams } from "./get-broadcaster-subscriptions";
+import { getBroadcasterSubscriptions, type GetTwitchBroadcasterSubscriptionsParams } from "./get-broadcaster-subscriptions";
+import { getTwitchUsers, type GetTwitchUsersParams } from "./get-users";
 
 interface TwitchApiClientParams {
     clientId: string;
@@ -21,6 +22,7 @@ export function makeTwitchApiClient(params: TwitchApiClientParams) {
     });
 
     return {
-        getBroadcasterSubscriptions: (params: GetBroadcasterSubscriptionsParams) => getBroadcasterSubscriptions(apiClient, params),
+        getBroadcasterSubscriptions: (params: GetTwitchBroadcasterSubscriptionsParams) => getBroadcasterSubscriptions(apiClient, params),
+        getUsers: (params: GetTwitchUsersParams) => getTwitchUsers(apiClient, params)
     };
 }
