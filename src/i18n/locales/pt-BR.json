@@ -1,10 +1,10 @@
 {
     "LOGIN_TITLE": "Bem-vindo ao Login",
     "LOGIN_BUTTON_TWITCH": "Entrar com Twitch",
-    "DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY": "Sorteio de Seguidores",
+    "DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY": "Sorteio de Subscribers",
     "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY": "Sorteio de Ingressos",
-    "FOLLOWER_GIVEAWAY_TITLE": "Título do Sorteio de Seguidores",
-    "FOLLOWER_GIVEAWAY_DESCRIPTION": "Descrição do Sorteio de Seguidores",
+    "FOLLOWER_GIVEAWAY_TITLE": "Título do Sorteio de Subscribers",
+    "FOLLOWER_GIVEAWAY_DESCRIPTION": "Descrição do Sorteio de Subscribers",
     "FOLLOWER_GIVEAWAY_FORM_TITLE_FIELD": "Título do Sorteio",
     "FOLLOWER_GIVEAWAY_FORM_DESCRIPTION_FIELD": "Descrição do Sorteio",
     "FOLLOWER_GIVEAWAY_FORM_SUBSCRIPTION_REQUIREMENT_FIELD": "Requisito de Sub",
