@@ -17,7 +17,7 @@ export type GetTwitchBroadcasterSubscriptionsParams = {
     before?: string;
 }
 
-export type GetTwitchBroadcasterSubscriptionsResponse = TwitchPagination<{
+export type BroadcasterSubscriber = {
     broadcaster_id: string;
     broadcaster_login: string;
     broadcaster_name: string;
@@ -29,7 +29,9 @@ export type GetTwitchBroadcasterSubscriptionsResponse = TwitchPagination<{
     user_id: string;
     user_name: string;
     user_login: string;
-}>;
+};
+
+export type GetTwitchBroadcasterSubscriptionsResponse = TwitchPagination<BroadcasterSubscriber>;
 
 export type GetTwitchUsersParams = {
     id?: string;
