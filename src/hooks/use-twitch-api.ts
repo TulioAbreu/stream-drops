@@ -7,6 +7,8 @@ import { useLoginStore } from "@/storage/login";
 interface TwitchUser {
     id: string;
     login: string;
+    displayName: string;
+    profileImageUrl: string;
     expiresIn: number;
 }
 
@@ -30,24 +32,34 @@ export function useTwitchApi() {
         const validateToken = async () => {
             const result = await twitchIdClient.validateToken(twitchAccessToken);
             if (result.isOk()) {
-                const { client_id, user_id , login, expires_in } = result.value;
+                const { client_id, user_id, expires_in } = result.value;
 
+                // Verifica se o token pertence ao cliente correto
                 if (client_id === TWITCH_CLIENT_ID) {
                     setIsTokenValid(true);
 
-                    setUserData({
-                        id: user_id,
-                        login,
-                        expiresIn: expires_in,
+                    // Inicializa o cliente da API da Twitch
+                    const apiClient = makeTwitchApiClient({
+                        clientId: TWITCH_CLIENT_ID,
+                        accessToken: twitchAccessToken,
                     });
-                   
+                    setTwitchApiClient(apiClient);
 
-                    setTwitchApiClient(
-                        makeTwitchApiClient({
-                            clientId: TWITCH_CLIENT_ID,
-                            accessToken: twitchAccessToken,
-                        })
-                    );
+                    // Faz uma nova requisição para obter o profileImageUrl
+                    const userResult = await apiClient.getUsers({ id: user_id });
+                    if (userResult.isOk() && userResult.value.data.length > 0) {
+                        const user = userResult.value.data[0];
+                        setUserData({
+                            id: user.id,
+                            login: user.login,
+                            displayName: user.display_name,
+                            profileImageUrl: user.profile_image_url,
+                            expiresIn: expires_in,
+                        });
+                    } else {
+                        console.error("Erro ao obter dados do usuário:", userResult.isErr() && userResult.error);
+                        setUserData(null);
+                    }
                 } else {
                     console.error("O token não pertence ao cliente configurado.");
                     setIsTokenValid(false);
