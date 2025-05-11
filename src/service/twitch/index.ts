@@ -4,13 +4,11 @@ import type { GetTwitchBroadcasterSubscriptionsParams, GetTwitchBroadcasterSubsc
 
 interface TwitchApiClientParams {
     clientId: string;
-    clientSecret: string;
-    redirectUri: string;
     accessToken: string;
 }
 
 export function makeTwitchApiClient(params: TwitchApiClientParams) {
-    const { clientId, clientSecret, redirectUri, accessToken } = params;
+    const { clientId, accessToken } = params;
 
     const apiClient = axios.create({
         baseURL: "https://api.twitch.tv/helix",
