@@ -49,5 +49,5 @@ export type GetTwitchUsersResponse = {
         view_count: number;
         email: string;
         created_at: string;
-    }
+    }[]
 }
