@@ -1,15 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { err, ok, type Result } from "neverthrow";
-
-interface TwitchIdValidateTokenResponse {
-    client_id: string;
-    login: string;
-    scope: string[];
-    token_type: string;
-    expires_in: number;
-    user_id: string;
-    user_name: string;
-}
+import type { TwitchIdValidateTokenResponse } from "./types";
 
 export function makeTwitchIdApiClient() {
     const apiClient = axios.create({
