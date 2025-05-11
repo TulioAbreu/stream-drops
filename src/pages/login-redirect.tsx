@@ -2,8 +2,6 @@ import { LoaderCircleIcon } from "lucide-react";
 import { useEffect } from "react";
 
 export function LoginRedirectPage() {
-    // TODO: Implement timeout for the redirect
-
     useEffect(() => {
         const hash = document.location.hash.toString();
         if (hash) {
