@@ -15,7 +15,7 @@ const AUTHORIZATION_URL = new URL("/oauth2/authorize", "https://id.twitch.tv");
 AUTHORIZATION_URL.searchParams.set("client_id", TWITCH_CLIENT_ID);
 AUTHORIZATION_URL.searchParams.set("redirect_uri", "http://localhost:3000/auth");
 AUTHORIZATION_URL.searchParams.set("response_type", "token");
-AUTHORIZATION_URL.searchParams.set("scope", "user:read:subscriptions");
+AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions");
 
 const AUTHORIZATION_DRIVE_URL = new URL("/o/oauth2/v2/auth", "https://accounts.google.com");
 AUTHORIZATION_DRIVE_URL.searchParams.set("client_id", "790178845295-d80705l73fje56tomu29lnmlspl85lnt.apps.googleusercontent.com");
