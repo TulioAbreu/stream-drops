@@ -8,7 +8,7 @@ export function LoginRedirectPage() {
             const hashParams = new URLSearchParams(hash.substring(1));
             const accessToken = hashParams.get("access_token");
             if (accessToken) {
-                window.opener.postMessage({ accessToken }, "*");
+                window.opener.postMessage({ type: "twitch-auth", accessToken }, "*");
             }
         }
         window.close();

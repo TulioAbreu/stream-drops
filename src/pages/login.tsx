@@ -41,6 +41,9 @@ export function LoginPage() {
         setIsLoadingTwitch(true);
         window.open(AUTHORIZATION_URL, "newwindow", "width=400,height=600,status=no,toolbar=no,menubar=no,location=no");
         window.addEventListener("message", (event) => {
+            if (event.data.type !== "twitch-auth") {
+                return;
+            }
             const accessToken = event.data.accessToken;
             setTwitchAccessToken(accessToken);
         });
@@ -49,9 +52,11 @@ export function LoginPage() {
     const handleLoginGoogleDrive = () => {
         window.open(AUTHORIZATION_DRIVE_URL, "newwindow", "width=400,height=600,status=no,toolbar=no,menubar=no,location=no");
         window.addEventListener("message", (event) => {
-            const accessToken = event.data.accessToken;
-            alert(accessToken);
-            setDriveAccessToken(accessToken);
+            if (event.data.type !== "drive-auth") {
+                return;
+            }
+            const code = event.data.code;
+            setDriveAccessToken(code);
         });
     };
 

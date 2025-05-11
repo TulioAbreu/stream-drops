@@ -3,12 +3,12 @@ import { useEffect } from "react";
 
 export function LoginRedirectDrivePage() {
     useEffect(() => {
-        const hash = document.location.hash.toString();
+        const hash = document.location.search.toString();
         if (hash) {
-            const hashParams = new URLSearchParams(hash.substring(1));
-            const accessToken = hashParams.get("access_token");
-            if (accessToken) {
-                window.opener.postMessage({ accessToken }, "*");
+            const hashParams = new URLSearchParams(hash);
+            const code = hashParams.get("code");
+            if (code) {
+                window.opener.postMessage({ type: "drive-auth", code }, "*");
             }
         }
         window.close();
