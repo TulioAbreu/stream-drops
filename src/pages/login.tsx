@@ -15,11 +15,25 @@ AUTHORIZATION_URL.searchParams.set("redirect_uri", "http://localhost:3000/auth")
 AUTHORIZATION_URL.searchParams.set("response_type", "token");
 AUTHORIZATION_URL.searchParams.set("scope", "user:read:subscriptions");
 
+const AUTHORIZATION_DRIVE_URL = new URL("/o/oauth2/v2/auth", "https://accounts.google.com");
+AUTHORIZATION_DRIVE_URL.searchParams.set("client_id", "790178845295-d80705l73fje56tomu29lnmlspl85lnt.apps.googleusercontent.com");
+AUTHORIZATION_DRIVE_URL.searchParams.set("redirect_uri", "http://localhost:3000/auth/drive");
+AUTHORIZATION_DRIVE_URL.searchParams.set("response_type", "code");
+const SCOPES = [
+    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/spreadsheets",
+]
+AUTHORIZATION_DRIVE_URL.searchParams.set("scope", SCOPES.join(" "));
+AUTHORIZATION_DRIVE_URL.searchParams.set("access_type", "offline");
+AUTHORIZATION_DRIVE_URL.searchParams.set("prompt", "consent");
+
 export function LoginPage() {
     const { t } = useTranslation();
     const [isLoadingTwitch, setIsLoadingTwitch] = useState<boolean>(false);
     const { setTwitchAccessToken } = useLoginStore();
     const { userData } = useTwitchApi();
+
+    const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
 
 
     const handleLoginTwitch = () => {
@@ -29,6 +43,15 @@ export function LoginPage() {
         window.addEventListener("message", (event) => {
             const accessToken = event.data.accessToken;
             setTwitchAccessToken(accessToken);
+        });
+    };
+
+    const handleLoginGoogleDrive = () => {
+        window.open(AUTHORIZATION_DRIVE_URL, "newwindow", "width=400,height=600,status=no,toolbar=no,menubar=no,location=no");
+        window.addEventListener("message", (event) => {
+            const accessToken = event.data.accessToken;
+            alert(accessToken);
+            setDriveAccessToken(accessToken);
         });
     };
 
@@ -76,9 +99,10 @@ export function LoginPage() {
                             </Button>
                         )
                     )}
-                    <Button variant="default" className="w-full mt-4" onClick={() => {}}>
+                    <Button variant="default" className="w-full mt-4" onClick={handleLoginGoogleDrive}>
                         {t("LOGIN_BUTTON_GOOGLE_DRIVE")}
                     </Button>
+                    {driveAccessToken}
                 </CardContent>
             </Card>
         </div>

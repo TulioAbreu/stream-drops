@@ -4,6 +4,7 @@ import { LoginPage } from "./pages/login"
 import { DashboardPage } from "./pages/dashboard"
 import { FollowerGiveaway } from "./pages/follower-giveaway"
 import { LoginRedirectPage } from "./pages/login-redirect"
+import { LoginRedirectDrivePage } from "./pages/login-redirect-drive"
 
 export function App() {
     return (
@@ -12,6 +13,7 @@ export function App() {
                 <Routes>
                     <Route path="/" element={<LoginPage />} />
                     <Route path="/auth" element={<LoginRedirectPage />} />
+                    <Route path="/auth/drive" element={<LoginRedirectDrivePage />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/dashboard/follower-giveaway" element={<FollowerGiveaway />} />
                 </Routes>
