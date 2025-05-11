@@ -85,7 +85,7 @@ export function FollowerGiveaway() {
                                         />
                                     </div>
                                     <div className="flex flex-col gap-2">
-                                        <Label>Sorte de Sub</Label>
+                                        <Label>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIBER_LUCK")}</Label>
                                         <Table>
                                             <TableHeader>
                                                 <TableRow>
@@ -112,7 +112,7 @@ export function FollowerGiveaway() {
                             </Form>
                         </CardContent>
                         <CardFooter className="flex justify-end">
-                            <Button>Buscar Participantes</Button>
+                            <Button>{t("FOLLOWER_GIVEAWAY_FORM_FIND_PARTICIPANTS_BUTTON")}</Button>
                         </CardFooter>
                     </Card>
                     <Card className="rounded w-[400px]">

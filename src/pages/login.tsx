@@ -46,7 +46,7 @@ export function LoginPage() {
                         {t("LOGIN_TITLE")}
                     </CardTitle>
                     <CardDescription>
-                        Faça o login nas plataformas abaixo para continuar
+                        {t("LOGIN_DESCRIPTION")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -76,6 +76,9 @@ export function LoginPage() {
                             </Button>
                         )
                     )}
+                    <Button variant="default" className="w-full mt-4" onClick={() => {}}>
+                        {t("LOGIN_BUTTON_GOOGLE_DRIVE")}
+                    </Button>
                 </CardContent>
             </Card>
         </div>
