@@ -3,15 +3,15 @@ import { persist } from 'zustand/middleware';
 import { STORAGE_KEY_LOGIN_STORAGE } from '.';
 
 interface LoginStore {
-    isLoggedIn: boolean;
-    setIsLoggedIn: (isLoggedIn: boolean) => void;
+    twitchAccessToken: string | null;
+    setTwitchAccessToken: (twitchAccessToken: string) => void;
 }
 
 export const useLoginStore = create(
     persist<LoginStore>(
         (set) => ({
-            isLoggedIn: false,
-            setIsLoggedIn: (isLoggedIn: boolean) => set({ isLoggedIn }),
+            twitchAccessToken: null,
+            setTwitchAccessToken: (twitchAccessToken: string) => set({ twitchAccessToken }),
         }),
         {
             name: STORAGE_KEY_LOGIN_STORAGE,
