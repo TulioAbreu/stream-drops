@@ -42,6 +42,9 @@ export function AppSidebar() {
             <SidebarHeader />
             <SidebarContent>
                 <SidebarGroup>
+                    <SidebarHeader className="text-2xl font-bold">
+                        📦 StreamDrops
+                    </SidebarHeader>
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {items.map((item) => (
