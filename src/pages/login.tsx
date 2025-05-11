@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/i18n";
 import { TWITCH_CLIENT_ID } from "@/settings";
 import { useLoginStore } from "@/storage/login";
+import { useEffect } from "react";
 import { useNavigate } from "react-router";
 
 const AUTHORIZATION_URL = new URL("/oauth2/authorize", "https://id.twitch.tv");
@@ -22,6 +23,10 @@ export function LoginPage() {
             setTwitchAccessToken(accessToken);
         });
     };
+
+    useEffect(() => {
+
+    }, [twitchAccessToken]);
 
     return (
         <div className="flex flex-col items-center justify-center h-screen">
