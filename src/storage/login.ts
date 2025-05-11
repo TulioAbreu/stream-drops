@@ -4,6 +4,8 @@ import { STORAGE_KEY_LOGIN_STORAGE } from '.';
 
 interface LoginStore {
     twitchAccessToken: string | null;
+    driveCode: string | null;
+    setDriveCode: (driveCode: string) => void;
     setTwitchAccessToken: (twitchAccessToken: string) => void;
 }
 
@@ -12,6 +14,8 @@ export const useLoginStore = create(
         (set) => ({
             twitchAccessToken: null,
             setTwitchAccessToken: (twitchAccessToken: string) => set({ twitchAccessToken }),
+            driveCode: null,
+            setDriveCode: (driveCode: string) => set({ driveCode }),
         }),
         {
             name: STORAGE_KEY_LOGIN_STORAGE,

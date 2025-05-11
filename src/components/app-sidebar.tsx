@@ -27,11 +27,11 @@ const items: NavbarItem[] = [
         icon: <UserRoundCheck />,
         url: "/dashboard/follower-giveaway",
     },
-    {
-        title: "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY",
-        icon: <Ticket />,
-        url: "/dashboard/",
-    },
+    // {
+    //     title: "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY",
+    //     icon: <Ticket />,
+    //     url: "/dashboard/",
+    // },
 ]
 
 export function AppSidebar() {

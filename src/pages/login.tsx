@@ -7,7 +7,9 @@ import { useTranslation } from "@/i18n";
 import { TWITCH_CLIENT_ID } from "@/settings";
 import { useLoginStore } from "@/storage/login";
 import { AvatarImage } from "@radix-ui/react-avatar";
+import { CheckIcon, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 
 const AUTHORIZATION_URL = new URL("/oauth2/authorize", "https://id.twitch.tv");
 AUTHORIZATION_URL.searchParams.set("client_id", TWITCH_CLIENT_ID);
@@ -29,12 +31,11 @@ AUTHORIZATION_DRIVE_URL.searchParams.set("prompt", "consent");
 
 export function LoginPage() {
     const { t } = useTranslation();
-    const [isLoadingTwitch, setIsLoadingTwitch] = useState<boolean>(false);
-    const { setTwitchAccessToken } = useLoginStore();
+    const navigate = useNavigate();
+    const { setTwitchAccessToken, setDriveCode, driveCode, twitchAccessToken } = useLoginStore();
     const { userData } = useTwitchApi();
-
-    const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
-
+    const [isLoadingTwitch, setIsLoadingTwitch] = useState<boolean>(false);
+    const [isLoadingDrive, setIsLoadingDrive] = useState<boolean>(false);
 
     const handleLoginTwitch = () => {
         // TODO: Implement timeout for the popup
@@ -56,7 +57,7 @@ export function LoginPage() {
                 return;
             }
             const code = event.data.code;
-            setDriveAccessToken(code);
+            setDriveCode(code);
         });
     };
 
@@ -64,7 +65,16 @@ export function LoginPage() {
         if (userData) {
             setIsLoadingTwitch(false);
         }
-    }, [userData])
+    }, [userData]);
+
+    useEffect(() => {
+        if (!driveCode || !twitchAccessToken) {
+            return;
+        }
+        setTimeout(() => {
+            navigate("/dashboard");
+        }, 1000);
+    }, [driveCode, twitchAccessToken]);
 
     return (
         <div className="flex flex-col items-center justify-center h-screen">
@@ -77,7 +87,7 @@ export function LoginPage() {
                         {t("LOGIN_DESCRIPTION")}
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col gap-4">
                     {userData ? (
                         <div className="flex flex-row items-center p-4 border rounded shadow-md gap-4">
                             <Avatar>
@@ -104,10 +114,25 @@ export function LoginPage() {
                             </Button>
                         )
                     )}
-                    <Button variant="default" className="w-full mt-4" onClick={handleLoginGoogleDrive}>
-                        {t("LOGIN_BUTTON_GOOGLE_DRIVE")}
-                    </Button>
-                    {driveAccessToken}
+                    {driveCode ? (
+                        <div className="flex flex-row items-center p-4 border rounded shadow-md gap-4">
+                            {isLoadingDrive ? (
+                                <>
+                                    <Loader className="w-5 h-5 animate-spin text-blue-500" />
+                                    <p>Autenticando Google Drive...</p>
+                                </>
+                            ) : (
+                                <>
+                                    <CheckIcon className="w-5 h-5 text-green-500" />
+                                    <p>Google Drive autenticado.</p>
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <Button variant="default" className="w-full mt-4" onClick={handleLoginGoogleDrive}>
+                            {t("LOGIN_BUTTON_GOOGLE_DRIVE")}
+                        </Button>
+                    )}
                 </CardContent>
             </Card>
         </div>
