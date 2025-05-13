@@ -50,6 +50,26 @@ export function FollowerGiveaway() {
 
         setIsLoadingUsers(true);
         const subscriptions: BroadcasterSubscriber[] = [];
+
+        const tiers = ["1000", "2000", "3000"] as const;
+        for (let i = 0; i < 10000; i++) {
+            const randomTier = tiers[Math.floor(Math.random() * tiers.length)];
+            const fakeSubscription: BroadcasterSubscriber = {
+                user_id: `user_${i}`,
+                user_name: `user_${i}`,
+                tier: randomTier,
+                is_gift: false,
+                broadcaster_id: userData.id,
+                broadcaster_name: userData.login,
+                broadcaster_login: userData.login,
+                gifter_id: "",
+                gifter_login: "",
+                plan_name: "",
+                user_login: `user_${i}`,
+            };
+            subscriptions.push(fakeSubscription);
+        }
+
         let nextPage = undefined;
         do {
             const response = await twitchApiClient.getBroadcasterSubscriptions({
@@ -146,33 +166,40 @@ export function FollowerGiveaway() {
                         </CardFooter>
                     </Card>
                     {(isLoadingUsers || users) && (
-                        <Card className="rounded w-[40%] p-4">
-                            {isLoadingUsers ? (
-                                <div>
+                        <Card className="rounded w-[40%] max-h-[400px] overflow-auto">
+                            <CardHeader>
+                                <CardTitle>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TITLE")}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {isLoadingUsers ? (
+                                    <div>
 
-                                </div>
-                            ) : (
-                                users && users.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-full">
-                                        <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
                                     </div>
                                 ) : (
-                                    users && (
-                                        <Table className="w-full">
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            {users.map((user) => (
-                                                <TableRow key={user.user_id}>
-                                                    <TableCell>{user.user_name}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </Table>
+                                    users && users.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-full">
+                                            <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
+                                        </div>
+                                    ) : (
+                                        users && (
+                                            <Table className="w-full">
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
+                                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                {users.map((user) => (
+                                                    <TableRow key={user.user_id}>
+                                                        <TableCell>{user.user_name}</TableCell>
+                                                        <TableCell>{user.tier}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </Table>
+                                        )
                                     )
-                                )
-                            )}
+                                )}
+                            </CardContent>
                         </Card>
                     )}
                 </div>
