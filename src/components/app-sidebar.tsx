@@ -14,6 +14,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useTranslation } from "@/i18n";
+import { useLocation } from "react-router";
 
 interface NavbarItem {
     title: string;
@@ -36,6 +37,7 @@ const items: NavbarItem[] = [
 
 export function AppSidebar() {
     const { t } = useTranslation();
+    const location = useLocation();
 
     return (
         <Sidebar>
@@ -49,7 +51,7 @@ export function AppSidebar() {
                         <SidebarMenu>
                             {items.map((item) => (
                                 <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild>
+                                    <SidebarMenuButton asChild className={location.pathname === item.url ? "bg-neutral-800" : ""}>
                                         <a href={item.url}>
                                             {item.icon}
                                             <span>{t(item.title)}</span>
