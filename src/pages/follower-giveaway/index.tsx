@@ -15,13 +15,7 @@ import { useTranslation } from "@/i18n";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-
-interface FollowerGiveawayForm {
-    title: string;
-    description: string;
-    requiredSubscriber: SubscriberTier;
-    subscriberMultiplier: Record<SubscriberTier, number>;
-}
+import { FollowerGiveawayForm } from "./components/follower-giveaway-form";
 
 export function FollowerGiveaway() {
     const { t } = useTranslation();
@@ -29,20 +23,6 @@ export function FollowerGiveaway() {
     const [users, setUsers] = useState<BroadcasterSubscriber[] | null>(null);
     const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
 
-    const form = useForm<FollowerGiveawayForm>({
-        defaultValues: {
-            title: "",
-            description: "",
-            requiredSubscriber: SubscriberTier.TIER_1,
-            subscriberMultiplier: {
-                [SubscriberTier.TIER_1]: 1,
-                [SubscriberTier.TIER_2]: 1,
-                [SubscriberTier.TIER_3]: 1,
-            },
-        },
-    });
-
-    const requiredSubscriber = form.watch("requiredSubscriber");
 
     const onClickSearchParticipants = async () => {
         if (!twitchApiClient || !userData) {
@@ -114,67 +94,9 @@ export function FollowerGiveaway() {
                     </div>
                     <div className="flex flex-row gap-8 w-full">
                         <div className="flex-1/3">
-                            <Form {...form}>
-                                <form className="flex flex-col gap-4">
-                                    <div className="flex flex-col gap-2">
-                                        <Label>{t("FOLLOWER_GIVEAWAY_FORM_TITLE_FIELD")}</Label>
-                                        <Input placeholder={t("FOLLOWER_GIVEAWAY_FORM_TITLE_FIELD")} />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Label>{t("FOLLOWER_GIVEAWAY_FORM_DESCRIPTION_FIELD")}</Label>
-                                        <Textarea placeholder={t("FOLLOWER_GIVEAWAY_FORM_DESCRIPTION_FIELD")} className="resize-none" />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Label>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIPTION_REQUIREMENT_FIELD")}</Label>
-                                        <FormField
-                                            control={form.control}
-                                            name="requiredSubscriber"
-                                            render={({ field }) => (
-                                                <Select
-                                                    onValueChange={(value) => {
-                                                        field.onChange(value);
-                                                    }}
-                                                >
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Selecione" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {Object.values(SubscriberTier).map((tierValue) => (
-                                                            <SelectItem key={tierValue} value={String(tierValue)}>
-                                                                {SubscriberTierLabels[tierValue]}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Label>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIBER_LUCK")}</Label>
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
-                                                    <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIPTION_SUBSCRIBER_LUCK_TABLE_HEADER")}</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            {Object.values(SubscriberTier).filter((tier) => tier >= requiredSubscriber).map((tierValue) => (
-                                                <TableRow key={tierValue}>
-                                                    <TableCell>{SubscriberTierLabels[tierValue]}</TableCell>
-                                                    <TableCell>
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="0"
-                                                            className="w-[100px]"
-                                                            {...form.register(`subscriberMultiplier.${tierValue}` as any)}
-                                                        />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </Table>
-                                    </div>
-                                </form>
-                            </Form>
+                            <FollowerGiveawayForm
+                                onSubmit={onClickSearchParticipants}
+                            />
                         </div>
                         <div className="flex flex-col gap-2 flex-1/3">
                             <h2 className="text-lg font-bold">{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TITLE")}</h2>
