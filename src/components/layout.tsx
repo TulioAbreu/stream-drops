@@ -7,7 +7,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <AppSidebar />
             <main className="flex flex-col h-screen flex-grow min-h-screen">
                 <SidebarTrigger />
-                {children}
+                <div className="px-[100px] py-[20px]">
+                    {children}
+                </div>
             </main>
         </SidebarProvider>
     )
