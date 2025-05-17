@@ -75,29 +75,10 @@ export function FollowerGiveaway() {
         <Layout>
             <div className="flex flex-row justify-center flex-grow gap-4">
                 <div className="flex flex-col gap-4 w-full p-8">
-                    <div className="flex flex-row justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
-                            <p className="text-sm text-muted-foreground">{t("FOLLOWER_GIVEAWAY_DESCRIPTION")}</p>
-                        </div>
-                        <div className="flex flex-row gap-4">
-                            <Button type="button" onClick={onClickSearchParticipants}>{t("FOLLOWER_GIVEAWAY_FORM_FIND_PARTICIPANTS_BUTTON")}</Button>
-                            <Button
-                                variant="default"
-                                onClick={() => {}}
-                                className="min-w-[160px]"
-                                disabled={isLoadingUsers || users === null || users.length === 0}
-                            >
-                                Sortear
-                            </Button>
-                        </div>
-                    </div>
+                        <FollowerGiveawayForm
+                            onSubmit={onClickSearchParticipants}
+                        />
                     <div className="flex flex-row gap-8 w-full">
-                        <div className="flex-1/3">
-                            <FollowerGiveawayForm
-                                onSubmit={onClickSearchParticipants}
-                            />
-                        </div>
                         <div className="flex flex-col gap-2 flex-1/3">
                             <h2 className="text-lg font-bold">{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TITLE")}</h2>
                             {isLoadingUsers ? (
