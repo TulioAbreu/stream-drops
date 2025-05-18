@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
-import { Edit2Icon, CirclePlusIcon, PlusIcon  } from "lucide-react";
+import { Edit2Icon, CirclePlusIcon, PlusIcon, FileSymlinkIcon, SquareArrowOutUpRight  } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -59,13 +59,13 @@ export function FollowerGiveaway() {
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger>
-                                                    <Edit2Icon
+                                                    <SquareArrowOutUpRight
                                                         className="cursor-pointer hover:filter hover:brightness-75 transition-all"
                                                         onClick={() => onClickEdit(giveaway.id)}
                                                     />
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_EDIT")}
+                                                    {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_OPEN")}
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>

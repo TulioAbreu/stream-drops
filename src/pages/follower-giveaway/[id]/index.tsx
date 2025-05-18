@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useSubscriptionGiveawayDb } from "@/database";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
-import { ArrowLeftIcon, PartyPopperIcon, SearchIcon, UserIcon } from "lucide-react";
+import { ArrowLeftIcon, CheckIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
@@ -19,7 +20,7 @@ export function FollowerGiveawayId() {
     const [users, setUsers] = useState<BroadcasterSubscriber[] | null>(null);
     const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
     const { getGiveaway } = useSubscriptionGiveawayDb();
-    const [giveaway, setGiveaway] = useState<any>(null);
+    const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -102,16 +103,14 @@ export function FollowerGiveawayId() {
                         <SearchIcon className="w-4 h-4 mr-2" />
                         <span>{t("FOLLOWER_GIVEAWAY_FORM_SEARCH_PARTICIPANTS")}</span>
                     </Button>
-                    <div className="flex flex-row gap-2">
-                        <Button variant="outline" size="lg">
-                            <PartyPopperIcon className="w-4 h-4 mr-2" />
-                            <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
-                        </Button>
-                    </div>
+                    <Button variant="outline" size="lg">
+                        <PartyPopperIcon className="w-4 h-4 mr-2" />
+                        <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
+                    </Button>
                 </div>
             </div>
-            <div className="flex flex-col gap-4 items-start w-1/4">
-                <Card className="w-full">
+            <div className="flex flex-row gap-4 mb-4">
+                <Card className="w-[200px]">
                     <CardHeader className="relative">
                         <CardDescription>Total de Participantes</CardDescription>
                         <CardTitle className="text-3xl font-semibold tabular-nums">
@@ -122,6 +121,19 @@ export function FollowerGiveawayId() {
                         </CardTitle>
                     </CardHeader>
                 </Card>
+                <Card className="w-[200px]">
+                    <CardHeader className="relative">
+                        <CardDescription>Critério de Participação</CardDescription>
+                        <CardTitle className="text-3xl font-semibold tabular-nums">
+                            <div className="flex flex-row gap-2 items-center">
+                                <CrownIcon className="w-6 h-6" />
+                                {t(`TIER_${giveaway?.requiredSubscriber ?? 0}`)}
+                            </div>
+                        </CardTitle>
+                    </CardHeader>
+                </Card>
+            </div>
+            <div className="flex flex-row w-full gap-4 mb-4 nowrap">
                 <Card className="w-full">
                     <CardHeader className="relative">
                         <CardTitle className="text-2xl font-semibold">Lista de Participantes</CardTitle>
@@ -149,15 +161,56 @@ export function FollowerGiveawayId() {
                                 )}
                                 itemContent={(_index, user) => [
                                     <TableCell>{user.user_name}</TableCell>,
-                                    <TableCell>{user.tier}</TableCell>
+                                    <TableCell>{t(`TIER_${user.tier}`)}</TableCell>
                                 ]}
                             />
                         )}
                     </CardContent>
                 </Card>
-                <div className="flex flex-col gap-4 w-1/8">
-
-                </div>
+                <Card className="w-full">
+                    <CardHeader className="relative">
+                        <div className="flex flex-row items-center justify-between">
+                            <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
+                            <div>
+                                <Button variant="outline" size="lg">
+                                    <FileSpreadsheetIcon className="w-4 h-4" />
+                                    Exportar
+                                </Button>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <Table className="overflow-x-scroll">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
+                                    <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
+                                    <TableHead></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {users?.slice(0, 5).map((user) => (
+                                    <TableRow key={user.user_id}>
+                                        <TableCell>{user.user_name}</TableCell>
+                                        <TableCell>{t(`TIER_${user.tier}`)}</TableCell>
+                                        <TableCell>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <Button variant="ghost" size="icon">
+                                                            <XIcon />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Remover {user.user_name}</TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             </div>
         </Layout>
     );
