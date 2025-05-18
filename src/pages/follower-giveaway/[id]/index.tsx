@@ -1,12 +1,16 @@
 import { Layout } from "@/components/layout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSubscriptionGiveawayDb } from "@/database";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
+import { ArrowLeftIcon, PartyPopperIcon, SearchIcon, UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { TableVirtuoso } from "react-virtuoso";
 
 export function FollowerGiveawayId() {
@@ -17,6 +21,7 @@ export function FollowerGiveawayId() {
     const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
     const { getGiveaway } = useSubscriptionGiveawayDb();
     const [giveaway, setGiveaway] = useState<any>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchGiveaway = async () => {
@@ -30,6 +35,10 @@ export function FollowerGiveawayId() {
         };
         fetchGiveaway();
     }, [id, getGiveaway]);
+
+    const onClickBack = () => {
+        navigate("/dashboard/follower-giveaway");
+    };
 
     const onClickSearchParticipants = async () => {
         if (!twitchApiClient || !userData) {
@@ -80,9 +89,38 @@ export function FollowerGiveawayId() {
 
     return (
         <Layout>
-            <h1 className="text-2xl font-bold mb-4">
-                {giveaway === null ? <Skeleton className="w-1/2 h-8 rounded-md" /> : giveaway.title}
-            </h1>
+            <div className="flex flex-row justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold">{giveaway === null ? <Skeleton className="w-1/2 h-8 rounded-md" /> : giveaway.title}</h1>
+                <div className="flex flex-row gap-4">
+                    <Button variant="ghost" size="lg" onClick={onClickBack}>
+                        <ArrowLeftIcon className="w-4 h-4 mr-2" />
+                        <span>{t("NAVIGATE_BACK")}</span>
+                    </Button>
+                    <Button variant="outline" onClick={onClickSearchParticipants} size="lg">
+                        <SearchIcon className="w-4 h-4 mr-2" />
+                        <span>{t("FOLLOWER_GIVEAWAY_FORM_SEARCH_PARTICIPANTS")}</span>
+                    </Button>
+                    <div className="flex flex-row gap-2">
+                        <Button variant="outline" size="lg">
+                            <PartyPopperIcon className="w-4 h-4 mr-2" />
+                            <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+            <div className="flex gap-4">
+                <Card className="w-1/8">
+                    <CardHeader className="relative">
+                        <CardDescription>Total de Participantes</CardDescription>
+                        <CardTitle className="text-3xl font-semibold tabular-nums">
+                            <div className="flex flex-row gap-2 items-center">
+                                <UserIcon className="w-6 h-6" />
+                                {users?.length ?? 0}
+                            </div>
+                        </CardTitle>
+                    </CardHeader>
+                </Card>
+            </div>
             <div className="flex flex-row gap-8 w-full">
                 <div className="flex flex-col gap-2 flex-1/3">
                     <h2 className="text-lg font-bold">{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TITLE")}</h2>
