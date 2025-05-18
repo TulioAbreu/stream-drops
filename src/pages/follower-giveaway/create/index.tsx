@@ -55,7 +55,9 @@ export function FollowerGiveawayCreate() {
 
     return (
         <Layout>
-            <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
+            <div className="flex flex-row gap-4">
+                <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
+            </div>
             <Form {...form}>
                 <div className="flex flex-col gap-4">
                     <div className={FIELD_CONTAINER}>

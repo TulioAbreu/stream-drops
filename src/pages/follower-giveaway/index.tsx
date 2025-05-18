@@ -1,7 +1,8 @@
 import { Layout } from "@/components/layout";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
-import { Delete, DeleteIcon, Edit2Icon, EditIcon, Trash2Icon, TrashIcon,  } from "lucide-react";
+import { Edit2Icon, CirclePlusIcon  } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -17,6 +18,10 @@ export function FollowerGiveaway() {
         navigate(`/dashboard/follower-giveaway/${id}`);
     };
 
+    const onClickCreate = () => {
+        navigate("/dashboard/follower-giveaway/create");
+    };
+
     useEffect(() => {
         const fetchGiveaways = async () => {
             setIsLoading(true);
@@ -29,8 +34,15 @@ export function FollowerGiveaway() {
 
     return (
         <Layout>
-            
-            <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
+                <Button onClick={onClickCreate}>
+                    {t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}
+                    <CirclePlusIcon
+                        className="cursor-pointer hover:filter hover:brightness-75 transition-all"
+                    />
+                </Button>
+            </div>
             <div className="flex flex-col gap-4">
                 <Table>
                     <TableHeader>
@@ -46,7 +58,7 @@ export function FollowerGiveaway() {
                                 <TableCell>
                                     <div className="flex flex-row gap-4">
                                         <Edit2Icon
-                                            className="cursor-pointer"
+                                            className="cursor-pointer hover:filter hover:brightness-75 transition-all"
                                             onClick={() => onClickEdit(giveaway.id)}
                                         />
                                     </div>
