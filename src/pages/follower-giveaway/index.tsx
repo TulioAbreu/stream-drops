@@ -12,14 +12,14 @@ import { Button } from "@/components/ui/button";
 import { v7 } from "uuid";
 import { useSubscriptionGiveawayDb } from "@/database";
 import { Layout } from "@/components/layout";
+import { useNavigate } from "react-router";
 
-interface FollowerGiveawayFormProps {
-    onSubmit: (data: FollowerGiveawayForm) => void;
-}
+const FIELD_CONTAINER = "flex flex-col gap-2";
 
-export function FollowerGiveaway({ onSubmit }: FollowerGiveawayFormProps) {
+export function FollowerGiveaway() {
     const { t } = useTranslation();
     const { addGiveaway } = useSubscriptionGiveawayDb();
+    const navigate = useNavigate();
     const form = useForm<FollowerGiveawayForm>({
         defaultValues: {
             title: "",
@@ -35,33 +35,30 @@ export function FollowerGiveaway({ onSubmit }: FollowerGiveawayFormProps) {
 
     const requiredSubscriber = form.watch("requiredSubscriber");
     
-    const onClickSubmit = (data: FollowerGiveawayForm) => {
-        addGiveaway({
-            ...data,
-            id: v7(),
-            description: data.description,
-            requiredSubscriber: data.requiredSubscriber,
-            subscriberMultiplier: data.subscriberMultiplier,
-            title: data.title,
-            participants: [],
-            winners: [],
-        })
-            .then(() => {
-                onSubmit(data);
-        })
-            .then(() => {
-                alert("Giveaway added successfully");
-            })
+    const onClickSubmit = async (data: FollowerGiveawayForm) => {
+        try {
+            const id = v7();
+            await addGiveaway({
+                id,
+                description: data.description,
+                requiredSubscriber: data.requiredSubscriber,
+                subscriberMultiplier: data.subscriberMultiplier,
+                title: data.title,
+                participants: [],
+                winners: [],
+            });
+            navigate(`/dashboard/follower-giveaway/${id}`);
+        } catch (error) {
+            console.error("Error adding giveaway:", error);
+        }
     };
 
     return (
         <Layout>
-            <div className="flex flex-col">
-                <h1 className="text-2xl font-bold">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
-            </div>
+            <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
             <Form {...form}>
-                <form className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-4">
+                    <div className={FIELD_CONTAINER}>
                         <Label>{t("FOLLOWER_GIVEAWAY_FORM_TITLE_FIELD")}</Label>
                         <Input
                             placeholder={t("FOLLOWER_GIVEAWAY_FORM_TITLE_FIELD")}
@@ -70,7 +67,7 @@ export function FollowerGiveaway({ onSubmit }: FollowerGiveawayFormProps) {
                             })}
                         />
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className={FIELD_CONTAINER}>
                         <Label>{t("FOLLOWER_GIVEAWAY_FORM_DESCRIPTION_FIELD")}</Label>
                         <Textarea
                             placeholder={t("FOLLOWER_GIVEAWAY_FORM_DESCRIPTION_FIELD")}
@@ -80,7 +77,7 @@ export function FollowerGiveaway({ onSubmit }: FollowerGiveawayFormProps) {
                             })}
                         />
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className={FIELD_CONTAINER}>
                         <Label>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIPTION_REQUIREMENT_FIELD")}</Label>
                         <FormField
                             control={form.control}
@@ -105,7 +102,7 @@ export function FollowerGiveaway({ onSubmit }: FollowerGiveawayFormProps) {
                             )}
                         />
                     </div>
-                    <div className="flex flex-col gap-2">
+                    <div className={FIELD_CONTAINER}>
                         <Label>{t("FOLLOWER_GIVEAWAY_FORM_SUBSCRIBER_LUCK")}</Label>
                         <Table>
                             <TableHeader>
@@ -129,12 +126,12 @@ export function FollowerGiveaway({ onSubmit }: FollowerGiveawayFormProps) {
                             ))}
                         </Table>
                     </div>
-                    <div className="flex flex-row items-center justify-end gap-2">
+                    <div className="flex flex-row items-center justify-end">
                         <Button type="submit" onClick={form.handleSubmit(onClickSubmit)}>
                             {t("FOLLOWER_GIVEAWAY_FORM_FIND_PARTICIPANTS_BUTTON")}
                         </Button>
                     </div>
-                </form>
+                </div>
             </Form>
         </Layout>
     )
