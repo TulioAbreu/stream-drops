@@ -1,8 +1,9 @@
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
-import { Edit2Icon, CirclePlusIcon  } from "lucide-react";
+import { Edit2Icon, CirclePlusIcon, PlusIcon  } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -36,11 +37,9 @@ export function FollowerGiveaway() {
         <Layout>
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
-                <Button onClick={onClickCreate}>
-                    {t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}
-                    <CirclePlusIcon
-                        className="cursor-pointer hover:filter hover:brightness-75 transition-all"
-                    />
+                <Button variant="outline" onClick={onClickCreate} size="lg">
+                    <PlusIcon/>
+                    <span>{t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}</span>
                 </Button>
             </div>
             <div className="flex flex-col gap-4">
@@ -57,10 +56,19 @@ export function FollowerGiveaway() {
                                 <TableCell>{giveaway.title}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-row gap-4">
-                                        <Edit2Icon
-                                            className="cursor-pointer hover:filter hover:brightness-75 transition-all"
-                                            onClick={() => onClickEdit(giveaway.id)}
-                                        />
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <Edit2Icon
+                                                        className="cursor-pointer hover:filter hover:brightness-75 transition-all"
+                                                        onClick={() => onClickEdit(giveaway.id)}
+                                                    />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_EDIT")}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </div>
                                 </TableCell>
                             </TableRow>
