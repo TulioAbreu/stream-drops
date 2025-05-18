@@ -1,7 +1,6 @@
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSubscriptionGiveawayDb } from "@/database";
@@ -90,7 +89,10 @@ export function FollowerGiveawayId() {
     return (
         <Layout>
             <div className="flex flex-row justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">{giveaway === null ? <Skeleton className="w-1/2 h-8 rounded-md" /> : giveaway.title}</h1>
+                <div>
+                    <h1 className="text-2xl font-bold">{giveaway === null ? <Skeleton className="w-1/2 h-8 rounded-md" /> : giveaway.title}</h1>
+                    <p className="text-muted-foreground">{giveaway?.description}</p>
+                </div>
                 <div className="flex flex-row gap-4">
                     <Button variant="ghost" size="lg" onClick={onClickBack}>
                         <ArrowLeftIcon className="w-4 h-4 mr-2" />
@@ -108,8 +110,8 @@ export function FollowerGiveawayId() {
                     </div>
                 </div>
             </div>
-            <div className="flex gap-4">
-                <Card className="w-1/8">
+            <div className="flex flex-col gap-4 items-start w-1/4">
+                <Card className="w-full">
                     <CardHeader className="relative">
                         <CardDescription>Total de Participantes</CardDescription>
                         <CardTitle className="text-3xl font-semibold tabular-nums">
@@ -120,45 +122,41 @@ export function FollowerGiveawayId() {
                         </CardTitle>
                     </CardHeader>
                 </Card>
-            </div>
-            <div className="flex flex-row gap-8 w-full">
-                <div className="flex flex-col gap-2 flex-1/3">
-                    <h2 className="text-lg font-bold">{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TITLE")}</h2>
-                    {isLoadingUsers ? (
-                        <Skeleton className="w-full h-full rounded-md" />
-                    ) : (
-                        <>
-                            {(users === null || users.length === 0) && (
-                                <div className="flex flex-col h-full">
-                                    <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
-                                </div>
-                            )}
-                            {users && users.length > 0 && (
-                                <div className="flex flex-col h-full">
-                                    <TableVirtuoso
-                                        style={{ height: "100%" }}
-                                        data={users}
-                                        components={{
-                                            Table,
-                                            TableBody,
-                                            TableRow,
-                                            TableHead: TableHeader,
-                                        }}
-                                        fixedHeaderContent={() => (
-                                            <TableRow>
-                                                <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
-                                                <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
-                                            </TableRow>
-                                        )}
-                                        itemContent={(_index, user) => [
-                                            <TableCell>{user.user_name}</TableCell>,
-                                            <TableCell>{user.tier}</TableCell>
-                                        ]}
-                                    />
-                                </div>
-                            )}
-                        </>
-                    )}
+                <Card className="w-full">
+                    <CardHeader className="relative">
+                        <CardTitle className="text-2xl font-semibold">Lista de Participantes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {(users === null || users.length === 0) ? (
+                            <div className="flex flex-col h-full">
+                                <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
+                            </div>
+                        ) : (
+                            <TableVirtuoso
+                                style={{ height: "300px" }}
+                                data={users}
+                                components={{
+                                    Table,
+                                    TableBody,
+                                    TableRow,
+                                    TableHead: TableHeader,
+                                }}
+                                fixedHeaderContent={() => (
+                                    <TableRow>
+                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
+                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
+                                    </TableRow>
+                                )}
+                                itemContent={(_index, user) => [
+                                    <TableCell>{user.user_name}</TableCell>,
+                                    <TableCell>{user.tier}</TableCell>
+                                ]}
+                            />
+                        )}
+                    </CardContent>
+                </Card>
+                <div className="flex flex-col gap-4 w-1/8">
+
                 </div>
             </div>
         </Layout>
