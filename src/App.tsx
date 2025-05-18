@@ -5,6 +5,7 @@ import { DashboardPage } from "./pages/dashboard"
 import { FollowerGiveaway } from "./pages/follower-giveaway"
 import { LoginRedirectPage } from "./pages/login-redirect"
 import { LoginRedirectDrivePage } from "./pages/login-redirect-drive"
+import { FollowerGiveawayId } from "./pages/follower-giveaway/[id]"
 
 export function App() {
     return (
@@ -16,6 +17,7 @@ export function App() {
                     <Route path="/auth/drive" element={<LoginRedirectDrivePage />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/dashboard/follower-giveaway" element={<FollowerGiveaway />} />
+                    <Route path="/dashboard/follower-giveaway/:id" element={<FollowerGiveawayId />} />
                 </Routes>
             </BrowserRouter>
         </ThemeProvider>
