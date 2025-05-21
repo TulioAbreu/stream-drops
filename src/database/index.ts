@@ -1,14 +1,6 @@
-import type { TwitchSubscriptionTier } from "@/service/twitch/types";
+import type { BroadcasterSubscriber, TwitchSubscriptionTier } from "@/service/twitch/types";
 import { useCallback } from "react";
 
-export interface GiveawayParticipant {
-    id: string;
-    user_id: string;
-    user_name: string;
-    tier: string;
-}
-
-export interface GiveawayWinner extends GiveawayParticipant {}
 
 export interface FollowerGiveawayFormData {
     id: string;
@@ -16,8 +8,9 @@ export interface FollowerGiveawayFormData {
     description: string;
     requiredSubscriber: number;
     subscriberMultiplier: Record<TwitchSubscriptionTier, number>;
-    participants: GiveawayParticipant[];
-    winners: GiveawayWinner[];
+    participants: BroadcasterSubscriber[];
+    winners: BroadcasterSubscriber[];
+    spreadsheetUrl: string | null;
 }
 
 const DB_NAME = "stream-drops-db";

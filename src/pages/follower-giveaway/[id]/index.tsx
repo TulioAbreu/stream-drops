@@ -23,9 +23,8 @@ export function FollowerGiveawayId() {
     const [users, setUsers] = useState<BroadcasterSubscriber[] | null>(null);
     const [winners, setWinners] = useState<BroadcasterSubscriber[] | null>(null);
     const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
-    const { getGiveaway } = useSubscriptionGiveawayDb();
+    const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
-    const { driveCode } = useLoginStore();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -36,6 +35,12 @@ export function FollowerGiveawayId() {
             const giveawayData = await getGiveaway(id);
             if (giveawayData) {
                 setGiveaway(giveawayData);
+                if (giveawayData.participants) {
+                    setUsers(giveawayData.participants);
+                }
+                if (giveawayData.winners) {
+                    setWinners(giveawayData.winners);
+                }
             }
         };
         fetchGiveaway();
@@ -93,7 +98,7 @@ export function FollowerGiveawayId() {
     };
 
     const onClickDrawWinners = async () => {
-        if (!twitchApiClient || !userData) {
+        if (!giveaway || !twitchApiClient || !userData) {
             return;
         }
         const winner = getGiveawayResult({
@@ -106,10 +111,20 @@ export function FollowerGiveawayId() {
             },
             totalWinners: 1,
         });
+        await updateGiveaway({
+            ...giveaway,
+            id: giveaway.id,
+            winners: [...(winners ?? []), ...winner] as BroadcasterSubscriber[],
+            participants: users ?? [] as BroadcasterSubscriber[],
+        });
         setWinners((winners) => [...winner, ...(winners ?? [])]);
     };
 
     const onClickExportWinners = async () => {
+        if (!giveaway) {
+            return;
+        }
+
         const newTab = window.open("about:blank", "_blank");
         const url = await exportGiveawayResultToSheets({
             participants: users ?? [],
@@ -123,8 +138,22 @@ export function FollowerGiveawayId() {
             title: giveaway?.title ?? "",
             description: giveaway?.description ?? "",
         });
+        await updateGiveaway({
+            ...giveaway,
+            spreadsheetUrl: url,
+        });
         if (newTab) {
             newTab.location.href = url;
+        }
+    };
+
+    const onClickViewSpreadsheet = () => {
+        if (!giveaway?.spreadsheetUrl) {
+            return;
+        }
+        const newTab = window.open("about:blank", "_blank");
+        if (newTab) {
+            newTab.location.href = giveaway.spreadsheetUrl;
         }
     };
 
@@ -226,14 +255,17 @@ export function FollowerGiveawayId() {
                         <div className="flex flex-row items-center justify-between">
                             <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
                             <div className="flex flex-row gap-2">
-                                <Button variant="outline" size="lg" disabled={users === null || users.length === 0} onClick={onClickExportWinners}>
-                                    <SaveIcon className="w-4 h-4 mr-2" />
-                                    Exportar
-                                </Button>
-                                <Button variant="outline" size="lg" disabled={winners === null || winners.length === 0} onClick={onClickExportWinners}>
-                                    <FileSpreadsheetIcon className="w-4 h-4 mr-2" />
-                                    Visualizar Planilha
-                                </Button>
+                                {giveaway?.spreadsheetUrl ? (
+                                    <Button variant="outline" size="lg" disabled={winners === null || winners.length === 0} onClick={onClickViewSpreadsheet}>
+                                        <FileSpreadsheetIcon className="w-4 h-4 mr-2" />
+                                        Visualizar Planilha
+                                    </Button>
+                                ) : (
+                                    <Button variant="outline" size="lg" disabled={users === null || users.length === 0} onClick={onClickExportWinners}>
+                                        <SaveIcon className="w-4 h-4 mr-2" />
+                                        Exportar
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </CardHeader>

@@ -46,6 +46,7 @@ export function FollowerGiveawayCreate() {
                 title: data.title,
                 participants: [],
                 winners: [],
+                spreadsheetUrl: null,
             });
             navigate(`/dashboard/follower-giveaway/${id}`);
         } catch (error) {
