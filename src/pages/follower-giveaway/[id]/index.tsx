@@ -27,22 +27,23 @@ export function FollowerGiveawayId() {
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const navigate = useNavigate();
 
+    const fetchGiveaway = async () => {
+        if (!id) {
+            return;
+        }
+        const giveawayData = await getGiveaway(id);
+        if (giveawayData) {
+            setGiveaway(giveawayData);
+            if (giveawayData.participants) {
+                setUsers(giveawayData.participants);
+            }
+            if (giveawayData.winners) {
+                setWinners(giveawayData.winners);
+            }
+        }
+    };
+
     useEffect(() => {
-        const fetchGiveaway = async () => {
-            if (!id) {
-                return;
-            }
-            const giveawayData = await getGiveaway(id);
-            if (giveawayData) {
-                setGiveaway(giveawayData);
-                if (giveawayData.participants) {
-                    setUsers(giveawayData.participants);
-                }
-                if (giveawayData.winners) {
-                    setWinners(giveawayData.winners);
-                }
-            }
-        };
         fetchGiveaway();
     }, [id, getGiveaway]);
 
@@ -142,6 +143,8 @@ export function FollowerGiveawayId() {
             ...giveaway,
             spreadsheetUrl: url,
         });
+        fetchGiveaway();
+
         if (newTab) {
             newTab.location.href = url;
         }
