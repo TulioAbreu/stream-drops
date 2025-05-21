@@ -10,7 +10,7 @@ import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets } from "@/service/google-drive";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
 import { useLoginStore } from "@/storage/login";
-import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
+import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
@@ -225,10 +225,14 @@ export function FollowerGiveawayId() {
                     <CardHeader className="relative">
                         <div className="flex flex-row items-center justify-between">
                             <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
-                            <div>
+                            <div className="flex flex-row gap-2">
                                 <Button variant="outline" size="lg" disabled={users === null || users.length === 0} onClick={onClickExportWinners}>
-                                    <FileSpreadsheetIcon className="w-4 h-4" />
+                                    <SaveIcon className="w-4 h-4 mr-2" />
                                     Exportar
+                                </Button>
+                                <Button variant="outline" size="lg" disabled={winners === null || winners.length === 0} onClick={onClickExportWinners}>
+                                    <FileSpreadsheetIcon className="w-4 h-4 mr-2" />
+                                    Visualizar Planilha
                                 </Button>
                             </div>
                         </div>
