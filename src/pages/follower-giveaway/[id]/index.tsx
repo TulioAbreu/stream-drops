@@ -6,8 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
+import { getGiveawayResult } from "@/service/giveaway";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
-import { ArrowLeftIcon, CheckIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
+import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
@@ -18,6 +19,7 @@ export function FollowerGiveawayId() {
     const { t } = useTranslation();
     const { twitchApiClient, userData } = useTwitchApi();
     const [users, setUsers] = useState<BroadcasterSubscriber[] | null>(null);
+    const [winners, setWinners] = useState<BroadcasterSubscriber[] | null>(null);
     const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
     const { getGiveaway } = useSubscriptionGiveawayDb();
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
@@ -87,6 +89,23 @@ export function FollowerGiveawayId() {
         // setUsers(subscriptions);
     };
 
+    const onClickDrawWinners = async () => {
+        if (!twitchApiClient || !userData) {
+            return;
+        }
+        const winner = getGiveawayResult({
+            participants: users ?? [],
+            requiredSubscriber: giveaway?.requiredSubscriber ?? 0,
+            subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
+                "1000": 1,
+                "2000": 1,
+                "3000": 1,
+            },
+            totalWinners: 1,
+        });
+        setWinners((winners) => [...(winners ?? []), ...winner]);
+    };
+
     return (
         <Layout>
             <div className="flex flex-row justify-between items-center mb-6">
@@ -103,7 +122,7 @@ export function FollowerGiveawayId() {
                         <SearchIcon className="w-4 h-4 mr-2" />
                         <span>{t("FOLLOWER_GIVEAWAY_FORM_SEARCH_PARTICIPANTS")}</span>
                     </Button>
-                    <Button variant="outline" size="lg">
+                    <Button variant="outline" size="lg" onClick={onClickDrawWinners} disabled={users === null || users.length === 0}>
                         <PartyPopperIcon className="w-4 h-4 mr-2" />
                         <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
                     </Button>
@@ -157,11 +176,24 @@ export function FollowerGiveawayId() {
                                     <TableRow>
                                         <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
                                         <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
+                                        <TableHead></TableHead>
                                     </TableRow>
                                 )}
                                 itemContent={(_index, user) => [
                                     <TableCell>{user.user_name}</TableCell>,
-                                    <TableCell>{t(`TIER_${user.tier}`)}</TableCell>
+                                    <TableCell>{t(`TIER_${user.tier}`)}</TableCell>,
+                                    <TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <Button variant="ghost" size="icon">
+                                                        <XIcon />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Remover {user.user_name}</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </TableCell>
                                 ]}
                             />
                         )}
@@ -172,7 +204,7 @@ export function FollowerGiveawayId() {
                         <div className="flex flex-row items-center justify-between">
                             <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
                             <div>
-                                <Button variant="outline" size="lg">
+                                <Button variant="outline" size="lg" disabled={users === null || users.length === 0}>
                                     <FileSpreadsheetIcon className="w-4 h-4" />
                                     Exportar
                                 </Button>
@@ -180,35 +212,45 @@ export function FollowerGiveawayId() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <Table className="overflow-x-scroll">
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
-                                    <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
-                                    <TableHead></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {users?.slice(0, 5).map((user) => (
-                                    <TableRow key={user.user_id}>
-                                        <TableCell>{user.user_name}</TableCell>
-                                        <TableCell>{t(`TIER_${user.tier}`)}</TableCell>
-                                        <TableCell>
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger>
-                                                        <Button variant="ghost" size="icon">
-                                                            <XIcon />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Remover {user.user_name}</TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        </TableCell>
+                        {(winners === null || winners.length === 0) ? (
+                            <div className="flex flex-col h-full">
+                                <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_WINNERS")}</p>
+                            </div>
+                        ) : (
+                            <TableVirtuoso
+                                style={{ height: "300px" }}
+                                data={winners}
+                                components={{
+                                    Table,
+                                    TableBody,
+                                    TableRow,
+                                    TableHead: TableHeader,
+                                }}
+                                fixedHeaderContent={() => (
+                                    <TableRow>
+                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
+                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
+                                        <TableHead></TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                )}
+                                itemContent={(_index, user) => [
+                                    <TableCell>{user.user_name}</TableCell>,
+                                    <TableCell>{t(`TIER_${user.tier}`)}</TableCell>,
+                                    <TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <Button variant="ghost" size="icon">
+                                                        <XIcon />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Remover {user.user_name}</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </TableCell>
+                                ]}
+                            />
+                        )}
                     </CardContent>
                 </Card>
             </div>

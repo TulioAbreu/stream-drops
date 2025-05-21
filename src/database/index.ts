@@ -1,3 +1,4 @@
+import type { TwitchSubscriptionTier } from "@/service/twitch/types";
 import { useCallback } from "react";
 
 export interface GiveawayParticipant {
@@ -14,7 +15,7 @@ export interface FollowerGiveawayFormData {
     title: string;
     description: string;
     requiredSubscriber: number;
-    subscriberMultiplier: Record<string, number>;
+    subscriberMultiplier: Record<TwitchSubscriptionTier, number>;
     participants: GiveawayParticipant[];
     winners: GiveawayWinner[];
 }
