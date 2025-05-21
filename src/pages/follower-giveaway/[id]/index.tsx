@@ -7,7 +7,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
+import { exportGiveawayResultToSheets } from "@/service/google-drive";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
+import { useLoginStore } from "@/storage/login";
 import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,6 +25,7 @@ export function FollowerGiveawayId() {
     const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
     const { getGiveaway } = useSubscriptionGiveawayDb();
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
+    const { driveCode } = useLoginStore();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -104,6 +107,25 @@ export function FollowerGiveawayId() {
             totalWinners: 1,
         });
         setWinners((winners) => [...winner, ...(winners ?? [])]);
+    };
+
+    const onClickExportWinners = async () => {
+        const newTab = window.open("about:blank", "_blank");
+        const url = await exportGiveawayResultToSheets({
+            participants: users ?? [],
+            winners: winners ?? [],
+            requiredSubscriber: giveaway?.requiredSubscriber ?? 0,
+            subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
+                "1000": 1,
+                "2000": 1,
+                "3000": 1,
+            },
+            title: giveaway?.title ?? "",
+            description: giveaway?.description ?? "",
+        });
+        if (newTab) {
+            newTab.location.href = url;
+        }
     };
 
     return (
@@ -204,7 +226,7 @@ export function FollowerGiveawayId() {
                         <div className="flex flex-row items-center justify-between">
                             <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
                             <div>
-                                <Button variant="outline" size="lg" disabled={users === null || users.length === 0}>
+                                <Button variant="outline" size="lg" disabled={users === null || users.length === 0} onClick={onClickExportWinners}>
                                     <FileSpreadsheetIcon className="w-4 h-4" />
                                     Exportar
                                 </Button>
