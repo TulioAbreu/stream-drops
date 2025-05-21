@@ -7,7 +7,7 @@ import { useTranslation } from "@/i18n";
 import { TWITCH_CLIENT_ID } from "@/settings";
 import { useLoginStore } from "@/storage/login";
 import { AvatarImage } from "@radix-ui/react-avatar";
-import { CheckIcon, Loader } from "lucide-react";
+import { CheckIcon, CloudIcon, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -123,7 +123,7 @@ export function LoginPage() {
                                 </>
                             ) : (
                                 <>
-                                    <CheckIcon className="w-5 h-5 text-green-500" />
+                                    <CloudIcon className="w-5 h-5" />
                                     <p>Google Drive autenticado.</p>
                                 </>
                             )}
@@ -132,6 +132,12 @@ export function LoginPage() {
                         <Button variant="default" className="w-full mt-4" onClick={handleLoginGoogleDrive}>
                             {t("LOGIN_BUTTON_GOOGLE_DRIVE")}
                         </Button>
+                    )}
+                    {(driveCode && twitchAccessToken) && (
+                        <div className="flex flex-row items-center p-4 border rounded shadow-md gap-4">
+                            <CheckIcon className="w-5 h-5 text-green-500" />
+                            <p>Tudo pronto, finalizando login...</p>
+                        </div>
                     )}
                 </CardContent>
             </Card>
