@@ -66,8 +66,10 @@ export async function exportGiveawayResultToSheets({
         },
         body: JSON.stringify({
             requests: [
-                { updateSheetProperties: { properties: { sheetId: 0, title: "Participantes" }, fields: "title" } },
-                { addSheet: { properties: { title: "Ganhadores" } } },
+                // Renomeia a aba padrão para "Ganhadores"
+                { updateSheetProperties: { properties: { sheetId: 0, title: "Ganhadores" }, fields: "title" } },
+                // Adiciona as outras abas
+                { addSheet: { properties: { title: "Participantes" } } },
                 { addSheet: { properties: { title: "Detalhes" } } }
             ]
         })
@@ -83,15 +85,15 @@ export async function exportGiveawayResultToSheets({
         ...winners.map(w => [w.user_name, w.tier, String(subscriberMultiplier[w.tier] || 1)])
     ];
 
-    const multipliersText = Object.entries(subscriberMultiplier)
-        .map(([tier, mult]) => `${tier}: ${mult}`)
-        .join(", ");
-
     const detailsValues = [
         ["Título", title],
         ["Descrição", description],
         ["Inscritos Necessários", String(requiredSubscriber)],
-        ["Multiplicadores", multipliersText]
+        ["Ganhadores", String(winners.length)],
+        ["Multiplicadores de Sub"],
+        ["Tier 1", String(subscriberMultiplier["1000"] || 1)],
+        ["Tier 2", String(subscriberMultiplier["2000"] || 1)],
+        ["Tier 3", String(subscriberMultiplier["3000"] || 1)],
     ];
 
     const valuesUpdateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
@@ -104,8 +106,8 @@ export async function exportGiveawayResultToSheets({
         body: JSON.stringify({
             valueInputOption: "RAW",
             data: [
-                { range: "Participantes!A1", values: participantValues },
                 { range: "Ganhadores!A1", values: winnerValues },
+                { range: "Participantes!A1", values: participantValues },
                 { range: "Detalhes!A1", values: detailsValues }
             ]
         })
