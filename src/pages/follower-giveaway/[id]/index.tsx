@@ -103,7 +103,7 @@ export function FollowerGiveawayId() {
             },
             totalWinners: 1,
         });
-        setWinners((winners) => [...(winners ?? []), ...winner]);
+        setWinners((winners) => [...winner, ...(winners ?? [])]);
     };
 
     return (
