@@ -88,7 +88,7 @@ export async function exportGiveawayResultToSheets({
     const detailsValues = [
         ["Título", title],
         ["Descrição", description],
-        ["Inscritos Necessários", String(requiredSubscriber)],
+        ["Critério de Participação", `Tier ${Number(requiredSubscriber) / 1000}`],
         ["Ganhadores", String(winners.length)],
         ["Multiplicadores de Sub"],
         ["Tier 1", String(subscriberMultiplier["1000"] || 1)],
