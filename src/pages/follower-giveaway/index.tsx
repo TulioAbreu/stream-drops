@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
-import { Edit2Icon, CirclePlusIcon, PlusIcon, FileSymlinkIcon, SquareArrowOutUpRight  } from "lucide-react";
+import { PlusIcon, SquareArrowOutUpRight  } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -11,7 +11,7 @@ import { useNavigate } from "react-router";
 export function FollowerGiveaway() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(false);
+    const [_isLoading, setIsLoading] = useState(false);
     const { getGiveaways } = useSubscriptionGiveawayDb();
     const [giveaways, setGiveaways] = useState<FollowerGiveawayFormData[]>([]);
 

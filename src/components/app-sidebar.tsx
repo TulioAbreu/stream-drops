@@ -1,6 +1,5 @@
 import {
     UserRoundCheck,
-    Ticket
 } from "lucide-react";
 import {
     Sidebar,

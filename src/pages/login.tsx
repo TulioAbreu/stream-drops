@@ -35,7 +35,7 @@ export function LoginPage() {
     const { setTwitchAccessToken, setDriveCode, driveCode, twitchAccessToken } = useLoginStore();
     const { userData } = useTwitchApi();
     const [isLoadingTwitch, setIsLoadingTwitch] = useState<boolean>(false);
-    const [isLoadingDrive, setIsLoadingDrive] = useState<boolean>(false);
+    const [isLoadingDrive, _setIsLoadingDrive] = useState<boolean>(false);
 
     const handleLoginTwitch = () => {
         // TODO: Implement timeout for the popup

@@ -9,7 +9,6 @@ import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets } from "@/service/google-drive";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
-import { useLoginStore } from "@/storage/login";
 import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,7 +21,7 @@ export function FollowerGiveawayId() {
     const { twitchApiClient, userData } = useTwitchApi();
     const [users, setUsers] = useState<BroadcasterSubscriber[] | null>(null);
     const [winners, setWinners] = useState<BroadcasterSubscriber[] | null>(null);
-    const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
+    const [_isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
     const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const navigate = useNavigate();
