@@ -11,9 +11,11 @@ export function LoginRedirectPage() {
             const accessToken = hashParams.get("access_token");
             if (accessToken) {
                 setTwitchAccessToken(accessToken);
+                setTimeout(() => {
+                    window.close();
+                }, 5000);
             }
         }
-        window.close();
     }, []);
 
     return (
