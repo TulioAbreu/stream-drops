@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { makeTwitchApiClient } from "@/service/twitch";
 import { makeTwitchIdApiClient } from "@/service/twitch-id";
-import { TWITCH_CLIENT_ID } from "@/settings";
 import { useLoginStore } from "@/storage/login";
 
 interface TwitchUser {
@@ -35,12 +34,12 @@ export function useTwitchApi() {
                 const { client_id, user_id, expires_in } = result.value;
 
                 // Verifica se o token pertence ao cliente correto
-                if (client_id === TWITCH_CLIENT_ID) {
+                if (client_id === import.meta.env.VITE_TWITCH_CLIENT_ID) {
                     setIsTokenValid(true);
 
                     // Inicializa o cliente da API da Twitch
                     const apiClient = makeTwitchApiClient({
-                        clientId: TWITCH_CLIENT_ID,
+                        clientId: import.meta.env.VITE_TWITCH_CLIENT_ID,
                         accessToken: twitchAccessToken,
                     });
                     setTwitchApiClient(apiClient);

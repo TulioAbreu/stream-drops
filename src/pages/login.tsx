@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { useTranslation } from "@/i18n";
-import { TWITCH_CLIENT_ID } from "@/settings";
 import { useLoginStore } from "@/storage/login";
 import { AvatarImage } from "@radix-ui/react-avatar";
 import { CheckIcon } from "lucide-react";
@@ -12,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 const AUTHORIZATION_URL = new URL("/oauth2/authorize", "https://id.twitch.tv");
-AUTHORIZATION_URL.searchParams.set("client_id", TWITCH_CLIENT_ID);
+AUTHORIZATION_URL.searchParams.set("client_id", import.meta.env.VITE_TWITCH_CLIENT_ID);
 AUTHORIZATION_URL.searchParams.set("redirect_uri", "http://localhost:3000/auth");
 AUTHORIZATION_URL.searchParams.set("response_type", "token");
 AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions");
