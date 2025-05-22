@@ -19,20 +19,18 @@ AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions");
 export function LoginPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { setTwitchAccessToken, twitchAccessToken } = useLoginStore();
+    const { twitchAccessToken } = useLoginStore();
     const { userData } = useTwitchApi();
     const [isLoadingTwitch, setIsLoadingTwitch] = useState<boolean>(false);
 
     const handleLoginTwitch = () => {
         setIsLoadingTwitch(true);
-        window.open(AUTHORIZATION_URL, "newwindow", "width=400,height=600,status=no,toolbar=no,menubar=no,location=no");
-        window.addEventListener("message", (event) => {
-            if (event.data.type !== "twitch-auth") {
-                return;
-            }
-            const accessToken = event.data.accessToken;
-            setTwitchAccessToken(accessToken);
-        });
+        window.open(
+            AUTHORIZATION_URL,
+            "twitch-login",
+            "width=500,height=600"
+        );
+
     };
 
     useEffect(() => {
@@ -82,7 +80,7 @@ export function LoginPage() {
                                     <Skeleton className="w-50 h-5" />
                                 </div>
                             </div>
-                        ): (
+                        ) : (
                             <Button variant="default" className="w-full" onClick={handleLoginTwitch}>
                                 {t("LOGIN_BUTTON_TWITCH")}
                             </Button>

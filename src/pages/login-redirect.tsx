@@ -1,14 +1,19 @@
+import { useLoginStore } from "@/storage/login";
 import { LoaderCircleIcon } from "lucide-react";
 import { useEffect } from "react";
 
 export function LoginRedirectPage() {
+    const { setTwitchAccessToken } = useLoginStore();
     useEffect(() => {
         const hash = document.location.hash.toString();
         if (hash) {
             const hashParams = new URLSearchParams(hash.substring(1));
             const accessToken = hashParams.get("access_token");
             if (accessToken) {
-                window.opener.postMessage({ type: "twitch-auth", accessToken }, "*");
+                setTwitchAccessToken(accessToken);
+                setTimeout(() => {
+                    window.close();
+                }, 5000);
             }
         }
         window.close();
