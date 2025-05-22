@@ -19,7 +19,7 @@ AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions");
 export function LoginPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { twitchAccessToken } = useLoginStore();
+    const { setTwitchAccessToken, twitchAccessToken } = useLoginStore();
     const { userData } = useTwitchApi();
     const [isLoadingTwitch, setIsLoadingTwitch] = useState<boolean>(false);
 
@@ -30,7 +30,6 @@ export function LoginPage() {
             "twitch-login",
             "width=500,height=600"
         );
-
     };
 
     useEffect(() => {
@@ -47,6 +46,18 @@ export function LoginPage() {
             navigate("/dashboard");
         }, 1000);
     }, [twitchAccessToken]);
+
+    useEffect(() => {
+        function handleMessage(event: MessageEvent) {
+            // Garante que a mensagem veio do mesmo origin
+            if (event.origin !== window.location.origin) return;
+            if (event.data?.type === "twitch-auth" && event.data.accessToken) {
+                setTwitchAccessToken(event.data.accessToken);
+            }
+        }
+        window.addEventListener("message", handleMessage);
+        return () => window.removeEventListener("message", handleMessage);
+    }, [setTwitchAccessToken]);
 
     return (
         <div className="flex flex-col items-center justify-center h-screen">

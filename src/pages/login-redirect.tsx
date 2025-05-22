@@ -11,9 +11,16 @@ export function LoginRedirectPage() {
             const accessToken = hashParams.get("access_token");
             if (accessToken) {
                 setTwitchAccessToken(accessToken);
+                // Envia o token para a janela que abriu este popup
+                if (window.opener) {
+                    window.opener.postMessage(
+                        { type: "twitch-auth", accessToken },
+                        window.location.origin
+                    );
+                }
                 setTimeout(() => {
                     window.close();
-                }, 5000);
+                }, 500);
             }
         }
     }, []);
