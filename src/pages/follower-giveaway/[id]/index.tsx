@@ -58,43 +58,43 @@ export function FollowerGiveawayId() {
         setIsLoadingUsers(true);
         const subscriptions: BroadcasterSubscriber[] = [];
 
-        const tiers = ["1000", "2000", "3000"] as const;
-        for (let i = 0; i < 10000; i++) {
-            const randomTier = tiers[Math.floor(Math.random() * tiers.length)];
-            const fakeSubscription: BroadcasterSubscriber = {
-                user_id: `user_${i}`,
-                user_name: `user_${i}`,
-                tier: randomTier,
-                is_gift: false,
-                broadcaster_id: userData.id,
-                broadcaster_name: userData.login,
-                broadcaster_login: userData.login,
-                gifter_id: "",
-                gifter_login: "",
-                plan_name: "",
-                user_login: `user_${i}`,
-            };
-            subscriptions.push(fakeSubscription);
-        }
-        setUsers(subscriptions);
-        setIsLoadingUsers(false);
-        // let nextPage = undefined;
-        // do {
-        //     const response = await twitchApiClient.getBroadcasterSubscriptions({
-        //         broadcaster_id: userData?.id,
-        //         first: "100",
-        //         after: nextPage,
-        //     });
-        //     if (response.isErr()) {
-        //         console.error("Error fetching subscriptions:", response.error);
-        //         return;
-        //     } else {
-        //         subscriptions.push(...response.value.data);
-        //         nextPage = response.value.pagination.cursor;
-        //     }
-        // } while (nextPage);
-        // setIsLoadingUsers(false);
+        // const tiers = ["1000", "2000", "3000"] as const;
+        // for (let i = 0; i < 10000; i++) {
+        //     const randomTier = tiers[Math.floor(Math.random() * tiers.length)];
+        //     const fakeSubscription: BroadcasterSubscriber = {
+        //         user_id: `user_${i}`,
+        //         user_name: `user_${i}`,
+        //         tier: randomTier,
+        //         is_gift: false,
+        //         broadcaster_id: userData.id,
+        //         broadcaster_name: userData.login,
+        //         broadcaster_login: userData.login,
+        //         gifter_id: "",
+        //         gifter_login: "",
+        //         plan_name: "",
+        //         user_login: `user_${i}`,
+        //     };
+        //     subscriptions.push(fakeSubscription);
+        // }
         // setUsers(subscriptions);
+        // setIsLoadingUsers(false);
+        let nextPage = undefined;
+        do {
+            const response = await twitchApiClient.getBroadcasterSubscriptions({
+                broadcaster_id: userData?.id,
+                first: "100",
+                after: nextPage,
+            });
+            if (response.isErr()) {
+                console.error("Error fetching subscriptions:", response.error);
+                return;
+            } else {
+                subscriptions.push(...response.value.data);
+                nextPage = response.value.pagination.cursor;
+            }
+        } while (nextPage);
+        setIsLoadingUsers(false);
+        setUsers(subscriptions);
     };
 
     const onClickDrawWinners = async () => {
