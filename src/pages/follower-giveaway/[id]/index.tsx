@@ -195,7 +195,7 @@ export function FollowerGiveawayId() {
                     {giveaway?.winners.length ?? 0}
                 </GiveawayInfoCard>
             </div>
-            <div className="flex flex-row w-full gap-4 mb-4 nowrap">
+            <div className="flex flex-row w-full gap-4 mb-4 wrap">
                 <Card className="w-full">
                     <CardHeader className="relative">
                         <CardTitle className="text-2xl font-semibold">Lista de Participantes</CardTitle>
@@ -246,24 +246,23 @@ export function FollowerGiveawayId() {
                     <CardHeader className="relative">
                         <div className="flex flex-row items-center justify-between">
                             <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
-                            <div className="flex flex-row gap-2">
-                                {giveaway?.spreadsheetUrl ? (
+                            <div className="flex flex-row flex-wrap justify-end gap-2">
+                                {giveaway?.spreadsheetUrl && (
                                     <Button variant="outline" size="lg" disabled={giveaway.winners === null || giveaway.winners.length === 0} onClick={onClickViewSpreadsheet}>
                                         <FileSpreadsheetIcon className="w-4 h-4 mr-2" />
                                         Visualizar Planilha
                                     </Button>
-                                ) : (
-                                    <Button
-                                        variant="outline"
-                                        size="lg"
-                                        disabled={giveaway?.participants === null || giveaway?.participants.length === 0}
-                                        onClick={onClickExportWinners}
-                                        loading={isExportingResultSheets}
-                                    >
-                                        <SaveIcon className="w-4 h-4 mr-2" />
-                                        Exportar
-                                    </Button>
                                 )}
+                                <Button
+                                    variant="outline"
+                                    size="lg"
+                                    disabled={giveaway?.participants === null || giveaway?.participants.length === 0}
+                                    onClick={onClickExportWinners}
+                                    loading={isExportingResultSheets}
+                                >
+                                    <SaveIcon className="w-4 h-4 mr-2" />
+                                    Exportar
+                                </Button>
                             </div>
                         </div>
                     </CardHeader>
@@ -309,18 +308,18 @@ export function FollowerGiveawayId() {
                         )}
                     </CardContent>
                 </Card>
-                <Dialog open={isFetchingParticipants}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Aguarde...</DialogTitle>
-                            <DialogDescription>
-                                <p className="mb-4">Buscando participantes do sorteio.</p>
-                                <Progress value={fetchUsersProgress} />
-                            </DialogDescription>
-                        </DialogHeader>
-                    </DialogContent>
-                </Dialog>
             </div>
+            <Dialog open={isFetchingParticipants}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Aguarde...</DialogTitle>
+                        <DialogDescription>
+                            <p className="mb-4">Buscando participantes do sorteio.</p>
+                            <Progress value={fetchUsersProgress} />
+                        </DialogDescription>
+                    </DialogHeader>
+                </DialogContent>
+            </Dialog>
         </Layout>
     );
 }
