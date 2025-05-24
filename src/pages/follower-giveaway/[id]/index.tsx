@@ -73,6 +73,8 @@ export function FollowerGiveawayId() {
         }
         const newWinners = getGiveawayResult({
             participants: giveaway.participants ?? [],
+            winners: giveaway.winners ?? [],
+            repeatWinners: false,
             requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
             subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
                 "1000": 1,
