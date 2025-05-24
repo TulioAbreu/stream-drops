@@ -1,4 +1,4 @@
-import type { BroadcasterSubscriber } from "../twitch/types";
+import type { BroadcasterSubscriber, TwitchSubscriptionTier } from "../twitch/types";
 
 interface CreateGiveawayResultSheets {
     participants: BroadcasterSubscriber[];
@@ -28,6 +28,12 @@ function getDriveAccessToken(): Promise<string> {
         driveClient.requestAccessToken();
     });
 }
+
+const tierMapper: Record<TwitchSubscriptionTier, string> = {
+    "1000": "Tier 1",
+    "2000": "Tier 2",
+    "3000": "Tier 3"
+};
 
 export async function exportGiveawayResultToSheets({
     participants,
@@ -77,12 +83,12 @@ export async function exportGiveawayResultToSheets({
 
     const participantValues = [
         ["Nome", "Tier", "Multiplicador"],
-        ...participants.map(p => [p.user_name, p.tier, String(subscriberMultiplier[p.tier] || 1)])
+        ...participants.map(p => [p.user_name, tierMapper[p.tier], String(subscriberMultiplier[p.tier] || 1)])
     ];
 
     const winnerValues = [
         ["Nome", "Tier", "Multiplicador"],
-        ...winners.map(w => [w.user_name, w.tier, String(subscriberMultiplier[w.tier] || 1)])
+        ...winners.map(w => [w.user_name, tierMapper[w.tier], String(subscriberMultiplier[w.tier] || 1)])
     ];
 
     const detailsValues = [
