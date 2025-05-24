@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
-import { PlusIcon, SquareArrowOutUpRight  } from "lucide-react";
+import { PlusIcon, SquareArrowOutUpRight, TrashIcon  } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -12,7 +12,7 @@ export function FollowerGiveaway() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [_isLoading, setIsLoading] = useState(false);
-    const { getGiveaways } = useSubscriptionGiveawayDb();
+    const { getGiveaways, deleteGiveaway } = useSubscriptionGiveawayDb();
     const [giveaways, setGiveaways] = useState<FollowerGiveawayFormData[]>([]);
 
     const onClickEdit = (id: string) => {
@@ -23,15 +23,21 @@ export function FollowerGiveaway() {
         navigate("/dashboard/follower-giveaway/create");
     };
 
+    const onClickDelete = async (id: string) => {
+        await deleteGiveaway(id);
+        await fetchGiveaways();
+    };
+
+    const fetchGiveaways = async () => {
+        setIsLoading(true);
+        const giveawaysData = await getGiveaways();
+        setGiveaways(giveawaysData);
+        setIsLoading(false);
+    };
+
     useEffect(() => {
-        const fetchGiveaways = async () => {
-            setIsLoading(true);
-            const giveawaysData = await getGiveaways();
-            setGiveaways(giveawaysData);
-            setIsLoading(false);
-        };
         fetchGiveaways();
-    }, [getGiveaways]);
+    }, [getGiveaways, fetchGiveaways]);
 
     return (
         <Layout>
@@ -66,6 +72,19 @@ export function FollowerGiveaway() {
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_OPEN")}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <TrashIcon
+                                                        className="cursor-pointer hover:filter hover:brightness-75 transition-all"
+                                                        onClick={() => onClickDelete(giveaway.id)}
+                                                    />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_DELETE")}
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
