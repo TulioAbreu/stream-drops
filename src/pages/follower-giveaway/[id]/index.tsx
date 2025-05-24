@@ -207,7 +207,7 @@ export function FollowerGiveawayId() {
                                                         <XIcon />
                                                     </Button>
                                                 </TooltipTrigger>
-                                                <TooltipContent>Remover {user.user_name}</TooltipContent>
+                                                <TooltipContent>Remover</TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
                                     </TableCell>
