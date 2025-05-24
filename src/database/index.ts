@@ -34,7 +34,7 @@ function openDb(): Promise<IDBDatabase> {
 
 export function useSubscriptionGiveawayDb() {
     // CREATE
-    const addGiveaway = useCallback(async (data: FollowerGiveawayFormData) => {
+    const addGiveaway = async (data: FollowerGiveawayFormData) => {
         const db = await openDb();
         return new Promise<void>((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
@@ -42,10 +42,10 @@ export function useSubscriptionGiveawayDb() {
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);
         });
-    }, []);
+    };
 
     // READ ALL
-    const getGiveaways = useCallback(async (): Promise<FollowerGiveawayFormData[]> => {
+    const getGiveaways = async (): Promise<FollowerGiveawayFormData[]> => {
         const db = await openDb();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readonly");
@@ -53,10 +53,10 @@ export function useSubscriptionGiveawayDb() {
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error);
         });
-    }, []);
+    };
 
     // READ ONE
-    const getGiveaway = useCallback(async (id: string): Promise<FollowerGiveawayFormData | undefined> => {
+    const getGiveaway = async (id: string): Promise<FollowerGiveawayFormData | undefined> => {
         const db = await openDb();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readonly");
@@ -64,10 +64,10 @@ export function useSubscriptionGiveawayDb() {
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => reject(req.error);
         });
-    }, []);
+    };
 
     // UPDATE
-    const updateGiveaway = useCallback(async (data: FollowerGiveawayFormData) => {
+    const updateGiveaway = async (data: FollowerGiveawayFormData) => {
         const db = await openDb();
         return new Promise<void>((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
@@ -75,10 +75,10 @@ export function useSubscriptionGiveawayDb() {
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);
         });
-    }, []);
+    };
 
     // DELETE
-    const deleteGiveaway = useCallback(async (id: string) => {
+    const deleteGiveaway = async (id: string) => {
         const db = await openDb();
         return new Promise<void>((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
@@ -86,7 +86,7 @@ export function useSubscriptionGiveawayDb() {
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);
         });
-    }, []);
+    };
 
     return {
         addGiveaway,
