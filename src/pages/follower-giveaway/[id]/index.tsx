@@ -31,11 +31,13 @@ export function FollowerGiveawayId() {
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const [fetchUsersProgress, setFetchUsersProgress] = useState<number>(0);
     const [isFetchingParticipants, startFetchParticipantsTransition] = useTransition();
+    const [isExportingResultSheets, startExportingResultSheetsTransition] = useTransition();
 
     const fetchGiveaway = async () => {
         if (!id) {
             return;
         }
+
         const giveawayData = await getGiveaway(id);
         if (giveawayData) {
             setGiveaway(giveawayData);
@@ -50,7 +52,7 @@ export function FollowerGiveawayId() {
 
     useEffect(() => {
         fetchGiveaway();
-    }, [id, getGiveaway]);
+    }, [id]);
 
     const onClickBack = () => {
         navigate("/dashboard/follower-giveaway");
@@ -65,7 +67,12 @@ export function FollowerGiveawayId() {
             const subscribers = await fetchSubscribers(twitchApiClient, userData.id, (progress) => {
                 setFetchUsersProgress(progress);
             });
-            setParticipants(filterElegibleSubscribers(subscribers, giveaway.subscriptionRequirement));
+            const eligibleSubscribers = filterElegibleSubscribers(subscribers, giveaway.subscriptionRequirement);
+            await updateGiveaway({
+                ...giveaway,
+                participants: eligibleSubscribers
+            });
+            setParticipants(eligibleSubscribers);
         });
     };
 
@@ -73,7 +80,7 @@ export function FollowerGiveawayId() {
         if (!giveaway || !twitchApiClient || !userData) {
             return;
         }
-        const winner = getGiveawayResult({
+        const newWinners = getGiveawayResult({
             participants: participants ?? [],
             requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
             subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
@@ -83,13 +90,13 @@ export function FollowerGiveawayId() {
             },
             totalWinners: 1,
         });
+        const winners = [...newWinners, ...giveaway.winners];
         await updateGiveaway({
             ...giveaway,
-            id: giveaway.id,
-            winners: [...(winners ?? []), ...winner] as BroadcasterSubscriber[],
-            participants: participants ?? [] as BroadcasterSubscriber[],
+            winners,
         });
-        setWinners((winners) => [...winner, ...(winners ?? [])]);
+        await fetchGiveaway();
+        setWinners(winners);
     };
 
     const onClickExportWinners = async () => {
@@ -97,28 +104,26 @@ export function FollowerGiveawayId() {
             return;
         }
 
-        const newTab = window.open("about:blank", "_blank");
-        const url = await exportGiveawayResultToSheets({
-            participants: participants ?? [],
-            winners: winners ?? [],
-            requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
-            subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
-                "1000": 1,
-                "2000": 1,
-                "3000": 1,
-            },
-            title: giveaway?.title ?? "",
-            description: giveaway?.description ?? "",
-        });
-        await updateGiveaway({
-            ...giveaway,
-            spreadsheetUrl: url,
-        });
-        fetchGiveaway();
+        startExportingResultSheetsTransition(async () => {
+            const url = await exportGiveawayResultToSheets({
+                participants: participants ?? [],
+                winners: winners ?? [],
+                requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
+                subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
+                    "1000": 1,
+                    "2000": 1,
+                    "3000": 1,
+                },
+                title: giveaway?.title ?? "",
+                description: giveaway?.description ?? "",
+            });
 
-        if (newTab) {
-            newTab.location.href = url;
-        }
+            await updateGiveaway({
+                ...giveaway,
+                spreadsheetUrl: url,
+            });
+            await fetchGiveaway();
+        });
     };
 
     const onClickViewSpreadsheet = () => {
@@ -227,7 +232,13 @@ export function FollowerGiveawayId() {
                                         Visualizar Planilha
                                     </Button>
                                 ) : (
-                                    <Button variant="outline" size="lg" disabled={participants === null || participants.length === 0} onClick={onClickExportWinners}>
+                                    <Button
+                                        variant="outline"
+                                        size="lg"
+                                        disabled={participants === null || participants.length === 0}
+                                        onClick={onClickExportWinners}
+                                        loading={isExportingResultSheets}
+                                    >
                                         <SaveIcon className="w-4 h-4 mr-2" />
                                         Exportar
                                     </Button>
