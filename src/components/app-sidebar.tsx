@@ -43,8 +43,9 @@ export function AppSidebar() {
             <SidebarHeader />
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarHeader className="text-2xl font-bold">
-                        📦 StreamDrops
+                    <SidebarHeader className="text-2xl font-bold flex flex-row">
+                        <img src="/icon.png" alt="Logo" className="w-8 h-8 mr-2 inline-block" />
+                        StreamDrops
                     </SidebarHeader>
                     <SidebarGroupContent>
                         <SidebarMenu>
