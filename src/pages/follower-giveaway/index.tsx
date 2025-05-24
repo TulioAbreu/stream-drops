@@ -1,5 +1,6 @@
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
@@ -14,6 +15,7 @@ export function FollowerGiveaway() {
     const [_isLoading, setIsLoading] = useState(false);
     const { getGiveaways, deleteGiveaway } = useSubscriptionGiveawayDb();
     const [giveaways, setGiveaways] = useState<FollowerGiveawayFormData[]>([]);
+    const [giveawayIdToDelete, setGiveawayIdToDelete] = useState<string | null>(null);
 
     const onClickEdit = (id: string) => {
         navigate(`/dashboard/follower-giveaway/${id}`);
@@ -24,8 +26,7 @@ export function FollowerGiveaway() {
     };
 
     const onClickDelete = async (id: string) => {
-        await deleteGiveaway(id);
-        await fetchGiveaways();
+        setGiveawayIdToDelete(id);
     };
 
     const fetchGiveaways = async () => {
@@ -58,17 +59,24 @@ export function FollowerGiveaway() {
                     </TableHeader>
                     <TableBody>
                         {giveaways.map((giveaway) => (
-                            <TableRow>
-                                <TableCell>{giveaway.title}</TableCell>
+                            <TableRow key={giveaway.id}>
                                 <TableCell>
-                                    <div className="flex flex-row gap-4">
+                                    <a href={`/dashboard/follower-giveaway/${giveaway.id}`} className="text-blue-500 hover:underline w-full">
+                                        {giveaway.title}
+                                    </a>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex flex-row gap-2">
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger>
-                                                    <SquareArrowOutUpRight
-                                                        className="cursor-pointer hover:filter hover:brightness-75 transition-all"
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="lg"
                                                         onClick={() => onClickEdit(giveaway.id)}
-                                                    />
+                                                    >
+                                                        <SquareArrowOutUpRight className="w-4 h-4" />
+                                                    </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_OPEN")}
@@ -78,10 +86,13 @@ export function FollowerGiveaway() {
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger>
-                                                    <TrashIcon
-                                                        className="cursor-pointer hover:filter hover:brightness-75 transition-all"
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="lg"
                                                         onClick={() => onClickDelete(giveaway.id)}
-                                                    />
+                                                    >
+                                                        <TrashIcon className="w-4 h-4" />
+                                                    </Button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_DELETE")}
@@ -95,6 +106,31 @@ export function FollowerGiveaway() {
                     </TableBody>
                 </Table>
             </div>
+            <Dialog open={!!giveawayIdToDelete} onOpenChange={() => setGiveawayIdToDelete(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <h2 className="text-lg font-semibold">{t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_TITLE", "Confirmar exclusão")}</h2>
+                    </DialogHeader>
+                    <p>{t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_DESCRIPTION", "Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.")}</p>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setGiveawayIdToDelete(null)}>
+                            {t("CANCEL", "Cancelar")}
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={async () => {
+                                if (giveawayIdToDelete) {
+                                    await deleteGiveaway(giveawayIdToDelete);
+                                    setGiveawayIdToDelete(null);
+                                    fetchGiveaways();
+                                }
+                            }}
+                        >
+                            {t("DELETE", "Excluir")}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </Layout>
     )
 }
