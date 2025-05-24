@@ -11,6 +11,8 @@ interface TwitchUser {
     expiresIn: number;
 }
 
+export type TwitchApiClient = ReturnType<typeof makeTwitchApiClient>;
+
 export function useTwitchApi() {
     const { twitchAccessToken } = useLoginStore();
     const [twitchApiClient, setTwitchApiClient] = useState<ReturnType<typeof makeTwitchApiClient> | null>(null);

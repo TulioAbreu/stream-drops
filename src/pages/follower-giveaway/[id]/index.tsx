@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { TableVirtuoso } from "react-virtuoso";
 import { GiveawayInfoCard } from "./components/giveaway-info-card";
+import { fetchSubscribers } from "@/usecase/fetch-subscribers";
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
@@ -60,26 +61,19 @@ export function FollowerGiveawayId() {
                 return;
             }
             setFetchUsersProgress(0);
-            const subscriptions: BroadcasterSubscriber[] = [];
-            let nextPage = undefined;
-            let totalPages = 0;
-            do {
-                const response = await twitchApiClient.getBroadcasterSubscriptions({
-                    broadcaster_id: userData?.id,
-                    first: "100",
-                    after: nextPage,
-                });
-                if (response.isErr()) {
-                    console.error("Error fetching subscriptions:", response.error);
-                    return;
-                } else {
-                    totalPages = Math.ceil(response.value.total / 100);
-                    subscriptions.push(...response.value.data);
-                    nextPage = response.value.pagination.cursor;
-                    setFetchUsersProgress((prev) => Math.min(prev + 100 / totalPages, 100));
+            const subscribers = await fetchSubscribers(twitchApiClient, userData.id, (progress) => {
+                setFetchUsersProgress(progress);
+            });
+            const elegibleSubscribers = subscribers.filter((subscriber) => {
+                if (!giveaway?.requiredSubscriber) {
+                    return true;
                 }
-            } while (nextPage);
-            setUsers(subscriptions);
+                if (giveaway?.requiredSubscriber === 0) {
+                    return true;
+                }
+                return Number(subscriber.tier) >= giveaway.requiredSubscriber;
+            });
+            setUsers(elegibleSubscribers);
         });
     };
 
