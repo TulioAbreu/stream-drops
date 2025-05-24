@@ -10,7 +10,7 @@ import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/data
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets } from "@/service/google-drive";
-import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
+import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, TrophyIcon, UserIcon, XIcon } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
@@ -126,6 +126,30 @@ export function FollowerGiveawayId() {
         }
     };
 
+    const onClickRemoveParticipant = async (userId: string) => {
+        if (!giveaway) {
+            return;
+        }
+        const newParticipants = giveaway.participants.filter((user) => user.user_id !== userId);
+        await updateGiveaway({
+            ...giveaway,
+            participants: newParticipants,
+        });
+        await fetchGiveaway();
+    };
+
+    const onClickRemoveWinner = async (userId: string) => {
+        if (!giveaway) {
+            return;
+        }
+        const newWinners = giveaway.winners.filter((user) => user.user_id !== userId);
+        await updateGiveaway({
+            ...giveaway,
+            winners: newWinners,
+        });
+        await fetchGiveaway();
+    };
+
     return (
         <Layout>
             <div className="flex flex-row justify-between items-center mb-6">
@@ -163,6 +187,13 @@ export function FollowerGiveawayId() {
                 >
                     {t(`TIER_${giveaway?.subscriptionRequirement ?? 0}`)}
                 </GiveawayInfoCard>
+                <GiveawayInfoCard
+                    className="w-[180px]"
+                    title="Total de Vencedores"
+                    icon={TrophyIcon}
+                >
+                    {giveaway?.winners.length ?? 0}
+                </GiveawayInfoCard>
             </div>
             <div className="flex flex-row w-full gap-4 mb-4 nowrap">
                 <Card className="w-full">
@@ -198,7 +229,7 @@ export function FollowerGiveawayId() {
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger>
-                                                    <Button variant="ghost" size="icon">
+                                                    <Button variant="ghost" size="icon" onClick={() => onClickRemoveParticipant(user.user_id)}>
                                                         <XIcon />
                                                     </Button>
                                                 </TooltipTrigger>
@@ -265,11 +296,11 @@ export function FollowerGiveawayId() {
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger>
-                                                    <Button variant="ghost" size="icon">
+                                                    <Button variant="ghost" size="icon" onClick={() => onClickRemoveWinner(user.user_id)}>
                                                         <XIcon />
                                                     </Button>
                                                 </TooltipTrigger>
-                                                <TooltipContent>Remover {user.user_name}</TooltipContent>
+                                                <TooltipContent>Remover</TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
                                     </TableCell>
