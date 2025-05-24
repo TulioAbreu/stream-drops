@@ -23,14 +23,14 @@ import { filterElegibleSubscribers } from "@/usecase/filter-eligible-subscribers
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
     const { t } = useTranslation();
-    const { twitchApiClient, userData } = useTwitchApi();
-    const [users, setUsers] = useState<BroadcasterSubscriber[] | null>(null);
-    const [winners, setWinners] = useState<BroadcasterSubscriber[] | null>(null);
-    const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
-    const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const navigate = useNavigate();
-    const [isFetchingParticipants, startFetchParticipantsTransition] = useTransition();
+    const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
+    const { twitchApiClient, userData } = useTwitchApi();
+    const [participants, setParticipants] = useState<BroadcasterSubscriber[] | null>(null);
+    const [winners, setWinners] = useState<BroadcasterSubscriber[] | null>(null);
+    const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const [fetchUsersProgress, setFetchUsersProgress] = useState<number>(0);
+    const [isFetchingParticipants, startFetchParticipantsTransition] = useTransition();
 
     const fetchGiveaway = async () => {
         if (!id) {
@@ -40,7 +40,7 @@ export function FollowerGiveawayId() {
         if (giveawayData) {
             setGiveaway(giveawayData);
             if (giveawayData.participants) {
-                setUsers(giveawayData.participants);
+                setParticipants(giveawayData.participants);
             }
             if (giveawayData.winners) {
                 setWinners(giveawayData.winners);
@@ -65,7 +65,7 @@ export function FollowerGiveawayId() {
             const subscribers = await fetchSubscribers(twitchApiClient, userData.id, (progress) => {
                 setFetchUsersProgress(progress);
             });
-            setUsers(filterElegibleSubscribers(subscribers, giveaway.subscriptionRequirement));
+            setParticipants(filterElegibleSubscribers(subscribers, giveaway.subscriptionRequirement));
         });
     };
 
@@ -74,7 +74,7 @@ export function FollowerGiveawayId() {
             return;
         }
         const winner = getGiveawayResult({
-            participants: users ?? [],
+            participants: participants ?? [],
             requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
             subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
                 "1000": 1,
@@ -87,7 +87,7 @@ export function FollowerGiveawayId() {
             ...giveaway,
             id: giveaway.id,
             winners: [...(winners ?? []), ...winner] as BroadcasterSubscriber[],
-            participants: users ?? [] as BroadcasterSubscriber[],
+            participants: participants ?? [] as BroadcasterSubscriber[],
         });
         setWinners((winners) => [...winner, ...(winners ?? [])]);
     };
@@ -99,7 +99,7 @@ export function FollowerGiveawayId() {
 
         const newTab = window.open("about:blank", "_blank");
         const url = await exportGiveawayResultToSheets({
-            participants: users ?? [],
+            participants: participants ?? [],
             winners: winners ?? [],
             requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
             subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
@@ -147,7 +147,7 @@ export function FollowerGiveawayId() {
                         <SearchIcon className="w-4 h-4 mr-2" />
                         <span>{t("FOLLOWER_GIVEAWAY_FORM_SEARCH_PARTICIPANTS")}</span>
                     </Button>
-                    <Button variant="outline" size="lg" onClick={onClickDrawWinners} disabled={users === null || users.length === 0}>
+                    <Button variant="outline" size="lg" onClick={onClickDrawWinners} disabled={participants === null || participants.length === 0}>
                         <PartyPopperIcon className="w-4 h-4 mr-2" />
                         <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
                     </Button>
@@ -159,7 +159,7 @@ export function FollowerGiveawayId() {
                     title="Total de Participantes"
                     icon={UserIcon}
                 >
-                    {users?.length ?? 0}
+                    {participants?.length ?? 0}
                 </GiveawayInfoCard>
                 <GiveawayInfoCard
                     className="w-[260px]"
@@ -175,14 +175,14 @@ export function FollowerGiveawayId() {
                         <CardTitle className="text-2xl font-semibold">Lista de Participantes</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {(users === null || users.length === 0) ? (
+                        {(participants === null || participants.length === 0) ? (
                             <div className="flex flex-col h-full">
                                 <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
                             </div>
                         ) : (
                             <TableVirtuoso
                                 style={{ height: "300px" }}
-                                data={users}
+                                data={participants}
                                 components={{
                                     Table,
                                     TableBody,
@@ -227,7 +227,7 @@ export function FollowerGiveawayId() {
                                         Visualizar Planilha
                                     </Button>
                                 ) : (
-                                    <Button variant="outline" size="lg" disabled={users === null || users.length === 0} onClick={onClickExportWinners}>
+                                    <Button variant="outline" size="lg" disabled={participants === null || participants.length === 0} onClick={onClickExportWinners}>
                                         <SaveIcon className="w-4 h-4 mr-2" />
                                         Exportar
                                     </Button>
