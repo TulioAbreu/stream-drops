@@ -23,7 +23,6 @@ export function FollowerGiveawayId() {
     const { twitchApiClient, userData } = useTwitchApi();
     const [users, setUsers] = useState<BroadcasterSubscriber[] | null>(null);
     const [winners, setWinners] = useState<BroadcasterSubscriber[] | null>(null);
-    const [_isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
     const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const navigate = useNavigate();
@@ -179,9 +178,9 @@ export function FollowerGiveawayId() {
                         </CardTitle>
                     </CardHeader>
                 </Card>
-                <Card className="w-[200px]">
+                <Card className="w-[260px]">
                     <CardHeader className="relative">
-                        <CardDescription>Critério de Participação</CardDescription>
+                        <CardDescription>Critério Minimo de Participação</CardDescription>
                         <CardTitle className="text-3xl font-semibold tabular-nums">
                             <div className="flex flex-row gap-2 items-center">
                                 <CrownIcon className="w-6 h-6" />
