@@ -16,6 +16,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { TableVirtuoso } from "react-virtuoso";
+import { GiveawayInfoCard } from "./components/giveaway-info-card";
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
@@ -167,28 +168,20 @@ export function FollowerGiveawayId() {
                 </div>
             </div>
             <div className="flex flex-row gap-4 mb-4">
-                <Card className="w-[200px]">
-                    <CardHeader className="relative">
-                        <CardDescription>Total de Participantes</CardDescription>
-                        <CardTitle className="text-3xl font-semibold tabular-nums">
-                            <div className="flex flex-row gap-2 items-center">
-                                <UserIcon className="w-6 h-6" />
-                                {users?.length ?? 0}
-                            </div>
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card className="w-[260px]">
-                    <CardHeader className="relative">
-                        <CardDescription>Critério Minimo de Participação</CardDescription>
-                        <CardTitle className="text-3xl font-semibold tabular-nums">
-                            <div className="flex flex-row gap-2 items-center">
-                                <CrownIcon className="w-6 h-6" />
-                                {t(`TIER_${giveaway?.requiredSubscriber ?? 0}`)}
-                            </div>
-                        </CardTitle>
-                    </CardHeader>
-                </Card>
+                <GiveawayInfoCard
+                    className="w-[200px]"
+                    title="Total de Participantes"
+                    icon={UserIcon}
+                >
+                    {users?.length ?? 0}
+                </GiveawayInfoCard>
+                <GiveawayInfoCard
+                    className="w-[260px]"
+                    title="Critério Minimo de Participação"
+                    icon={CrownIcon}
+                >
+                    {t(`TIER_${giveaway?.requiredSubscriber ?? 0}`)}
+                </GiveawayInfoCard>
             </div>
             <div className="flex flex-row w-full gap-4 mb-4 nowrap">
                 <Card className="w-full">
