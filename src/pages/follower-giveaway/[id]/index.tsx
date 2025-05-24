@@ -152,162 +152,164 @@ export function FollowerGiveawayId() {
 
     return (
         <Layout>
-            <div className="flex flex-row justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold">{giveaway === null ? <Skeleton className="w-1/2 h-8 rounded-md" /> : giveaway.title}</h1>
-                    <p className="text-muted-foreground">{giveaway?.description}</p>
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-row justify-between items-center flex-wrap gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold">{giveaway === null ? <Skeleton className="w-1/2 h-8 rounded-md" /> : giveaway.title}</h1>
+                        <p className="text-muted-foreground">{giveaway?.description}</p>
+                    </div>
+                    <div className="flex flex-row gap-4 flex-wrap">
+                        <Button variant="ghost" size="lg" onClick={onClickBack}>
+                            <ArrowLeftIcon className="w-4 h-4 mr-2" />
+                            <span>{t("NAVIGATE_BACK")}</span>
+                        </Button>
+                        <Button variant="outline" onClick={onClickSearchParticipants} size="lg">
+                            <SearchIcon className="w-4 h-4 mr-2" />
+                            <span>{t("FOLLOWER_GIVEAWAY_FORM_SEARCH_PARTICIPANTS")}</span>
+                        </Button>
+                        <Button variant="outline" size="lg" onClick={onClickDrawWinners} disabled={giveaway?.participants === null || giveaway?.participants.length === 0}>
+                            <PartyPopperIcon className="w-4 h-4 mr-2" />
+                            <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex flex-row gap-4">
-                    <Button variant="ghost" size="lg" onClick={onClickBack}>
-                        <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                        <span>{t("NAVIGATE_BACK")}</span>
-                    </Button>
-                    <Button variant="outline" onClick={onClickSearchParticipants} size="lg">
-                        <SearchIcon className="w-4 h-4 mr-2" />
-                        <span>{t("FOLLOWER_GIVEAWAY_FORM_SEARCH_PARTICIPANTS")}</span>
-                    </Button>
-                    <Button variant="outline" size="lg" onClick={onClickDrawWinners} disabled={giveaway?.participants === null || giveaway?.participants.length === 0}>
-                        <PartyPopperIcon className="w-4 h-4 mr-2" />
-                        <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
-                    </Button>
+                <div className="flex flex-row gap-4 flex-wrap">
+                    <GiveawayInfoCard
+                        className="w-[200px]"
+                        title="Total de Participantes"
+                        icon={UserIcon}
+                    >
+                        {giveaway?.participants.length ?? 0}
+                    </GiveawayInfoCard>
+                    <GiveawayInfoCard
+                        className="w-[260px]"
+                        title="Critério Minimo de Participação"
+                        icon={CrownIcon}
+                    >
+                        {t(`TIER_${giveaway?.subscriptionRequirement ?? 0}`)}
+                    </GiveawayInfoCard>
+                    <GiveawayInfoCard
+                        className="w-[180px]"
+                        title="Total de Vencedores"
+                        icon={TrophyIcon}
+                    >
+                        {giveaway?.winners.length ?? 0}
+                    </GiveawayInfoCard>
                 </div>
-            </div>
-            <div className="flex flex-row gap-4 mb-4">
-                <GiveawayInfoCard
-                    className="w-[200px]"
-                    title="Total de Participantes"
-                    icon={UserIcon}
-                >
-                    {giveaway?.participants.length ?? 0}
-                </GiveawayInfoCard>
-                <GiveawayInfoCard
-                    className="w-[260px]"
-                    title="Critério Minimo de Participação"
-                    icon={CrownIcon}
-                >
-                    {t(`TIER_${giveaway?.subscriptionRequirement ?? 0}`)}
-                </GiveawayInfoCard>
-                <GiveawayInfoCard
-                    className="w-[180px]"
-                    title="Total de Vencedores"
-                    icon={TrophyIcon}
-                >
-                    {giveaway?.winners.length ?? 0}
-                </GiveawayInfoCard>
-            </div>
-            <div className="flex flex-row w-full gap-4 mb-4 wrap">
-                <Card className="w-full">
-                    <CardHeader className="relative">
-                        <CardTitle className="text-2xl font-semibold">Lista de Participantes</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {(giveaway?.participants === null || giveaway?.participants.length === 0) ? (
-                            <div className="flex flex-col h-full">
-                                <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
-                            </div>
-                        ) : (
-                            <TableVirtuoso
-                                style={{ height: "300px" }}
-                                data={giveaway?.participants}
-                                components={{
-                                    Table,
-                                    TableBody,
-                                    TableRow,
-                                    TableHead: TableHeader,
-                                }}
-                                fixedHeaderContent={() => (
-                                    <TableRow>
-                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
-                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
-                                        <TableHead></TableHead>
-                                    </TableRow>
-                                )}
-                                itemContent={(_index, user) => [
-                                    <TableCell>{user.user_name}</TableCell>,
-                                    <TableCell>{t(`TIER_${user.tier}`)}</TableCell>,
-                                    <TableCell>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger>
-                                                    <Button variant="ghost" size="icon" onClick={() => onClickRemoveParticipant(user.user_id)}>
-                                                        <XIcon />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Remover</TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </TableCell>
-                                ]}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
-                <Card className="w-full">
-                    <CardHeader className="relative">
-                        <div className="flex flex-row items-center justify-between">
-                            <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
-                            <div className="flex flex-row flex-wrap justify-end gap-2">
-                                {giveaway?.spreadsheetUrl && (
-                                    <Button variant="outline" size="lg" disabled={giveaway.winners === null || giveaway.winners.length === 0} onClick={onClickViewSpreadsheet}>
-                                        <FileSpreadsheetIcon className="w-4 h-4 mr-2" />
-                                        Visualizar Planilha
+                <div className="flex flex-row flex-wrap w-full gap-4">
+                    <Card className="w-full xl:w-[48%]">
+                        <CardHeader className="relative">
+                            <CardTitle className="text-2xl font-semibold">Lista de Participantes</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {(giveaway?.participants === null || giveaway?.participants.length === 0) ? (
+                                <div className="flex flex-col h-full">
+                                    <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
+                                </div>
+                            ) : (
+                                <TableVirtuoso
+                                    style={{ height: "300px" }}
+                                    data={giveaway?.participants}
+                                    components={{
+                                        Table,
+                                        TableBody,
+                                        TableRow,
+                                        TableHead: TableHeader,
+                                    }}
+                                    fixedHeaderContent={() => (
+                                        <TableRow>
+                                            <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
+                                            <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
+                                            <TableHead></TableHead>
+                                        </TableRow>
+                                    )}
+                                    itemContent={(_index, user) => [
+                                        <TableCell>{user.user_name}</TableCell>,
+                                        <TableCell>{t(`TIER_${user.tier}`)}</TableCell>,
+                                        <TableCell>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <Button variant="ghost" size="icon" onClick={() => onClickRemoveParticipant(user.user_id)}>
+                                                            <XIcon />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Remover</TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </TableCell>
+                                    ]}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+                    <Card className="w-full xl:w-[48%]">
+                        <CardHeader className="relative">
+                            <div className="flex flex-row items-center justify-between flex-wrap gap-4">
+                                <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
+                                <div className="flex flex-row flex-wrap justify-end gap-2">
+                                    {giveaway?.spreadsheetUrl && (
+                                        <Button variant="outline" size="lg" disabled={giveaway.winners === null || giveaway.winners.length === 0} onClick={onClickViewSpreadsheet}>
+                                            <FileSpreadsheetIcon className="w-4 h-4 mr-2" />
+                                            Visualizar Planilha
+                                        </Button>
+                                    )}
+                                    <Button
+                                        variant="outline"
+                                        size="lg"
+                                        disabled={giveaway?.participants === null || giveaway?.participants.length === 0}
+                                        onClick={onClickExportWinners}
+                                        loading={isExportingResultSheets}
+                                    >
+                                        <SaveIcon className="w-4 h-4 mr-2" />
+                                        Exportar
                                     </Button>
-                                )}
-                                <Button
-                                    variant="outline"
-                                    size="lg"
-                                    disabled={giveaway?.participants === null || giveaway?.participants.length === 0}
-                                    onClick={onClickExportWinners}
-                                    loading={isExportingResultSheets}
-                                >
-                                    <SaveIcon className="w-4 h-4 mr-2" />
-                                    Exportar
-                                </Button>
+                                </div>
                             </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        {(giveaway?.winners === null || giveaway?.winners.length === 0) ? (
-                            <div className="flex flex-col h-full">
-                                <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_WINNERS")}</p>
-                            </div>
-                        ) : (
-                            <TableVirtuoso
-                                style={{ height: "300px" }}
-                                data={giveaway?.winners}
-                                components={{
-                                    Table,
-                                    TableBody,
-                                    TableRow,
-                                    TableHead: TableHeader,
-                                }}
-                                fixedHeaderContent={() => (
-                                    <TableRow>
-                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
-                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
-                                        <TableHead></TableHead>
-                                    </TableRow>
-                                )}
-                                itemContent={(_index, user) => [
-                                    <TableCell>{user.user_name}</TableCell>,
-                                    <TableCell>{t(`TIER_${user.tier}`)}</TableCell>,
-                                    <TableCell>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger>
-                                                    <Button variant="ghost" size="icon" onClick={() => onClickRemoveWinner(user.user_id)}>
-                                                        <XIcon />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>Remover</TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </TableCell>
-                                ]}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
+                        </CardHeader>
+                        <CardContent>
+                            {(giveaway?.winners === null || giveaway?.winners.length === 0) ? (
+                                <div className="flex flex-col h-full">
+                                    <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_WINNERS")}</p>
+                                </div>
+                            ) : (
+                                <TableVirtuoso
+                                    style={{ height: "300px" }}
+                                    data={giveaway?.winners}
+                                    components={{
+                                        Table,
+                                        TableBody,
+                                        TableRow,
+                                        TableHead: TableHeader,
+                                    }}
+                                    fixedHeaderContent={() => (
+                                        <TableRow>
+                                            <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
+                                            <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
+                                            <TableHead></TableHead>
+                                        </TableRow>
+                                    )}
+                                    itemContent={(_index, user) => [
+                                        <TableCell>{user.user_name}</TableCell>,
+                                        <TableCell>{t(`TIER_${user.tier}`)}</TableCell>,
+                                        <TableCell>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <Button variant="ghost" size="icon" onClick={() => onClickRemoveWinner(user.user_id)}>
+                                                            <XIcon />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Remover</TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </TableCell>
+                                    ]}
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
             <Dialog open={isFetchingParticipants}>
                 <DialogContent>
