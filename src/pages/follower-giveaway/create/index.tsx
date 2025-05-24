@@ -41,7 +41,7 @@ export function FollowerGiveawayCreate() {
             await addGiveaway({
                 id,
                 description: data.description,
-                requiredSubscriber: data.requiredSubscriber,
+                subscriptionRequirement: data.requiredSubscriber,
                 subscriberMultiplier: data.subscriberMultiplier,
                 title: data.title,
                 participants: [],

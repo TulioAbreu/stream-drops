@@ -18,6 +18,7 @@ import { useNavigate, useParams } from "react-router";
 import { TableVirtuoso } from "react-virtuoso";
 import { GiveawayInfoCard } from "./components/giveaway-info-card";
 import { fetchSubscribers } from "@/usecase/fetch-subscribers";
+import { filterElegibleSubscribers } from "@/usecase/filter-eligible-subscribers";
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
@@ -56,24 +57,15 @@ export function FollowerGiveawayId() {
     };
 
     const onClickSearchParticipants = async () => {
+        if (!twitchApiClient || !userData || !giveaway) {
+            return;
+        }
         startFetchParticipantsTransition(async () => {
-            if (!twitchApiClient || !userData) {
-                return;
-            }
             setFetchUsersProgress(0);
             const subscribers = await fetchSubscribers(twitchApiClient, userData.id, (progress) => {
                 setFetchUsersProgress(progress);
             });
-            const elegibleSubscribers = subscribers.filter((subscriber) => {
-                if (!giveaway?.requiredSubscriber) {
-                    return true;
-                }
-                if (giveaway?.requiredSubscriber === 0) {
-                    return true;
-                }
-                return Number(subscriber.tier) >= giveaway.requiredSubscriber;
-            });
-            setUsers(elegibleSubscribers);
+            setUsers(filterElegibleSubscribers(subscribers, giveaway.subscriptionRequirement));
         });
     };
 
@@ -83,7 +75,7 @@ export function FollowerGiveawayId() {
         }
         const winner = getGiveawayResult({
             participants: users ?? [],
-            requiredSubscriber: giveaway?.requiredSubscriber ?? 0,
+            requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
             subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
                 "1000": 1,
                 "2000": 1,
@@ -109,7 +101,7 @@ export function FollowerGiveawayId() {
         const url = await exportGiveawayResultToSheets({
             participants: users ?? [],
             winners: winners ?? [],
-            requiredSubscriber: giveaway?.requiredSubscriber ?? 0,
+            requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
             subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
                 "1000": 1,
                 "2000": 1,
@@ -174,7 +166,7 @@ export function FollowerGiveawayId() {
                     title="Critério Minimo de Participação"
                     icon={CrownIcon}
                 >
-                    {t(`TIER_${giveaway?.requiredSubscriber ?? 0}`)}
+                    {t(`TIER_${giveaway?.subscriptionRequirement ?? 0}`)}
                 </GiveawayInfoCard>
             </div>
             <div className="flex flex-row w-full gap-4 mb-4 nowrap">

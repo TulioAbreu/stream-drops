@@ -6,7 +6,7 @@ export interface FollowerGiveawayFormData {
     id: string;
     title: string;
     description: string;
-    requiredSubscriber: number;
+    subscriptionRequirement: number;
     subscriberMultiplier: Record<TwitchSubscriptionTier, number>;
     participants: BroadcasterSubscriber[];
     winners: BroadcasterSubscriber[];
