@@ -196,8 +196,8 @@ export function FollowerGiveawayId() {
                         {giveaway?.winners.length ?? 0}
                     </GiveawayInfoCard>
                 </div>
-                <div className="flex flex-row flex-wrap w-full gap-4">
-                    <Card className="w-full xl:w-[48%]">
+                <div className="flex flex-col xl:flex-row flex-wrap xl:flex-nowrap w-full gap-4">
+                    <Card className="w-full">
                         <CardHeader className="relative">
                             <CardTitle className="text-2xl font-semibold">Lista de Participantes</CardTitle>
                         </CardHeader>
@@ -243,7 +243,7 @@ export function FollowerGiveawayId() {
                             )}
                         </CardContent>
                     </Card>
-                    <Card className="w-full xl:w-[48%]">
+                    <Card className="w-full">
                         <CardHeader className="relative">
                             <div className="flex flex-row items-center justify-between flex-wrap gap-4">
                                 <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
