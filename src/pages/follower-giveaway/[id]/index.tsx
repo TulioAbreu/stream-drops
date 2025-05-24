@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,7 +10,6 @@ import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/data
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets } from "@/service/google-drive";
-import type { BroadcasterSubscriber } from "@/service/twitch/types";
 import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,8 +25,6 @@ export function FollowerGiveawayId() {
     const navigate = useNavigate();
     const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
     const { twitchApiClient, userData } = useTwitchApi();
-    const [participants, setParticipants] = useState<BroadcasterSubscriber[] | null>(null);
-    const [winners, setWinners] = useState<BroadcasterSubscriber[] | null>(null);
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const [fetchUsersProgress, setFetchUsersProgress] = useState<number>(0);
     const [isFetchingParticipants, startFetchParticipantsTransition] = useTransition();
@@ -41,12 +38,6 @@ export function FollowerGiveawayId() {
         const giveawayData = await getGiveaway(id);
         if (giveawayData) {
             setGiveaway(giveawayData);
-            if (giveawayData.participants) {
-                setParticipants(giveawayData.participants);
-            }
-            if (giveawayData.winners) {
-                setWinners(giveawayData.winners);
-            }
         }
     };
 
@@ -72,7 +63,7 @@ export function FollowerGiveawayId() {
                 ...giveaway,
                 participants: eligibleSubscribers
             });
-            setParticipants(eligibleSubscribers);
+            await fetchGiveaway();
         });
     };
 
@@ -81,7 +72,7 @@ export function FollowerGiveawayId() {
             return;
         }
         const newWinners = getGiveawayResult({
-            participants: participants ?? [],
+            participants: giveaway.participants ?? [],
             requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
             subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
                 "1000": 1,
@@ -96,7 +87,6 @@ export function FollowerGiveawayId() {
             winners,
         });
         await fetchGiveaway();
-        setWinners(winners);
     };
 
     const onClickExportWinners = async () => {
@@ -106,8 +96,8 @@ export function FollowerGiveawayId() {
 
         startExportingResultSheetsTransition(async () => {
             const url = await exportGiveawayResultToSheets({
-                participants: participants ?? [],
-                winners: winners ?? [],
+                participants: giveaway.participants ?? [],
+                winners: giveaway.winners ?? [],
                 requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
                 subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
                     "1000": 1,
@@ -152,7 +142,7 @@ export function FollowerGiveawayId() {
                         <SearchIcon className="w-4 h-4 mr-2" />
                         <span>{t("FOLLOWER_GIVEAWAY_FORM_SEARCH_PARTICIPANTS")}</span>
                     </Button>
-                    <Button variant="outline" size="lg" onClick={onClickDrawWinners} disabled={participants === null || participants.length === 0}>
+                    <Button variant="outline" size="lg" onClick={onClickDrawWinners} disabled={giveaway?.participants === null || giveaway?.participants.length === 0}>
                         <PartyPopperIcon className="w-4 h-4 mr-2" />
                         <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
                     </Button>
@@ -164,7 +154,7 @@ export function FollowerGiveawayId() {
                     title="Total de Participantes"
                     icon={UserIcon}
                 >
-                    {participants?.length ?? 0}
+                    {giveaway?.participants.length ?? 0}
                 </GiveawayInfoCard>
                 <GiveawayInfoCard
                     className="w-[260px]"
@@ -180,14 +170,14 @@ export function FollowerGiveawayId() {
                         <CardTitle className="text-2xl font-semibold">Lista de Participantes</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {(participants === null || participants.length === 0) ? (
+                        {(giveaway?.participants === null || giveaway?.participants.length === 0) ? (
                             <div className="flex flex-col h-full">
                                 <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
                             </div>
                         ) : (
                             <TableVirtuoso
                                 style={{ height: "300px" }}
-                                data={participants}
+                                data={giveaway?.participants}
                                 components={{
                                     Table,
                                     TableBody,
@@ -227,7 +217,7 @@ export function FollowerGiveawayId() {
                             <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
                             <div className="flex flex-row gap-2">
                                 {giveaway?.spreadsheetUrl ? (
-                                    <Button variant="outline" size="lg" disabled={winners === null || winners.length === 0} onClick={onClickViewSpreadsheet}>
+                                    <Button variant="outline" size="lg" disabled={giveaway.winners === null || giveaway.winners.length === 0} onClick={onClickViewSpreadsheet}>
                                         <FileSpreadsheetIcon className="w-4 h-4 mr-2" />
                                         Visualizar Planilha
                                     </Button>
@@ -235,7 +225,7 @@ export function FollowerGiveawayId() {
                                     <Button
                                         variant="outline"
                                         size="lg"
-                                        disabled={participants === null || participants.length === 0}
+                                        disabled={giveaway?.participants === null || giveaway?.participants.length === 0}
                                         onClick={onClickExportWinners}
                                         loading={isExportingResultSheets}
                                     >
@@ -247,14 +237,14 @@ export function FollowerGiveawayId() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {(winners === null || winners.length === 0) ? (
+                        {(giveaway?.winners === null || giveaway?.winners.length === 0) ? (
                             <div className="flex flex-col h-full">
                                 <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_WINNERS")}</p>
                             </div>
                         ) : (
                             <TableVirtuoso
                                 style={{ height: "300px" }}
-                                data={winners}
+                                data={giveaway?.winners}
                                 components={{
                                     Table,
                                     TableBody,
