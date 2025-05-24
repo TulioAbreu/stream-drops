@@ -1,6 +1,8 @@
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -10,7 +12,7 @@ import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets } from "@/service/google-drive";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
 import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, UserIcon, XIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { TableVirtuoso } from "react-virtuoso";
@@ -25,6 +27,8 @@ export function FollowerGiveawayId() {
     const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const navigate = useNavigate();
+    const [isFetchingParticipants, startFetchParticipantsTransition] = useTransition();
+    const [fetchUsersProgress, setFetchUsersProgress] = useState<number>(0);
 
     const fetchGiveaway = async () => {
         if (!id) {
@@ -51,50 +55,32 @@ export function FollowerGiveawayId() {
     };
 
     const onClickSearchParticipants = async () => {
-        if (!twitchApiClient || !userData) {
-            return;
-        }
-
-        setIsLoadingUsers(true);
-        const subscriptions: BroadcasterSubscriber[] = [];
-
-        // const tiers = ["1000", "2000", "3000"] as const;
-        // for (let i = 0; i < 10000; i++) {
-        //     const randomTier = tiers[Math.floor(Math.random() * tiers.length)];
-        //     const fakeSubscription: BroadcasterSubscriber = {
-        //         user_id: `user_${i}`,
-        //         user_name: `user_${i}`,
-        //         tier: randomTier,
-        //         is_gift: false,
-        //         broadcaster_id: userData.id,
-        //         broadcaster_name: userData.login,
-        //         broadcaster_login: userData.login,
-        //         gifter_id: "",
-        //         gifter_login: "",
-        //         plan_name: "",
-        //         user_login: `user_${i}`,
-        //     };
-        //     subscriptions.push(fakeSubscription);
-        // }
-        // setUsers(subscriptions);
-        // setIsLoadingUsers(false);
-        let nextPage = undefined;
-        do {
-            const response = await twitchApiClient.getBroadcasterSubscriptions({
-                broadcaster_id: userData?.id,
-                first: "100",
-                after: nextPage,
-            });
-            if (response.isErr()) {
-                console.error("Error fetching subscriptions:", response.error);
+        startFetchParticipantsTransition(async () => {
+            if (!twitchApiClient || !userData) {
                 return;
-            } else {
-                subscriptions.push(...response.value.data);
-                nextPage = response.value.pagination.cursor;
             }
-        } while (nextPage);
-        setIsLoadingUsers(false);
-        setUsers(subscriptions);
+            setFetchUsersProgress(0);
+            const subscriptions: BroadcasterSubscriber[] = [];
+            let nextPage = undefined;
+            let totalPages = 0;
+            do {
+                const response = await twitchApiClient.getBroadcasterSubscriptions({
+                    broadcaster_id: userData?.id,
+                    first: "100",
+                    after: nextPage,
+                });
+                if (response.isErr()) {
+                    console.error("Error fetching subscriptions:", response.error);
+                    return;
+                } else {
+                    totalPages = Math.ceil(response.value.total / 100);
+                    subscriptions.push(...response.value.data);
+                    nextPage = response.value.pagination.cursor;
+                    setFetchUsersProgress((prev) => Math.min(prev + 100 / totalPages, 100));
+                }
+            } while (nextPage);
+            setUsers(subscriptions);
+        });
     };
 
     const onClickDrawWinners = async () => {
@@ -313,6 +299,17 @@ export function FollowerGiveawayId() {
                         )}
                     </CardContent>
                 </Card>
+                <Dialog open={isFetchingParticipants}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Aguarde...</DialogTitle>
+                            <DialogDescription>
+                                <p className="mb-4">Buscando participantes do sorteio.</p>
+                                <Progress value={fetchUsersProgress} />
+                            </DialogDescription>
+                        </DialogHeader>
+                    </DialogContent>
+                </Dialog>
             </div>
         </Layout>
     );
