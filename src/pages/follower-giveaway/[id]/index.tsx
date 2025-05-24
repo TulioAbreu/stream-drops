@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
-import { exportGiveawayResultToSheets } from "@/service/google-drive";
+import { exportGiveawayResultToSheets, overrideGiveawayResultToSheets } from "@/service/google-drive";
 import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, TrophyIcon, UserIcon, XIcon } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
@@ -97,18 +97,36 @@ export function FollowerGiveawayId() {
         }
 
         startExportingResultSheetsTransition(async () => {
-            const url = await exportGiveawayResultToSheets({
-                participants: giveaway.participants ?? [],
-                winners: giveaway.winners ?? [],
-                requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
-                subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
-                    "1000": 1,
-                    "2000": 1,
-                    "3000": 1,
-                },
-                title: giveaway?.title ?? "",
-                description: giveaway?.description ?? "",
-            });
+            let url: string;
+            if (giveaway.spreadsheetUrl) {
+                url = await overrideGiveawayResultToSheets({
+                    participants: giveaway.participants ?? [],
+                    winners: giveaway.winners ?? [],
+                    requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
+                    subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
+                        "1000": 1,
+                        "2000": 1,
+                        "3000": 1,
+                    },
+                    title: giveaway?.title ?? "",
+                    description: giveaway?.description ?? "",
+                    spreadsheetId: giveaway.spreadsheetUrl.split("/")[5],
+                });
+                return;
+            } else {
+                url = await exportGiveawayResultToSheets({
+                    participants: giveaway.participants ?? [],
+                    winners: giveaway.winners ?? [],
+                    requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
+                    subscriberMultiplier: giveaway?.subscriberMultiplier ?? {
+                        "1000": 1,
+                        "2000": 1,
+                        "3000": 1,
+                    },
+                    title: giveaway?.title ?? "",
+                    description: giveaway?.description ?? "",
+                });
+            }
 
             await updateGiveaway({
                 ...giveaway,
