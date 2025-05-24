@@ -1,6 +1,4 @@
 import type { BroadcasterSubscriber, TwitchSubscriptionTier } from "@/service/twitch/types";
-import { useCallback } from "react";
-
 
 export interface FollowerGiveawayFormData {
     id: string;
