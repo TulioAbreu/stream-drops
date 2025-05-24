@@ -69,51 +69,59 @@ export function FollowerGiveaway() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {giveaways.map((giveaway) => (
-                            <TableRow key={giveaway.id}>
-                                <TableCell>
-                                    <a href={`/dashboard/follower-giveaway/${giveaway.id}`} className="text-blue-500 hover:underline w-full">
-                                        {giveaway.title}
-                                    </a>
-                                </TableCell>
-                                <TableCell>
-                                    <div className="flex flex-row gap-2">
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="lg"
-                                                        onClick={() => onClickEdit(giveaway.id)}
-                                                    >
-                                                        <SquareArrowOutUpRight className="w-4 h-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_OPEN")}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="lg"
-                                                        onClick={() => onClickDelete(giveaway.id)}
-                                                    >
-                                                        <TrashIcon className="w-4 h-4" />
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_DELETE")}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </div>
+                        {giveaways.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
+                                    {t("FOLLOWER_GIVEAWAY_TABLE_EMPTY", "Nenhum sorteio cadastrado.")}
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        ) : (
+                            giveaways.map((giveaway) => (
+                                <TableRow key={giveaway.id}>
+                                    <TableCell>
+                                        <a href={`/dashboard/follower-giveaway/${giveaway.id}`} className="text-blue-500 hover:underline w-full">
+                                            {giveaway.title}
+                                        </a>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-row gap-2">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="lg"
+                                                            onClick={() => onClickEdit(giveaway.id)}
+                                                        >
+                                                            <SquareArrowOutUpRight className="w-4 h-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_OPEN")}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="lg"
+                                                            onClick={() => onClickDelete(giveaway.id)}
+                                                        >
+                                                            <TrashIcon className="w-4 h-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_DELETE")}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
                     </TableBody>
                 </Table>
             </div>
@@ -124,7 +132,7 @@ export function FollowerGiveaway() {
                     </DialogHeader>
                     <p>{t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_DESCRIPTION", "Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.")}</p>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setGiveawayIdToDelete(null)}>
+                        <Button variant="outline" onClick={() => setGiveawayIdToDelete(null)} disabled={isDeletingGiveaway}>
                             {t("CANCEL", "Cancelar")}
                         </Button>
                         <Button
