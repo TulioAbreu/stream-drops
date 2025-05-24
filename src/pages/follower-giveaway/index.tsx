@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
-import { PlusIcon, SquareArrowOutUpRight, TrashIcon  } from "lucide-react";
-import { useEffect, useState } from "react";
+import { PlusIcon, SquareArrowOutUpRight, TrashIcon } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 
@@ -16,6 +16,7 @@ export function FollowerGiveaway() {
     const { getGiveaways, deleteGiveaway } = useSubscriptionGiveawayDb();
     const [giveaways, setGiveaways] = useState<FollowerGiveawayFormData[]>([]);
     const [giveawayIdToDelete, setGiveawayIdToDelete] = useState<string | null>(null);
+    const [isDeletingGiveaway, startIsDeletingGiveawayTransition] = useTransition();
 
     const onClickEdit = (id: string) => {
         navigate(`/dashboard/follower-giveaway/${id}`);
@@ -36,6 +37,16 @@ export function FollowerGiveaway() {
         setIsLoading(false);
     };
 
+    const onClickConfirmDeleteGiveaway = async () => {
+        startIsDeletingGiveawayTransition(async () => {
+            if (giveawayIdToDelete) {
+                await deleteGiveaway(giveawayIdToDelete);
+                setGiveawayIdToDelete(null);
+                fetchGiveaways();
+            }
+        });
+    };
+
     useEffect(() => {
         fetchGiveaways();
     }, [getGiveaways, fetchGiveaways]);
@@ -45,7 +56,7 @@ export function FollowerGiveaway() {
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
                 <Button variant="outline" onClick={onClickCreate} size="lg">
-                    <PlusIcon/>
+                    <PlusIcon />
                     <span>{t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}</span>
                 </Button>
             </div>
@@ -118,13 +129,8 @@ export function FollowerGiveaway() {
                         </Button>
                         <Button
                             variant="destructive"
-                            onClick={async () => {
-                                if (giveawayIdToDelete) {
-                                    await deleteGiveaway(giveawayIdToDelete);
-                                    setGiveawayIdToDelete(null);
-                                    fetchGiveaways();
-                                }
-                            }}
+                            loading={isDeletingGiveaway}
+                            onClick={onClickConfirmDeleteGiveaway}
                         >
                             {t("DELETE", "Excluir")}
                         </Button>
