@@ -1,9 +1,10 @@
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogDescription, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
+import { DialogTitle } from "@radix-ui/react-dialog";
 import { PlusIcon, SquareArrowOutUpRight, TrashIcon } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,7 +16,6 @@ export function FollowerGiveaway() {
     const [_isLoading, setIsLoading] = useState(false);
     const { getGiveaways, deleteGiveaway } = useSubscriptionGiveawayDb();
     const [giveaways, setGiveaways] = useState<FollowerGiveawayFormData[]>([]);
-    const [giveawayIdToDelete, setGiveawayIdToDelete] = useState<string | null>(null);
     const [isDeletingGiveaway, startIsDeletingGiveawayTransition] = useTransition();
 
     const onClickEdit = (id: string) => {
@@ -26,10 +26,6 @@ export function FollowerGiveaway() {
         navigate("/dashboard/follower-giveaway/create");
     };
 
-    const onClickDelete = async (id: string) => {
-        setGiveawayIdToDelete(id);
-    };
-
     const fetchGiveaways = async () => {
         setIsLoading(true);
         const giveawaysData = await getGiveaways();
@@ -37,13 +33,10 @@ export function FollowerGiveaway() {
         setIsLoading(false);
     };
 
-    const onClickConfirmDeleteGiveaway = async () => {
+    const onClickConfirmDeleteGiveaway = async (giveawayId: string) => {
         startIsDeletingGiveawayTransition(async () => {
-            if (giveawayIdToDelete) {
-                await deleteGiveaway(giveawayIdToDelete);
-                setGiveawayIdToDelete(null);
-                fetchGiveaways();
-            }
+            await deleteGiveaway(giveawayId);
+            fetchGiveaways();
         });
     };
 
@@ -104,13 +97,35 @@ export function FollowerGiveaway() {
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="lg"
-                                                            onClick={() => onClickDelete(giveaway.id)}
-                                                        >
-                                                            <TrashIcon className="w-4 h-4" />
-                                                        </Button>
+                                                        <Dialog>
+                                                            <DialogTrigger asChild>
+                                                                <Button variant="ghost" size="lg" disabled={isDeletingGiveaway}>
+                                                                    <TrashIcon className="w-4 h-4" />
+                                                                </Button>
+                                                            </DialogTrigger>
+                                                            <DialogContent>
+                                                                <DialogHeader>
+                                                                    <DialogTitle>{t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_TITLE", "Confirmar exclusão")}</DialogTitle>
+                                                                    <DialogDescription>
+                                                                        {t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_DESCRIPTION", "Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.")}
+                                                                    </DialogDescription>
+                                                                </DialogHeader>
+                                                                <DialogFooter>
+                                                                    <DialogClose asChild>
+                                                                        <Button variant="outline" disabled={isDeletingGiveaway}>
+                                                                            {t("CANCEL", "Cancelar")}
+                                                                        </Button>
+                                                                    </DialogClose>
+                                                                    <Button
+                                                                        variant="destructive"
+                                                                        loading={isDeletingGiveaway}
+                                                                        onClick={() => onClickConfirmDeleteGiveaway(giveaway.id)}
+                                                                    >
+                                                                        {t("DELETE", "Excluir")}
+                                                                    </Button>
+                                                                </DialogFooter>
+                                                            </DialogContent>
+                                                        </Dialog>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
                                                         {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_DELETE")}
@@ -125,26 +140,6 @@ export function FollowerGiveaway() {
                     </TableBody>
                 </Table>
             </div>
-            <Dialog open={!!giveawayIdToDelete} onOpenChange={() => setGiveawayIdToDelete(null)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <h2 className="text-lg font-semibold">{t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_TITLE", "Confirmar exclusão")}</h2>
-                    </DialogHeader>
-                    <p>{t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_DESCRIPTION", "Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.")}</p>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setGiveawayIdToDelete(null)} disabled={isDeletingGiveaway}>
-                            {t("CANCEL", "Cancelar")}
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            loading={isDeletingGiveaway}
-                            onClick={onClickConfirmDeleteGiveaway}
-                        >
-                            {t("DELETE", "Excluir")}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </Layout>
     )
 }
