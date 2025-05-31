@@ -13,7 +13,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useTranslation } from "@/i18n";
-import { useLocation } from "react-router";
+import { useLocation, Link } from "react-router";
 
 interface NavbarItem {
     title: string;
@@ -52,10 +52,10 @@ export function AppSidebar() {
                             {items.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton asChild className={location.pathname === item.url ? "bg-neutral-800" : ""}>
-                                        <a href={item.url}>
+                                        <Link to={item.url}>
                                             {item.icon}
                                             <span>{t(item.title)}</span>
-                                        </a>
+                                        </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}
