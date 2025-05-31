@@ -96,7 +96,7 @@ export function FollowerGiveaway() {
                                             </TooltipProvider>
                                             <TooltipProvider>
                                                 <Tooltip>
-                                                    <TooltipTrigger>
+                                                    <TooltipTrigger asChild>
                                                         <Dialog>
                                                             <DialogTrigger asChild>
                                                                 <Button variant="ghost" size="icon" disabled={isDeletingGiveaway}>
