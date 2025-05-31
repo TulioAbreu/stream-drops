@@ -48,6 +48,9 @@ export function FollowerGiveaway() {
     };
 
     useEffect(() => {
+        if (giveaways.length > 0) {
+            return;
+        }
         fetchGiveaways();
     }, [getGiveaways, fetchGiveaways]);
 
