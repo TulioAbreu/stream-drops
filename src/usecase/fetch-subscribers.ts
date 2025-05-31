@@ -25,7 +25,7 @@ export async function fetchSubscribers(
             currentPage++;
             subscriptions.push(...data);
             nextPage = pagination.cursor;
-            progressCallback((currentPage / totalPages));
+            progressCallback((currentPage / totalPages) * 100);
         }
     } while (nextPage);
     return subscriptions;
