@@ -217,7 +217,6 @@ export function FollowerGiveawayId() {
                     </GiveawayInfoCard>
                     <Card>
                         <CardContent>
-                            <CardDescription>Multiplicadores por Tier</CardDescription>
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -225,7 +224,7 @@ export function FollowerGiveawayId() {
                                             Object.entries(giveaway.subscriberMultiplier)
                                                 .filter(([tier]) => Number(tier) >= (giveaway?.subscriptionRequirement ?? 0))
                                                 .map(([tier, _multiplier]) => (
-                                                    <TableHead key={tier}>
+                                                    <TableHead key={tier} className="text-center">
                                                         {t(`TIER_${tier}`)}
                                                     </TableHead>
                                                 ))
@@ -238,7 +237,7 @@ export function FollowerGiveawayId() {
                                             Object.entries(giveaway.subscriberMultiplier)
                                                 .filter(([tier]) => Number(tier) >= (giveaway?.subscriptionRequirement ?? 0))
                                                 .map(([tier, multiplier]) => (
-                                                    <TableCell key={tier} className="text-right">
+                                                    <TableCell key={tier} className="text-center">
                                                         {multiplier}
                                                     </TableCell>
                                                 ))
@@ -246,6 +245,7 @@ export function FollowerGiveawayId() {
                                     </TableRow>
                                 </TableBody>
                             </Table>
+                            <CardDescription>Multiplicadores por Tier</CardDescription>
                         </CardContent>
                     </Card>
                 </div>

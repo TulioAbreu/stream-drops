@@ -17,14 +17,14 @@ export function GiveawayInfoCard({
     const Icon = icon;
     return (
         <Card className={className}>
-            <CardHeader className="relative">
-                <CardDescription>{title}</CardDescription>
+            <CardHeader className="relative flex flex-col h-full items-center justify-center text-center">
                 <CardTitle className="text-3xl font-semibold tabular-nums">
-                    <div className="flex flex-row gap-2 items-center">
+                    <div className="flex flex-row gap-2 items-center justify-center">
                         <Icon className="w-6 h-6" />
                         {children}
                     </div>
                 </CardTitle>
+                <CardDescription>{title}</CardDescription>
             </CardHeader>
         </Card>
     );
