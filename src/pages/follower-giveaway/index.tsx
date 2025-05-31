@@ -83,7 +83,7 @@ export function FollowerGiveaway() {
                                                     <TooltipTrigger asChild>
                                                         <Button
                                                             variant="ghost"
-                                                            size="lg"
+                                                            size="icon"
                                                             onClick={() => onClickEdit(giveaway.id)}
                                                         >
                                                             <SquareArrowOutUpRight className="w-4 h-4" />
@@ -99,7 +99,7 @@ export function FollowerGiveaway() {
                                                     <TooltipTrigger>
                                                         <Dialog>
                                                             <DialogTrigger asChild>
-                                                                <Button variant="ghost" size="lg" disabled={isDeletingGiveaway}>
+                                                                <Button variant="ghost" size="icon" disabled={isDeletingGiveaway}>
                                                                     <TrashIcon className="w-4 h-4" />
                                                                 </Button>
                                                             </DialogTrigger>
