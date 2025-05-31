@@ -48,11 +48,8 @@ export function FollowerGiveaway() {
     };
 
     useEffect(() => {
-        if (giveaways.length > 0) {
-            return;
-        }
         fetchGiveaways();
-    }, [getGiveaways, fetchGiveaways]);
+    }, []);
 
     return (
         <Layout>
@@ -90,7 +87,7 @@ export function FollowerGiveaway() {
                                         <div className="flex flex-row gap-2">
                                             <TooltipProvider>
                                                 <Tooltip>
-                                                    <TooltipTrigger>
+                                                    <TooltipTrigger asChild>
                                                         <Button
                                                             variant="ghost"
                                                             size="lg"
