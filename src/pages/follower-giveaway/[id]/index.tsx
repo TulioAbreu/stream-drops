@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -215,6 +215,39 @@ export function FollowerGiveawayId() {
                     >
                         {giveaway?.winners.length ?? 0}
                     </GiveawayInfoCard>
+                    <Card>
+                        <CardContent>
+                            <CardDescription>Multiplicadores por Tier</CardDescription>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        {giveaway?.subscriberMultiplier &&
+                                            Object.entries(giveaway.subscriberMultiplier)
+                                                .filter(([tier]) => Number(tier) >= (giveaway?.subscriptionRequirement ?? 0))
+                                                .map(([tier, _multiplier]) => (
+                                                    <TableHead key={tier}>
+                                                        {t(`TIER_${tier}`)}
+                                                    </TableHead>
+                                                ))
+                                        }
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow>
+                                        {giveaway?.subscriberMultiplier &&
+                                            Object.entries(giveaway.subscriberMultiplier)
+                                                .filter(([tier]) => Number(tier) >= (giveaway?.subscriptionRequirement ?? 0))
+                                                .map(([tier, multiplier]) => (
+                                                    <TableCell key={tier} className="text-right">
+                                                        {multiplier}
+                                                    </TableCell>
+                                                ))
+                                        }
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
                 </div>
                 <div className="flex flex-col xl:flex-row flex-wrap xl:flex-nowrap w-full gap-4">
                     <Card className="w-full">
