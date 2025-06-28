@@ -7,6 +7,7 @@ import { LoginRedirectPage } from "./pages/login-redirect"
 import { LoginRedirectDrivePage } from "./pages/login-redirect-drive"
 import { FollowerGiveawayId } from "./pages/follower-giveaway/[id]"
 import { FollowerGiveaway } from "./pages/follower-giveaway"
+import { EditFollowerGiveawayPage } from "./pages/follower-giveaway/[id]/edit"
 
 export function App() {
     return (
@@ -19,6 +20,7 @@ export function App() {
                     <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/dashboard/follower-giveaway" element={<FollowerGiveaway />} />
                     <Route path="/dashboard/follower-giveaway/create" element={<FollowerGiveawayCreate />} />
+                    <Route path="/dashboard/follower-giveaway/:id/edit" element={<EditFollowerGiveawayPage />} />
                     <Route path="/dashboard/follower-giveaway/:id" element={<FollowerGiveawayId />} />
                 </Routes>
             </BrowserRouter>

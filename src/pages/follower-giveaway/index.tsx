@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
 import { DialogTitle } from "@radix-ui/react-dialog";
-import { PlusIcon, SquareArrowOutUpRight, TrashIcon } from "lucide-react";
+import { ArrowRight, Edit2Icon, PlusIcon, TrashIcon } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -19,6 +19,10 @@ export function FollowerGiveaway() {
     const [isDeletingGiveaway, startIsDeletingGiveawayTransition] = useTransition();
 
     const onClickEdit = (id: string) => {
+        navigate(`/dashboard/follower-giveaway/${id}/edit`);
+    };
+
+    const onClickView = (id: string) => {
         navigate(`/dashboard/follower-giveaway/${id}`);
     };
 
@@ -84,13 +88,25 @@ export function FollowerGiveaway() {
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            onClick={() => onClickEdit(giveaway.id)}
+                                                            onClick={() => onClickView(giveaway.id)}
                                                         >
-                                                            <SquareArrowOutUpRight className="w-4 h-4" />
+                                                            <ArrowRight className="w-4 h-4" />
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
                                                         {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_OPEN")}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" onClick={() => onClickEdit(giveaway.id)}>
+                                                            <Edit2Icon />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_EDIT")}
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>

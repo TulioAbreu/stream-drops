@@ -10,8 +10,7 @@ import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/data
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets, overrideGiveawayResultToSheets } from "@/service/google-drive";
-import { ArrowLeftIcon, CrownIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, TrophyIcon, UserIcon, XIcon } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { ArrowLeftIcon, CrownIcon, Edit3Icon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, TrophyIcon, UserIcon, XIcon } from "lucide-react";import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { TableVirtuoso } from "react-virtuoso";
@@ -47,6 +46,10 @@ export function FollowerGiveawayId() {
 
     const onClickBack = () => {
         navigate("/dashboard/follower-giveaway");
+    };
+
+    const onClickEdit = () => {
+        navigate(`/dashboard/follower-giveaway/${id}/edit`);
     };
 
     const onClickSearchParticipants = async () => {
@@ -182,6 +185,10 @@ export function FollowerGiveawayId() {
                         <Button variant="ghost" size="lg" onClick={onClickBack}>
                             <ArrowLeftIcon className="w-4 h-4 mr-2" />
                             <span>{t("NAVIGATE_BACK")}</span>
+                        </Button>
+                        <Button variant="outline" size="lg" onClick={onClickEdit}>
+                            <Edit3Icon className="w-4 h-4 mr-2" />
+                            <span>{t("FOLLOWER_GIVEAWAY_FORM_EDIT")}</span>
                         </Button>
                         <Button variant="outline" onClick={onClickSearchParticipants} size="lg">
                             <SearchIcon className="w-4 h-4 mr-2" />
