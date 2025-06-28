@@ -6,12 +6,12 @@ import { Form, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useExclusionListDb, type ExclusionListItem } from "@/database/ExclusionListItem";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { useTranslation } from "@/i18n";
 import type { TwitchUser } from "@/service/twitch/types";
-import { formToJSON } from "axios";
-import { BanIcon, PlusIcon, SearchIcon, ShieldBan, ShieldBanIcon, Trash2Icon } from "lucide-react";
-import { useState, useTransition } from "react";
+import { BanIcon, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -22,6 +22,9 @@ interface ExclusionListForm {
 export function SettingsExclusionList() {
     const { t } = useTranslation();
 
+    const { getExclusions, addExclusion } = useExclusionListDb();
+
+    const [exclusions, setExclusions] = useState<ExclusionListItem[]>([]);
     const [isSearchingUser, startSearchUserTransition] = useTransition();
     const [isAddingUser, startAddUserTransition] = useTransition();
     const { getUserByLogin } = useTwitchApi();
@@ -48,12 +51,32 @@ export function SettingsExclusionList() {
 
     const handleAddUserToExclusionList = (user: TwitchUser) => {
         startAddUserTransition(async () => {
+            const exclusionItem: ExclusionListItem = {
+                twitchUserId: user.id,
+                displayName: user.display_name,
+                profileImageUrl: user.profile_image_url,
+                updatedAt: new Date().toISOString(),
+                username: user.login,
+            };
+
+            await addExclusion(exclusionItem);
+            await fetchExclusions();
+
             toast.success(t("SETTINGS_EXCLUSION_LIST_ADD_SUCCESS", { username: user.login }));
             form.reset();
             setFoundUsers(null);
             setIsDialogOpen(false);
         });
     };
+
+    const fetchExclusions = async () => {
+        const exclusions = await getExclusions();
+        setExclusions(exclusions);
+    };
+
+    useEffect(() => {
+        fetchExclusions();
+    }, [getExclusions, fetchExclusions]);
 
     return (
         <div className="flex flex-col gap-2">
@@ -141,25 +164,40 @@ export function SettingsExclusionList() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow>
-                        <TableCell>
-                            Exemplo Usuário
-                        </TableCell>
-                        <TableCell>
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <Trash2Icon className="h-4 w-4" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        Remover
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        </TableCell>
-                    </TableRow>
+                    {exclusions.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={2} className="text-center">
+                                {t("SETTINGS_EXCLUSION_LIST_EMPTY")}
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {exclusions.map((exclusion) => (
+                        <TableRow key={exclusion.twitchUserId}>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                    <Avatar>
+                                        <AvatarImage src={exclusion.profileImageUrl} alt={exclusion.displayName} />
+                                        <AvatarFallback>{exclusion.displayName.slice(0, 2)}</AvatarFallback>
+                                    </Avatar>
+                                    <span>{exclusion.username}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon">
+                                                <Trash2Icon className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            {t("SETTINGS_EXCLUSION_LIST_REMOVE_TOOLTIP", { username: exclusion.username })}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </TableCell>
+                        </TableRow>
+                    ))}
                 </TableBody>
             </Table>
         </div>

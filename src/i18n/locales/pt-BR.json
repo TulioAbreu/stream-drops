@@ -57,5 +57,7 @@
     "SETTINGS_EXCLUSION_LIST_DESCRIPTION": "Usuários nesta lista serão ignorados em todos os sorteios. A opção é recomendada para excluir administradores, bots ou usuários que não devem participar.",
     "SETTINGS_EXCLUSION_LIST_SEARCH_BUTTON": "Buscar Usuário",
     "SETTINGS_EXCLUSION_LIST_NO_USERS_FOUND": "Nenhum usuário encontrado.",
-    "SETTINGS_EXCLUSION_LIST_ADD_SUCCESS": "Usuário {{username}} adicionado à lista de exclusão."
+    "SETTINGS_EXCLUSION_LIST_ADD_SUCCESS": "Usuário {{username}} adicionado à lista de exclusão.",
+    "SETTINGS_EXCLUSION_LIST_EMPTY": "Nenhum usuário na lista de exclusão.",
+    "SETTINGS_EXCLUSION_LIST_REMOVE_TOOLTIP": "Remover da lista de exclusão"
 }

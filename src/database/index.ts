@@ -13,15 +13,15 @@ export interface FollowerGiveawayFormData {
 
 const DB_NAME = "stream-drops-db";
 const STORE_NAME = "giveaways";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-function openDb(): Promise<IDBDatabase> {
+export function openDb(storeName: string): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
         request.onupgradeneeded = () => {
             const db = request.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
+            if (!db.objectStoreNames.contains(storeName)) {
+                const store = db.createObjectStore(storeName, { keyPath: "id" });
                 store.createIndex("id", "id", { unique: true });
             }
         };
@@ -33,7 +33,7 @@ function openDb(): Promise<IDBDatabase> {
 export function useSubscriptionGiveawayDb() {
     // CREATE
     const addGiveaway = async (data: FollowerGiveawayFormData) => {
-        const db = await openDb();
+        const db = await openDb(STORE_NAME);
         return new Promise<void>((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
             tx.objectStore(STORE_NAME).add(data);
@@ -44,7 +44,7 @@ export function useSubscriptionGiveawayDb() {
 
     // READ ALL
     const getGiveaways = async (): Promise<FollowerGiveawayFormData[]> => {
-        const db = await openDb();
+        const db = await openDb(STORE_NAME);
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readonly");
             const req = tx.objectStore(STORE_NAME).getAll();
@@ -55,7 +55,7 @@ export function useSubscriptionGiveawayDb() {
 
     // READ ONE
     const getGiveaway = async (id: string): Promise<FollowerGiveawayFormData | undefined> => {
-        const db = await openDb();
+        const db = await openDb(STORE_NAME);
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readonly");
             const req = tx.objectStore(STORE_NAME).get(id);
@@ -66,7 +66,7 @@ export function useSubscriptionGiveawayDb() {
 
     // UPDATE
     const updateGiveaway = async (data: FollowerGiveawayFormData) => {
-        const db = await openDb();
+        const db = await openDb(STORE_NAME);
         return new Promise<void>((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
             tx.objectStore(STORE_NAME).put(data);
@@ -77,7 +77,7 @@ export function useSubscriptionGiveawayDb() {
 
     // DELETE
     const deleteGiveaway = async (id: string) => {
-        const db = await openDb();
+        const db = await openDb(STORE_NAME);
         return new Promise<void>((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
             tx.objectStore(STORE_NAME).delete(id);
