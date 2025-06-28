@@ -8,10 +8,12 @@ import { LoginRedirectDrivePage } from "./pages/login-redirect-drive"
 import { FollowerGiveawayId } from "./pages/follower-giveaway/[id]"
 import { FollowerGiveaway } from "./pages/follower-giveaway"
 import { EditFollowerGiveawayPage } from "./pages/follower-giveaway/[id]/edit"
+import { Toaster } from "./components/ui/sonner"
 
 export function App() {
     return (
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+            <Toaster />
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<LoginPage />} />
