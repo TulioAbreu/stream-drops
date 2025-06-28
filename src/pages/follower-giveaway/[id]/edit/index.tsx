@@ -37,6 +37,11 @@ export function EditFollowerGiveawayPage() {
         }
     };
 
+    const onClickCancel = () => {
+        if (!id) return;
+        navigate(`/dashboard/follower-giveaway/${id}`);
+    };
+
     useEffect(() => {
         if (!id) return;
         getGiveaway(id)
@@ -134,9 +139,12 @@ export function EditFollowerGiveawayPage() {
                             ))}
                         </Table>
                     </div>
-                    <div className="flex flex-row items-center justify-end">
+                    <div className="flex flex-row-reverse items-center gap-2">
                         <Button type="submit" onClick={form.handleSubmit(onClickSubmit)}>
                             {t("FOLLOWER_GIVEAWAY_FORM_EDIT_BUTTON")}
+                        </Button>
+                        <Button onClick={onClickCancel} variant="secondary">
+                            {t("CANCEL")}
                         </Button>
                     </div>
                 </div>

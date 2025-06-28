@@ -40,5 +40,6 @@
     "TIER_1000": "Tier 1",
     "TIER_2000": "Tier 2",
     "TIER_3000": "Tier 3",
-    "DELETE": "Deletar"
+    "DELETE": "Deletar",
+    "CANCEL": "Cancelar"
 }
