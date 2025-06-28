@@ -111,42 +111,42 @@ export function FollowerGiveaway() {
                                                 </Tooltip>
                                             </TooltipProvider>
                                             <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Dialog>
+                                                <Dialog>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
                                                             <DialogTrigger asChild>
                                                                 <Button variant="ghost" size="icon" disabled={isDeletingGiveaway}>
                                                                     <TrashIcon className="w-4 h-4" />
                                                                 </Button>
                                                             </DialogTrigger>
-                                                            <DialogContent>
-                                                                <DialogHeader>
-                                                                    <DialogTitle>{t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_TITLE", "Confirmar exclusão")}</DialogTitle>
-                                                                    <DialogDescription>
-                                                                        {t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_DESCRIPTION", "Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.")}
-                                                                    </DialogDescription>
-                                                                </DialogHeader>
-                                                                <DialogFooter>
-                                                                    <DialogClose asChild>
-                                                                        <Button variant="outline" disabled={isDeletingGiveaway}>
-                                                                            {t("CANCEL", "Cancelar")}
-                                                                        </Button>
-                                                                    </DialogClose>
-                                                                    <Button
-                                                                        variant="destructive"
-                                                                        loading={isDeletingGiveaway}
-                                                                        onClick={() => onClickConfirmDeleteGiveaway(giveaway.id)}
-                                                                    >
-                                                                        {t("DELETE", "Excluir")}
-                                                                    </Button>
-                                                                </DialogFooter>
-                                                            </DialogContent>
-                                                        </Dialog>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_DELETE")}
-                                                    </TooltipContent>
-                                                </Tooltip>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_DELETE")}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>{t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_TITLE", "Confirmar exclusão")}</DialogTitle>
+                                                            <DialogDescription>
+                                                                {t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_DESCRIPTION", "Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.")}
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <DialogFooter>
+                                                            <DialogClose asChild>
+                                                                <Button variant="outline" disabled={isDeletingGiveaway}>
+                                                                    {t("CANCEL", "Cancelar")}
+                                                                </Button>
+                                                            </DialogClose>
+                                                            <Button
+                                                                variant="destructive"
+                                                                loading={isDeletingGiveaway}
+                                                                onClick={() => onClickConfirmDeleteGiveaway(giveaway.id)}
+                                                            >
+                                                                {t("DELETE", "Excluir")}
+                                                            </Button>
+                                                        </DialogFooter>
+                                                    </DialogContent>
+                                                </Dialog>
                                             </TooltipProvider>
                                         </div>
                                     </TableCell>
