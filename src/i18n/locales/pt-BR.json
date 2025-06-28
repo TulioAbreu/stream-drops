@@ -5,6 +5,7 @@
     "LOGIN_BUTTON_GOOGLE_DRIVE": "Entrar com Google Drive",
     "DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY": "Sorteio de Subscribers",
     "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY": "Sorteio de Ingressos",
+    "DASHBOARD_SIDEBAR_ITEM_SETTINGS": "Configurações",
     "FOLLOWER_GIVEAWAY_TITLE": "Sorteio de Subscribers",
     "FOLLOWER_GIVEAWAY_DESCRIPTION": "",
     "FOLLOWER_GIVEAWAY_FORM_TITLE_FIELD": "Título do Sorteio",
@@ -43,5 +44,18 @@
     "DELETE": "Deletar",
     "CANCEL": "Cancelar",
     "FOLLOWER_GIVEAWAY_FORM_NO_SUBSCRIBERS": "Seu canal não possui subscribers.",
-    "FOLLOWER_GIVEAWAY_FORM_NO_ELIGIBLE_SUBSCRIBERS": "Nenhum subscriber atende ao critério mínimo de participação."
+    "FOLLOWER_GIVEAWAY_FORM_NO_ELIGIBLE_SUBSCRIBERS": "Nenhum subscriber atende ao critério mínimo de participação.",
+    "SETTINGS_PAGE_TITLE": "Configurações",
+    "SETTINGS_EXCLUSION_LIST_HEADER_NAME": "Usuário",
+    "SETTINGS_EXCLUSION_LIST_HEADER_ACTIONS": "Ações",
+    "SETTINGS_EXCLUSION_LIST_PLACEHOLDER": "Digite o nome de usuário para excluir",
+    "SETTINGS_EXCLUSION_LIST_ADD_BUTTON": "Excluir de Sorteios",
+    "SETTINGS_EXCLUSION_SEARCH_BUTTON": "Buscar",
+    "SETTINGS_EXCLUSION_LIST_ADD_DIALOG_TITLE": "Excluir Usuário de Sorteios",
+    "SETTINGS_EXCLUSION_LIST_ADD_DIALOG_DESCRIPTION": "Busque o usuário que deseja excluir de sorteios.",
+    "SETTINGS_EXCLUSION_LIST_TITLE": "Lista de Exclusão de Sorteios",
+    "SETTINGS_EXCLUSION_LIST_DESCRIPTION": "Usuários nesta lista serão ignorados em todos os sorteios. A opção é recomendada para excluir administradores, bots ou usuários que não devem participar.",
+    "SETTINGS_EXCLUSION_LIST_SEARCH_BUTTON": "Buscar Usuário",
+    "SETTINGS_EXCLUSION_LIST_NO_USERS_FOUND": "Nenhum usuário encontrado.",
+    "SETTINGS_EXCLUSION_LIST_ADD_SUCCESS": "Usuário {{username}} adicionado à lista de exclusão."
 }

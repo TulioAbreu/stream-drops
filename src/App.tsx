@@ -9,6 +9,7 @@ import { FollowerGiveawayId } from "./pages/follower-giveaway/[id]"
 import { FollowerGiveaway } from "./pages/follower-giveaway"
 import { EditFollowerGiveawayPage } from "./pages/follower-giveaway/[id]/edit"
 import { Toaster } from "./components/ui/sonner"
+import { SettingsPage } from "./pages/settings"
 
 export function App() {
     return (
@@ -20,6 +21,7 @@ export function App() {
                     <Route path="/auth" element={<LoginRedirectPage />} />
                     <Route path="/auth/drive" element={<LoginRedirectDrivePage />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/dashboard/settings" element={<SettingsPage />} />
                     <Route path="/dashboard/follower-giveaway" element={<FollowerGiveaway />} />
                     <Route path="/dashboard/follower-giveaway/create" element={<FollowerGiveawayCreate />} />
                     <Route path="/dashboard/follower-giveaway/:id/edit" element={<EditFollowerGiveawayPage />} />

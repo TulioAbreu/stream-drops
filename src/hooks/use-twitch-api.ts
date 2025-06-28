@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { makeTwitchApiClient } from "@/service/twitch";
 import { makeTwitchIdApiClient } from "@/service/twitch-id";
 import { useLoginStore } from "@/storage/login";
+import { err } from "neverthrow";
 
 interface TwitchUser {
     id: string;
@@ -84,5 +85,13 @@ export function useTwitchApi() {
         return () => clearInterval(interval);
     }, [twitchAccessToken]);
 
-    return { twitchApiClient, isTokenValid, userData };
+    const getUserByLogin = async (userName: string) => {
+        if (!twitchApiClient) {
+            console.error("Twitch API client not initialized.");
+            return err("Twitch API client not initialized.");
+        }
+        return twitchApiClient.getUsers({ login: userName });
+    }
+
+    return { twitchApiClient, isTokenValid, userData, getUserByLogin };
 }

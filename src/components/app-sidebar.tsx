@@ -1,5 +1,6 @@
 import {
     UserRoundCheck,
+    Settings,
 } from "lucide-react";
 import {
     Sidebar,
@@ -32,6 +33,11 @@ const items: NavbarItem[] = [
     //     icon: <Ticket />,
     //     url: "/dashboard/",
     // },
+    {
+        title: "DASHBOARD_SIDEBAR_ITEM_SETTINGS",
+        icon: <Settings />,
+        url: "/dashboard/settings",
+    }
 ]
 
 export function AppSidebar() {
