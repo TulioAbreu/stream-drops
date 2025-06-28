@@ -4,7 +4,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ children }: PageHeaderProps) {
     return (
-        <div className="text-2xl font-bold">
+        <div className="text-2xl font-bold mb-8">
             {children}
         </div>
     );
