@@ -59,5 +59,6 @@
     "SETTINGS_EXCLUSION_LIST_NO_USERS_FOUND": "Nenhum usuário encontrado.",
     "SETTINGS_EXCLUSION_LIST_ADD_SUCCESS": "Usuário {{username}} adicionado à lista de exclusão.",
     "SETTINGS_EXCLUSION_LIST_EMPTY": "Nenhum usuário na lista de exclusão.",
-    "SETTINGS_EXCLUSION_LIST_REMOVE_TOOLTIP": "Remover da lista de exclusão"
+    "SETTINGS_EXCLUSION_LIST_REMOVE_TOOLTIP": "Remover da lista de exclusão",
+    "FOLLOWER_GIVEAWAY_FORM_EXCLUDE_USER": "Excluir usuários de sorteios"
 }

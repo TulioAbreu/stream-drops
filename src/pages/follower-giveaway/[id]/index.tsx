@@ -10,7 +10,8 @@ import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/data
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets, overrideGiveawayResultToSheets } from "@/service/google-drive";
-import { ArrowLeftIcon, CrownIcon, Edit3Icon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, TrophyIcon, UserIcon, XIcon } from "lucide-react";import { useEffect, useState, useTransition } from "react";
+import { ArrowLeftIcon, BanIcon, CrownIcon, Edit3Icon, EllipsisIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, TrophyIcon, UserIcon, XIcon } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { TableVirtuoso } from "react-virtuoso";
@@ -19,13 +20,15 @@ import { fetchSubscribers } from "@/usecase/fetch-subscribers";
 import { filterElegibleSubscribers } from "@/usecase/filter-eligible-subscribers";
 import { toast } from "sonner";
 import { useExclusionListDb } from "@/database/ExclusionListItem";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import type { BroadcasterSubscriber } from "@/service/twitch/types";
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
-    const { getExclusions } = useExclusionListDb();
+    const { getExclusions, addExclusion } = useExclusionListDb();
     const { twitchApiClient, userData } = useTwitchApi();
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const [fetchUsersProgress, setFetchUsersProgress] = useState<number>(0);
@@ -195,6 +198,35 @@ export function FollowerGiveawayId() {
         await fetchGiveaway();
     };
 
+    const onClickExcludeUser = async (user: BroadcasterSubscriber) => {
+        if (!giveaway || !twitchApiClient) {
+            return;
+        }
+
+        try {
+            const twitchUser = await twitchApiClient.getUsers({
+                id: user.user_id,
+            });
+            if (twitchUser.isErr()) {
+                return;
+            }
+    
+            for (const exclusion of twitchUser.value.data) {
+                await addExclusion({
+                    twitchUserId: exclusion.id,
+                    displayName: exclusion.display_name,
+                    profileImageUrl: exclusion.profile_image_url,
+                    username: exclusion.login,
+                    updatedAt: new Date().toISOString(),
+                });
+            }
+    
+            await onClickSearchParticipants();
+        } catch (error) {
+            console.error("Error excluding user:", error);
+        }
+    };
+
     return (
         <Layout>
             <div className="flex flex-col gap-4">
@@ -319,6 +351,19 @@ export function FollowerGiveawayId() {
                                                     <TooltipContent>Remover</TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger>
+                                                    <Button variant="ghost" size="icon">
+                                                        <EllipsisIcon className="w-4 h-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onClick={() => onClickExcludeUser(user)}>
+                                                        <BanIcon className="w-4 h-4 mr-2" />
+                                                        {t("FOLLOWER_GIVEAWAY_FORM_EXCLUDE_USER")}
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     ]}
                                 />
