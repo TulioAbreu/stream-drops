@@ -41,5 +41,7 @@
     "TIER_2000": "Tier 2",
     "TIER_3000": "Tier 3",
     "DELETE": "Deletar",
-    "CANCEL": "Cancelar"
+    "CANCEL": "Cancelar",
+    "FOLLOWER_GIVEAWAY_FORM_NO_SUBSCRIBERS": "Seu canal não possui subscribers.",
+    "FOLLOWER_GIVEAWAY_FORM_NO_ELIGIBLE_SUBSCRIBERS": "Nenhum subscriber atende ao critério mínimo de participação."
 }

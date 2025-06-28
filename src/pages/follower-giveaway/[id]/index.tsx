@@ -17,6 +17,7 @@ import { TableVirtuoso } from "react-virtuoso";
 import { GiveawayInfoCard } from "./components/giveaway-info-card";
 import { fetchSubscribers } from "@/usecase/fetch-subscribers";
 import { filterElegibleSubscribers } from "@/usecase/filter-eligible-subscribers";
+import { toast } from "sonner";
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
@@ -61,11 +62,23 @@ export function FollowerGiveawayId() {
             const subscribers = await fetchSubscribers(twitchApiClient, userData.id, (progress) => {
                 setFetchUsersProgress(progress);
             });
+
+            if (subscribers.length === 0) {
+                toast.error(t("FOLLOWER_GIVEAWAY_FORM_NO_SUBSCRIBERS"));
+                return;
+            }
+
             const eligibleSubscribers = filterElegibleSubscribers(subscribers, giveaway.subscriptionRequirement);
             await updateGiveaway({
                 ...giveaway,
                 participants: eligibleSubscribers
             });
+
+            if (eligibleSubscribers.length === 0) {
+                toast.warning(t("FOLLOWER_GIVEAWAY_FORM_NO_ELIGIBLE_SUBSCRIBERS"));
+                return;
+            }
+
             await fetchGiveaway();
         });
     };
