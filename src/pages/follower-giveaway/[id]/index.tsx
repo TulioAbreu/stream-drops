@@ -18,12 +18,14 @@ import { GiveawayInfoCard } from "./components/giveaway-info-card";
 import { fetchSubscribers } from "@/usecase/fetch-subscribers";
 import { filterElegibleSubscribers } from "@/usecase/filter-eligible-subscribers";
 import { toast } from "sonner";
+import { useExclusionListDb } from "@/database/ExclusionListItem";
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
+    const { getExclusions } = useExclusionListDb();
     const { twitchApiClient, userData } = useTwitchApi();
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const [fetchUsersProgress, setFetchUsersProgress] = useState<number>(0);
@@ -59,8 +61,15 @@ export function FollowerGiveawayId() {
         }
         startFetchParticipantsTransition(async () => {
             setFetchUsersProgress(0);
-            const subscribers = await fetchSubscribers(twitchApiClient, userData.id, (progress) => {
+
+            const exclusions = await getExclusions();
+
+            let subscribers = await fetchSubscribers(twitchApiClient, userData.id, (progress) => {
                 setFetchUsersProgress(progress);
+            });
+            subscribers = subscribers.filter((subscriber) => {
+                // Filter out excluded users
+                return !exclusions.some((exclusion) => exclusion.twitchUserId === subscriber.user_id);
             });
 
             if (subscribers.length === 0) {
