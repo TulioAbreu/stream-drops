@@ -22,7 +22,7 @@ interface ExclusionListForm {
 export function SettingsExclusionList() {
     const { t } = useTranslation();
 
-    const { getExclusions, addExclusion } = useExclusionListDb();
+    const { getExclusions, addExclusion, deleteExclusionByUsername } = useExclusionListDb();
 
     const [exclusions, setExclusions] = useState<ExclusionListItem[]>([]);
     const [isSearchingUser, startSearchUserTransition] = useTransition();
@@ -72,6 +72,11 @@ export function SettingsExclusionList() {
     const fetchExclusions = async () => {
         const exclusions = await getExclusions();
         setExclusions(exclusions);
+    };
+
+    const handleRemoveExclusion = async (exclusion: ExclusionListItem) => {
+        await deleteExclusionByUsername(exclusion.username);
+        await fetchExclusions();
     };
 
     useEffect(() => {
@@ -186,7 +191,7 @@ export function SettingsExclusionList() {
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon">
+                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveExclusion(exclusion)}>
                                                 <Trash2Icon className="h-4 w-4" />
                                             </Button>
                                         </TooltipTrigger>
