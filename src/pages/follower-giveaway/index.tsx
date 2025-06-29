@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogDescription, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
+import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database/SubscriptionGiveaway";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { ArrowRight, Edit2Icon, PlusIcon, TrashIcon } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";

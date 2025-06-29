@@ -1,3 +1,5 @@
+import { openDb } from ".";
+
 export interface ExclusionListItem {
     twitchUserId: string;
     username: string;
@@ -6,24 +8,7 @@ export interface ExclusionListItem {
     updatedAt: string;
 }
 
-const DB_NAME = "stream-drops-db";
-const DB_VERSION = 2;
 const STORE_NAME = "exclusion-list";
-
-export function openDb(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = () => {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                const store = db.createObjectStore(STORE_NAME, { keyPath: "twitchUserId" });
-                store.createIndex("username", "username", { unique: true });
-            }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
 
 export function useExclusionListDb() {
     // CREATE

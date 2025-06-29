@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database";
+import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database/SubscriptionGiveaway";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets, overrideGiveawayResultToSheets } from "@/service/google-drive";

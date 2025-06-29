@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout";
 import { PageHeader } from "@/components/page-header/page-header";
 import { PageHeaderTitle } from "@/components/page-header/page-header-title";
-import { type FollowerGiveawayFormData, useSubscriptionGiveawayDb } from "@/database";
+import { type FollowerGiveawayFormData, useSubscriptionGiveawayDb } from "@/database/SubscriptionGiveaway";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";

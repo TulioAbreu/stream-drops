@@ -1,96 +1,49 @@
-import type { BroadcasterSubscriber, TwitchSubscriptionTier } from "@/service/twitch/types";
+const DATABASE_NAME = "stream-drops-db";
+const DATABASE_VERSION = 3;
 
-export interface FollowerGiveawayFormData {
-    id: string;
-    title: string;
-    description: string;
-    subscriptionRequirement: number;
-    subscriberMultiplier: Record<TwitchSubscriptionTier, number>;
-    participants: BroadcasterSubscriber[];
-    winners: BroadcasterSubscriber[];
-    spreadsheetUrl: string | null;
+interface DatabaseTable {
+    name: string;
+    index: {
+        keyPath: string;
+        options?: IDBIndexParameters;
+    }
 }
 
-const DB_NAME = "stream-drops-db";
-const STORE_NAME = "giveaways";
-const DB_VERSION = 2;
+const stores: DatabaseTable[] = [
+    {
+        name: "exclusion-list",
+        index: {
+            keyPath: "twitchUserId",
+            options: { unique: true }
+        }
+    },
+    {
+        name: "giveaways",
+        index: {
+            keyPath: "id",
+            options: { unique: true }
+        }
+    }
+];
 
-export function openDb(storeName: string): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
+export function openDb(): Promise<IDBDatabase> {
+    return new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+
         request.onupgradeneeded = () => {
             const db = request.result;
-            if (!db.objectStoreNames.contains(storeName)) {
-                const store = db.createObjectStore(storeName, { keyPath: "id" });
-                store.createIndex("id", "id", { unique: true });
-            }
+
+            stores.forEach(store => {
+                if (!db.objectStoreNames.contains(store.name)) {
+                    const objectStore = db.createObjectStore(store.name, { keyPath: store.index.keyPath });
+                    if (store.index.options) {
+                        objectStore.createIndex(store.index.keyPath, store.index.keyPath, store.index.options);
+                    }
+                }
+            });
         };
+
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
     });
-}
-
-export function useSubscriptionGiveawayDb() {
-    // CREATE
-    const addGiveaway = async (data: FollowerGiveawayFormData) => {
-        const db = await openDb(STORE_NAME);
-        return new Promise<void>((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            tx.objectStore(STORE_NAME).add(data);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
-    };
-
-    // READ ALL
-    const getGiveaways = async (): Promise<FollowerGiveawayFormData[]> => {
-        const db = await openDb(STORE_NAME);
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readonly");
-            const req = tx.objectStore(STORE_NAME).getAll();
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-        });
-    };
-
-    // READ ONE
-    const getGiveaway = async (id: string): Promise<FollowerGiveawayFormData | undefined> => {
-        const db = await openDb(STORE_NAME);
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readonly");
-            const req = tx.objectStore(STORE_NAME).get(id);
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-        });
-    };
-
-    // UPDATE
-    const updateGiveaway = async (data: FollowerGiveawayFormData) => {
-        const db = await openDb(STORE_NAME);
-        return new Promise<void>((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            tx.objectStore(STORE_NAME).put(data);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
-    };
-
-    // DELETE
-    const deleteGiveaway = async (id: string) => {
-        const db = await openDb(STORE_NAME);
-        return new Promise<void>((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            tx.objectStore(STORE_NAME).delete(id);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
-    };
-
-    return {
-        addGiveaway,
-        getGiveaways,
-        getGiveaway,
-        updateGiveaway,
-        deleteGiveaway,
-    };
 }

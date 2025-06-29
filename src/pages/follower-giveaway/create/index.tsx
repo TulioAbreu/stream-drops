@@ -10,7 +10,7 @@ import { type FollowerGiveawayForm } from "../types";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { v7 } from "uuid";
-import { useSubscriptionGiveawayDb } from "@/database";
+import { useSubscriptionGiveawayDb } from "@/database/SubscriptionGiveaway";
 import { Layout } from "@/components/layout";
 import { useNavigate } from "react-router";
 
