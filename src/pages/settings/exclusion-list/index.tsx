@@ -93,7 +93,7 @@ export function SettingsExclusionList() {
 
     return (
         <div className="flex flex-col gap-2">
-            <div className="flex flex-row items-center gap-4">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
                 <div>
                     <h2 className="text-lg font-bold">
                         {t("SETTINGS_EXCLUSION_LIST_TITLE")}
@@ -102,72 +102,72 @@ export function SettingsExclusionList() {
                         {t("SETTINGS_EXCLUSION_LIST_DESCRIPTION")}
                     </p>
                 </div>
-            </div>
-            <div className="flex flex-row justify-end">
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline">
-                            <PlusIcon className="h-4 w-4" />
-                            {t("SETTINGS_EXCLUSION_LIST_ADD_BUTTON")}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{t("SETTINGS_EXCLUSION_LIST_ADD_DIALOG_TITLE")}</DialogTitle>
-                            <DialogDescription>
-                                {t("SETTINGS_EXCLUSION_LIST_ADD_DIALOG_DESCRIPTION")}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(handleClickSearchUser)} className="flex flex-row gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="twitchUsername"
-                                    rules={{ required: t("SETTINGS_EXCLUSION_LIST_REQUIRED") }}
-                                    render={({ field }) => (
-                                        <Input
-                                            {...field}
-                                            placeholder={t("SETTINGS_EXCLUSION_LIST_PLACEHOLDER")}
-                                            className="w-full max-w-md"
-                                        />
-                                    )}
-                                />
-                                <Button type="submit" disabled={isSearchingUser} loading={isSearchingUser} className="flex gap-2 min-w-[142px]">
-                                    <SearchIcon className="h-4 w-4" />
-                                    {t("SETTINGS_EXCLUSION_LIST_SEARCH_BUTTON")}
-                                </Button>
-                            </form>
-                        </Form>
-                        {foundUsers && foundUsers.length > 0 && foundUsers.map((user) => (
-                            <Card>
-                                <CardContent className="flex items-center gap-4 justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <Avatar>
-                                            <AvatarImage src={user.profile_image_url} alt={user.display_name} />
-                                            <AvatarFallback>{user.display_name.slice(0, 2)}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-bold">{user.login}</p>
-                                        </div>
-                                    </div>
-                                    <Button type="submit" loading={isAddingUser} disabled={isAddingUser} variant="destructive" onClick={() => handleAddUserToExclusionList(user)} className="flex gap-2 min-w-[164px]">
-                                        <BanIcon className="h-4 w-4" />
-                                        {t("SETTINGS_EXCLUSION_LIST_ADD_BUTTON")}
+                <div className="self-end">
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline">
+                                <PlusIcon className="h-4 w-4" />
+                                {t("SETTINGS_EXCLUSION_LIST_ADD_BUTTON")}
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>{t("SETTINGS_EXCLUSION_LIST_ADD_DIALOG_TITLE")}</DialogTitle>
+                                <DialogDescription>
+                                    {t("SETTINGS_EXCLUSION_LIST_ADD_DIALOG_DESCRIPTION")}
+                                </DialogDescription>
+                            </DialogHeader>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(handleClickSearchUser)} className="flex flex-row gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="twitchUsername"
+                                        rules={{ required: t("SETTINGS_EXCLUSION_LIST_REQUIRED") }}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                placeholder={t("SETTINGS_EXCLUSION_LIST_PLACEHOLDER")}
+                                                className="w-full max-w-md"
+                                            />
+                                        )}
+                                    />
+                                    <Button type="submit" disabled={isSearchingUser} loading={isSearchingUser} className="flex gap-2 min-w-[142px]">
+                                        <SearchIcon className="h-4 w-4" />
+                                        {t("SETTINGS_EXCLUSION_LIST_SEARCH_BUTTON")}
                                     </Button>
-                                </CardContent>
-                            </Card>
-                        ))}
-                        {foundUsers && foundUsers.length === 0 && (
-                            <Card>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground">
-                                        {t("SETTINGS_EXCLUSION_LIST_NO_USERS_FOUND")}
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </DialogContent>
-                </Dialog>
+                                </form>
+                            </Form>
+                            {foundUsers && foundUsers.length > 0 && foundUsers.map((user) => (
+                                <Card>
+                                    <CardContent className="flex items-center gap-4 justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <Avatar>
+                                                <AvatarImage src={user.profile_image_url} alt={user.display_name} />
+                                                <AvatarFallback>{user.display_name.slice(0, 2)}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-bold">{user.display_name}</p>
+                                            </div>
+                                        </div>
+                                        <Button type="submit" loading={isAddingUser} disabled={isAddingUser} variant="destructive" onClick={() => handleAddUserToExclusionList(user)} className="flex gap-2 min-w-[164px]">
+                                            <BanIcon className="h-4 w-4" />
+                                            {t("SETTINGS_EXCLUSION_LIST_ADD_BUTTON")}
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                            {foundUsers && foundUsers.length === 0 && (
+                                <Card>
+                                    <CardContent>
+                                        <p className="text-sm text-muted-foreground">
+                                            {t("SETTINGS_EXCLUSION_LIST_NO_USERS_FOUND")}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
             <Table className="w-full mt-4">
                 <TableHeader>
@@ -192,7 +192,7 @@ export function SettingsExclusionList() {
                                         <AvatarImage src={exclusion.profileImageUrl} alt={exclusion.displayName} />
                                         <AvatarFallback>{exclusion.displayName.slice(0, 2)}</AvatarFallback>
                                     </Avatar>
-                                    <span>{exclusion.username}</span>
+                                    <span>{exclusion.displayName}</span>
                                 </div>
                             </TableCell>
                             <TableCell>
