@@ -106,7 +106,7 @@ export function SettingsExclusionList() {
             <div className="flex flex-row justify-end">
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="default">
+                        <Button variant="outline">
                             <PlusIcon className="h-4 w-4" />
                             {t("SETTINGS_EXCLUSION_LIST_ADD_BUTTON")}
                         </Button>
