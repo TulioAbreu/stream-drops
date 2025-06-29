@@ -46,13 +46,14 @@ export function AppSidebar() {
 
     return (
         <Sidebar>
-            <SidebarHeader />
+            <SidebarHeader className="p-4">
+                <div className="text-2xl font-bold flex flex-row gap-2">
+                    <img src="/icon.png" alt="Logo" className="w-8 h-8 inline-block" />
+                    StreamDrops
+                </div>
+            </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarHeader className="text-2xl font-bold flex flex-row">
-                        <img src="/icon.png" alt="Logo" className="w-8 h-8 mr-2 inline-block" />
-                        StreamDrops
-                    </SidebarHeader>
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {items.map((item) => (
