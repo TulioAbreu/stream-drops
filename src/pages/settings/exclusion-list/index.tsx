@@ -59,6 +59,14 @@ export function SettingsExclusionList() {
                 username: user.login,
             };
 
+            const currentExclusions = await getExclusions();
+            const isAlreadyExcluded = currentExclusions.some((exclusion) => exclusion.username === user.login);
+
+            if (isAlreadyExcluded) {
+                toast.error(t("SETTINGS_EXCLUSION_LIST_ALREADY_EXISTS", { username: user.login }));
+                return;
+            }
+
             await addExclusion(exclusionItem);
             await fetchExclusions();
 

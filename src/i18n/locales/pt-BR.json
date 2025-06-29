@@ -60,5 +60,6 @@
     "SETTINGS_EXCLUSION_LIST_ADD_SUCCESS": "Usuário {{username}} adicionado à lista de exclusão.",
     "SETTINGS_EXCLUSION_LIST_EMPTY": "Nenhum usuário na lista de exclusão.",
     "SETTINGS_EXCLUSION_LIST_REMOVE_TOOLTIP": "Remover da lista de exclusão",
-    "FOLLOWER_GIVEAWAY_FORM_EXCLUDE_USER": "Excluir usuários de sorteios"
+    "FOLLOWER_GIVEAWAY_FORM_EXCLUDE_USER": "Excluir usuários de sorteios",
+    "SETTINGS_EXCLUSION_LIST_ALREADY_EXISTS": "O usuário {{username}} já está na lista de exclusão."
 }
