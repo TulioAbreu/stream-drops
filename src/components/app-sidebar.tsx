@@ -68,7 +68,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="text-2xl font-bold flex flex-row gap-2">
           <img src="/icon.png" alt="Logo" className="w-8 h-8 inline-block" />
-          StreamDrops
+          {t("APP_NAME")}
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -111,21 +111,21 @@ export function AppSidebar() {
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
-                      <DialogTitle>Logout</DialogTitle>
+                      <DialogTitle>{t("SIDEBAR_LOGOUT_DIALOG_TITLE")}</DialogTitle>
                       <DialogDescription>
-                        Ao sair da conta, o histórico dos seus sorteios será apagado. Deseja continuar?
+                        {t("SIDEBAR_LOGOUT_DIALOG_DESCRIPTION")}
                       </DialogDescription>
                       <DialogFooter>
                         <Button variant="destructive" onClick={handleLogout}>
                           <LogOutIcon className="h-4 w-4" />
-                          Sair da conta
+                          {t("SIDEBAR_LOGOUT_BUTTON")}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  Logout
+                  {t("SIDEBAR_LOGOUT_BUTTON_TOOLTIP")}
                 </TooltipContent>
               </Tooltip>
             </div>
