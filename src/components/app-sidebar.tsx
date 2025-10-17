@@ -22,6 +22,7 @@ import { Skeleton } from "./ui/skeleton";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from "./ui/dialog";
 
 interface NavbarItem {
   title: string;
@@ -51,6 +52,16 @@ export function AppSidebar() {
   const { t } = useTranslation();
   const { userData } = useTwitchApi();
   const location = useLocation();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    indexedDB.databases().then((dbs) => {
+      dbs.forEach((db) => {
+        indexedDB.deleteDatabase(db.name!);
+      });
+    });
+    window.location.href = "/";
+  }
 
   return (
     <Sidebar>
@@ -93,9 +104,25 @@ export function AppSidebar() {
               </div>
               <Tooltip>
                 <TooltipTrigger>
-                  <Button variant="ghost" size="icon">
-                    <LogOutIcon className="h-4 w-4" />
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <LogOutIcon className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogTitle>Logout</DialogTitle>
+                      <DialogDescription>
+                        Ao sair da conta, o histórico dos seus sorteios será apagado. Deseja continuar?
+                      </DialogDescription>
+                      <DialogFooter>
+                        <Button variant="destructive" onClick={handleLogout}>
+                          <LogOutIcon className="h-4 w-4" />
+                          Sair da conta
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   Logout
