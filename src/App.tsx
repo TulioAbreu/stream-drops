@@ -10,6 +10,9 @@ import { FollowerGiveaway } from "./pages/follower-giveaway"
 import { EditFollowerGiveawayPage } from "./pages/follower-giveaway/[id]/edit"
 import { Toaster } from "./components/ui/sonner"
 import { SettingsPage } from "./pages/settings"
+import { ChatGiveawayCreate } from "./pages/chat-giveaway/create"
+import { ChatGiveawayDetail } from "./pages/chat-giveaway/[id]"
+import { ChatGiveaway } from "./pages/chat-giveaway"
 
 export function App() {
     return (
@@ -26,6 +29,9 @@ export function App() {
                     <Route path="/dashboard/follower-giveaway/create" element={<FollowerGiveawayCreate />} />
                     <Route path="/dashboard/follower-giveaway/:id/edit" element={<EditFollowerGiveawayPage />} />
                     <Route path="/dashboard/follower-giveaway/:id" element={<FollowerGiveawayId />} />
+                    <Route path="/dashboard/chat-giveaway" element={<ChatGiveaway />} />
+                    <Route path="/dashboard/chat-giveaway/create" element={<ChatGiveawayCreate />} />
+                    <Route path="/dashboard/chat-giveaway/:id" element={<ChatGiveawayDetail />} />
                 </Routes>
             </BrowserRouter>
         </ThemeProvider>

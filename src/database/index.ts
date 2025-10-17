@@ -1,5 +1,5 @@
 const DATABASE_NAME = "stream-drops-db";
-const DATABASE_VERSION = 4;
+const DATABASE_VERSION = 6;
 
 interface DatabaseTable {
     name: string;
@@ -31,6 +31,13 @@ const stores: DatabaseTable[] = [
     },
     {
         name: "giveaways",
+        primaryKey: {
+            keyPath: "id",
+            options: { keyPath: "id" }
+        }
+    },
+    {
+        name: "chat-giveaways",
         primaryKey: {
             keyPath: "id",
             options: { keyPath: "id" }

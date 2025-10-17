@@ -1,0 +1,114 @@
+// Mock chat data generator
+import type { ChatMessage, ChatParticipant } from "../types";
+import type { TwitchSubscriptionTier } from "@/service/twitch/types";
+
+const mockUsernames = [
+    "StreamMaster",
+    "GamerPro123",
+    "NightOwl",
+    "TechWizard",
+    "CoolCat88",
+    "PixelWarrior",
+    "ChillVibes",
+    "EpicGamer",
+    "CodeNinja",
+    "MusicLover",
+    "ArtisticSoul",
+    "SpeedRunner",
+    "RetroGamer",
+    "FunnyGuy",
+    "QuietObserver",
+];
+
+const mockAvatars = [
+    "https://static-cdn.jtvnw.net/jtv_user_pictures/aac6fec6-f3df-4b7d-9d68-f8e7d48fce32-profile_image-70x70.png",
+    "https://static-cdn.jtvnw.net/jtv_user_pictures/a14c3f4b-8f3e-4c5d-9f3a-7b8c9d0e1f2a-profile_image-70x70.png",
+    "https://static-cdn.jtvnw.net/user-default-pictures-uv/ebe4cd89-b4f4-4cd9-adac-2f30151b4209-profile_image-70x70.png",
+];
+
+const mockMessages = [
+    "Adorando a stream! 💜",
+    "Que gameplay incrível!",
+    "Muito bom!",
+    "Top demais esse jogo",
+    "Primeira vez aqui, adorando!",
+    "Já sou fã!",
+    "Melhor stream!",
+    "Conteúdo de qualidade 🔥",
+    "Continue assim!",
+    "Show demais!",
+];
+
+export function generateMockChatMessages(count: number = 50): ChatMessage[] {
+    const messages: ChatMessage[] = [];
+    const now = Date.now();
+
+    for (let i = 0; i < count; i++) {
+        const username = mockUsernames[Math.floor(Math.random() * mockUsernames.length)];
+        const tier = getMockTier();
+
+        messages.push({
+            id: `msg-${i}-${Date.now()}`,
+            userId: `user-${Math.floor(Math.random() * 1000)}`,
+            userName: username.toLowerCase(),
+            displayName: username,
+            avatar: mockAvatars[Math.floor(Math.random() * mockAvatars.length)],
+            message: mockMessages[Math.floor(Math.random() * mockMessages.length)],
+            timestamp: new Date(now - (count - i) * 5000).toISOString(),
+            tier,
+        });
+    }
+
+    return messages;
+}
+
+function getMockTier(): TwitchSubscriptionTier | "free" {
+    const rand = Math.random();
+    if (rand < 0.4) return "free";
+    if (rand < 0.7) return "1000";
+    if (rand < 0.9) return "2000";
+    return "3000";
+}
+
+export function convertMessageToParticipant(
+    message: ChatMessage,
+    keyword: string
+): ChatParticipant | null {
+    // Check if message contains the keyword
+    if (!message.message.toLowerCase().includes(keyword.toLowerCase())) {
+        return null;
+    }
+
+    return {
+        id: message.userId,
+        name: message.userName,
+        displayName: message.displayName,
+        avatar: message.avatar,
+        tier: message.tier,
+        message: message.message,
+        timestamp: message.timestamp,
+    };
+}
+
+export function filterParticipantsByMinimumTier(
+    participants: ChatParticipant[],
+    minimumTier: TwitchSubscriptionTier | "free"
+): ChatParticipant[] {
+    if (minimumTier === "free") {
+        return participants;
+    }
+
+    const tierOrder: Record<TwitchSubscriptionTier | "free", number> = {
+        "free": 0,
+        "1000": 1,
+        "2000": 2,
+        "3000": 3,
+    };
+
+    const minTierValue = tierOrder[minimumTier];
+
+    return participants.filter(p => {
+        const participantTierValue = tierOrder[p.tier];
+        return participantTierValue >= minTierValue;
+    });
+}
