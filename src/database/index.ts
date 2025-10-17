@@ -1,27 +1,39 @@
 const DATABASE_NAME = "stream-drops-db";
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 
 interface DatabaseTable {
     name: string;
-    index: {
+    primaryKey: {
+        keyPath: string;
+        options?: IDBObjectStoreParameters;
+    };
+    indexes?: {
+        name: string;
         keyPath: string;
         options?: IDBIndexParameters;
-    }
+    }[];
 }
 
 const stores: DatabaseTable[] = [
     {
         name: "exclusion-list",
-        index: {
+        primaryKey: {
             keyPath: "twitchUserId",
-            options: { unique: true }
-        }
+            options: { keyPath: "twitchUserId" }
+        },
+        indexes: [
+            {
+                name: "username",
+                keyPath: "username",
+                options: { unique: true }
+            }
+        ]
     },
     {
         name: "giveaways",
-        index: {
+        primaryKey: {
             keyPath: "id",
-            options: { unique: true }
+            options: { keyPath: "id" }
         }
     }
 ];
@@ -35,9 +47,13 @@ export function openDb(): Promise<IDBDatabase> {
 
             stores.forEach(store => {
                 if (!db.objectStoreNames.contains(store.name)) {
-                    const objectStore = db.createObjectStore(store.name, { keyPath: store.index.keyPath });
-                    if (store.index.options) {
-                        objectStore.createIndex(store.index.keyPath, store.index.keyPath, store.index.options);
+                    const objectStore = db.createObjectStore(store.name, store.primaryKey.options);
+
+                    // Create indexes if they exist
+                    if (store.indexes) {
+                        store.indexes.forEach(index => {
+                            objectStore.createIndex(index.name, index.keyPath, index.options);
+                        });
                     }
                 }
             });
