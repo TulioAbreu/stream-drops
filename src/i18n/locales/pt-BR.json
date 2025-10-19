@@ -61,5 +61,11 @@
     "SETTINGS_EXCLUSION_LIST_EMPTY": "Nenhum usuário na lista de exclusão.",
     "SETTINGS_EXCLUSION_LIST_REMOVE_TOOLTIP": "Remover da lista de exclusão",
     "FOLLOWER_GIVEAWAY_FORM_EXCLUDE_USER": "Excluir usuários de sorteios",
-    "SETTINGS_EXCLUSION_LIST_ALREADY_EXISTS": "O usuário {{username}} já está na lista de exclusão."
+    "SETTINGS_EXCLUSION_LIST_ALREADY_EXISTS": "O usuário {{username}} já está na lista de exclusão.",
+    "SETTINGS_EXCLUSION_LIST_REQUIRED": "O nome de usuário é obrigatório.",
+    "SIDEBAR_LOGOUT_BUTTON_TOOLTIP": "Sair da conta",
+    "SIDEBAR_LOGOUT_DIALOG_TITLE": "Confirmar Logout",
+    "SIDEBAR_LOGOUT_DIALOG_DESCRIPTION": "Ao sair da conta, o histórico dos seus sorteios será apagado. Deseja continuar?",
+    "SIDEBAR_LOGOUT_BUTTON": "Sair da conta",
+    "APP_NAME": "StreamDrops"
 }
