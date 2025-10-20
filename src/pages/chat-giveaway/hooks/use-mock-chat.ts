@@ -92,17 +92,17 @@ export function convertMessageToParticipant(
 
 export function filterParticipantsByMinimumTier(
     participants: ChatParticipant[],
-    minimumTier: TwitchSubscriptionTier | "free"
+    minimumTier: SubscriptionTierWithFreeType
 ): ChatParticipant[] {
-    if (minimumTier === "free") {
+    if (minimumTier === SubscriptionTierWithFree.FREE) {
         return participants;
     }
 
-    const tierOrder: Record<TwitchSubscriptionTier | "free", number> = {
-        "free": 0,
-        "1000": 1,
-        "2000": 2,
-        "3000": 3,
+    const tierOrder: Record<SubscriptionTierWithFreeType, number> = {
+        [SubscriptionTierWithFree.FREE]: 0,
+        [SubscriptionTierWithFree.TIER_1]: 1,
+        [SubscriptionTierWithFree.TIER_2]: 2,
+        [SubscriptionTierWithFree.TIER_3]: 3,
     };
 
     const minTierValue = tierOrder[minimumTier];
