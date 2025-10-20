@@ -16,6 +16,7 @@ import { drawWinner } from "@/service/chat-giveaway";
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl } from "@/lib/utils";
+import { SubscriptionTierWithFree } from "@/service/twitch/types";
 
 export function ChatGiveawayDetail() {
     const { id } = useParams<{ id: string }>();
@@ -112,10 +113,10 @@ export function ChatGiveawayDetail() {
     }
 
     const tierLabels: Record<string, string> = {
-        "free": "Free",
-        "1000": "Tier 1",
-        "2000": "Tier 2",
-        "3000": "Tier 3",
+        [SubscriptionTierWithFree.FREE]: "Free",
+        [SubscriptionTierWithFree.TIER_1]: "Tier 1",
+        [SubscriptionTierWithFree.TIER_2]: "Tier 2",
+        [SubscriptionTierWithFree.TIER_3]: "Tier 3",
     };
 
     return (

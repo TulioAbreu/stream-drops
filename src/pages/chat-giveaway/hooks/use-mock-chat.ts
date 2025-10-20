@@ -1,6 +1,6 @@
 // Mock chat data generator
 import type { ChatMessage, ChatParticipant } from "../types";
-import type { TwitchSubscriptionTier } from "@/service/twitch/types";
+import { TwitchSubscriptionTier, SubscriptionTierWithFree, type SubscriptionTierWithFree as SubscriptionTierWithFreeType } from "@/service/twitch/types";
 
 const mockUsernames = [
     "StreamMaster",
@@ -62,12 +62,12 @@ export function generateMockChatMessages(count: number = 50): ChatMessage[] {
     return messages;
 }
 
-function getMockTier(): TwitchSubscriptionTier | "free" {
+function getMockTier(): SubscriptionTierWithFreeType {
     const rand = Math.random();
-    if (rand < 0.4) return "free";
-    if (rand < 0.7) return "1000";
-    if (rand < 0.9) return "2000";
-    return "3000";
+    if (rand < 0.4) return SubscriptionTierWithFree.FREE;
+    if (rand < 0.7) return TwitchSubscriptionTier.TIER_1;
+    if (rand < 0.9) return TwitchSubscriptionTier.TIER_2;
+    return TwitchSubscriptionTier.TIER_3;
 }
 
 export function convertMessageToParticipant(

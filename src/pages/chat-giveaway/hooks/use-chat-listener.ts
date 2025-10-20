@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import tmi from "tmi.js";
 import type { ChatMessage, ChatParticipant } from "../types";
-import type { TwitchSubscriptionTier } from "@/service/twitch/types";
+import { TwitchSubscriptionTier, SubscriptionTierWithFree, type SubscriptionTierWithFree as SubscriptionTierWithFreeType } from "@/service/twitch/types";
 
 interface UseChatListenerOptions {
     channel: string;
     keyword: string;
-    minimumTier: TwitchSubscriptionTier | "free";
+    minimumTier: SubscriptionTierWithFreeType;
 }
 
 interface UseChatListenerReturn {
@@ -38,31 +38,31 @@ export function useChatListener({
     const clientRef = useRef<tmi.Client | null>(null);
 
     // Function to determine user tier based on badges
-    const getUserTier = useCallback((badges: tmi.Badges | undefined): TwitchSubscriptionTier | "free" => {
-        if (!badges) return "free";
+    const getUserTier = useCallback((badges: tmi.Badges | undefined): SubscriptionTierWithFreeType => {
+        if (!badges) return SubscriptionTierWithFree.FREE;
         
         if (badges.subscriber) {
             // Subscriber badge format is typically "tier/months"
             // We need to check the tier from the badge info
             const subscriberBadge = badges.subscriber;
-            if (subscriberBadge.includes("3")) return "3000";
-            if (subscriberBadge.includes("2")) return "2000";
-            if (subscriberBadge.includes("1")) return "1000";
-            return "1000"; // Default to tier 1 if subscriber but unclear tier
+            if (subscriberBadge.includes("3")) return TwitchSubscriptionTier.TIER_3;
+            if (subscriberBadge.includes("2")) return TwitchSubscriptionTier.TIER_2;
+            if (subscriberBadge.includes("1")) return TwitchSubscriptionTier.TIER_1;
+            return TwitchSubscriptionTier.TIER_1; // Default to tier 1 if subscriber but unclear tier
         }
         
-        return "free";
+        return SubscriptionTierWithFree.FREE;
     }, []);
 
     // Function to check if user meets minimum tier requirement
-    const meetsMinimumTier = useCallback((userTier: TwitchSubscriptionTier | "free"): boolean => {
-        if (minimumTier === "free") return true;
+    const meetsMinimumTier = useCallback((userTier: SubscriptionTierWithFreeType): boolean => {
+        if (minimumTier === SubscriptionTierWithFree.FREE) return true;
         
-        const tierOrder: Record<TwitchSubscriptionTier | "free", number> = {
-            "free": 0,
-            "1000": 1,
-            "2000": 2,
-            "3000": 3,
+        const tierOrder: Record<SubscriptionTierWithFreeType, number> = {
+            [SubscriptionTierWithFree.FREE]: 0,
+            [SubscriptionTierWithFree.TIER_1]: 1,
+            [SubscriptionTierWithFree.TIER_2]: 2,
+            [SubscriptionTierWithFree.TIER_3]: 3,
         };
         
         return tierOrder[userTier] >= tierOrder[minimumTier];

@@ -1,11 +1,11 @@
-import type { TwitchSubscriptionTier } from "@/service/twitch/types";
+import type { TwitchSubscriptionTier, SubscriptionTierWithFree } from "@/service/twitch/types";
 
 export interface ChatGiveawayForm {
     title: string;
     description: string;
     keyword: string;
     cost: number;
-    minimumTier: TwitchSubscriptionTier | "free";
+    minimumTier: SubscriptionTierWithFree;
     subscriberMultiplier: Record<TwitchSubscriptionTier, number>;
 }
 
@@ -14,7 +14,7 @@ export interface ChatParticipant {
     name: string;
     displayName: string;
     avatar: string;
-    tier: TwitchSubscriptionTier | "free";
+    tier: SubscriptionTierWithFree;
     message: string;
     timestamp: string;
 }
@@ -27,5 +27,5 @@ export interface ChatMessage {
     avatar: string;
     message: string;
     timestamp: string;
-    tier: TwitchSubscriptionTier | "free";
+    tier: SubscriptionTierWithFree;
 }
