@@ -182,7 +182,7 @@ export function ChatGiveawayDetail() {
                             <CardDescription>
                                 {nameFilter.trim() ? (
                                     <>
-                                        {participants.length} participantes encontrados 
+                                        {participants.length} participantes encontrados
                                         <span className="text-muted-foreground">
                                             {" "}(de {allParticipants.length} total)
                                         </span>
