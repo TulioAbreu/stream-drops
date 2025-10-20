@@ -10,12 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Sparkles } from "lucide-react";
 import { AlertCircle } from "lucide-react";
-import {
-    generateMockChatMessages,
-    convertMessageToParticipant,
-    filterParticipantsByMinimumTier
-} from "../hooks/use-mock-chat";
-import type { ChatParticipant } from "../types";
+import { useChatListener } from "../hooks/use-chat-listener";
 import { drawWinner } from "@/service/chat-giveaway";
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
@@ -27,8 +22,20 @@ export function ChatGiveawayDetail() {
     const { getChatGiveaway, updateChatGiveaway } = useChatGiveawayDb();
     const { userData } = useTwitchApi();
     const [giveaway, setGiveaway] = useState<ChatGiveawayFormData | null>(null);
-    const [participants, setParticipants] = useState<ChatParticipant[]>([]);
     const [isDrawing, setIsDrawing] = useState(false);
+
+    // Use chat listener when we have user data and giveaway data
+    const {
+        participants,
+        isConnected,
+        connectionStatus,
+        error: chatError,
+        reconnect
+    } = useChatListener({
+        channel: userData?.login || "",
+        keyword: giveaway?.keyword || "",
+        minimumTier: giveaway?.minimumTier || "free",
+    });
 
     useEffect(() => {
         if (!id) return;
@@ -40,27 +47,6 @@ export function ChatGiveawayDetail() {
                 return;
             }
             setGiveaway(data);
-
-            // Generate mock chat messages for participants (não exibimos mais as mensagens)
-            const messages = generateMockChatMessages(50);
-
-            // Convert messages to participants based on keyword
-            const newParticipants = messages
-                .map(msg => convertMessageToParticipant(msg, data.keyword))
-                .filter((p): p is ChatParticipant => p !== null);
-
-            // Filter by minimum tier
-            const eligibleParticipants = filterParticipantsByMinimumTier(
-                newParticipants,
-                data.minimumTier
-            );
-
-            // Remove duplicates by user ID
-            const uniqueParticipants = Array.from(
-                new Map(eligibleParticipants.map(p => [p.id, p])).values()
-            );
-
-            setParticipants(uniqueParticipants);
         };
 
         loadGiveaway();
@@ -171,9 +157,31 @@ export function ChatGiveawayDetail() {
                     {/* Participants Column */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Participantes</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                Participantes
+                                {connectionStatus === "connected" && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        Conectado
+                                    </Badge>
+                                )}
+                                {connectionStatus === "connecting" && (
+                                    <Badge variant="outline" className="text-xs">
+                                        Conectando...
+                                    </Badge>
+                                )}
+                                {connectionStatus === "error" && (
+                                    <Badge variant="destructive" className="text-xs">
+                                        Erro
+                                    </Badge>
+                                )}
+                            </CardTitle>
                             <CardDescription>
                                 {participants.length} participantes elegíveis
+                                {chatError && (
+                                    <p className="text-destructive text-sm mt-1">
+                                        Erro no chat: {chatError}
+                                    </p>
+                                )}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -208,9 +216,33 @@ export function ChatGiveawayDetail() {
                     {/* Chat Column */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Chat da Twitch</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                Chat da Twitch
+                                {isConnected && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        Ao vivo
+                                    </Badge>
+                                )}
+                            </CardTitle>
                             <CardDescription>
                                 {userData?.login ? `Canal: ${userData.login}` : "Carregando canal..."}
+                                {!isConnected && userData?.login && (
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-sm text-muted-foreground">
+                                            Status: {connectionStatus}
+                                        </span>
+                                        {connectionStatus === "error" && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={reconnect}
+                                                className="h-6 px-2 text-xs"
+                                            >
+                                                Reconectar
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
