@@ -31,7 +31,6 @@ export function ChatGiveawayCreate() {
             title: "",
             description: "",
             keyword: "",
-            cost: 0,
             minimumTier: "free",
             subscriberMultiplier: {
                 "1000": 1,
@@ -52,7 +51,7 @@ export function ChatGiveawayCreate() {
                 title: data.title,
                 description: data.description,
                 keyword: data.keyword,
-                cost: data.cost,
+                cost: 0,
                 minimumTier: data.minimumTier,
                 subscriberMultiplier: data.subscriberMultiplier,
                 winners: [],
@@ -102,17 +101,6 @@ export function ChatGiveawayCreate() {
                             placeholder="!sorteio"
                             {...form.register("keyword", {
                                 required: "Palavra-chave é obrigatória",
-                            })}
-                        />
-                    </div>
-
-                    <div className={FIELD_CONTAINER}>
-                        <Label>Custo (pontos do canal)</Label>
-                        <Input
-                            type="number"
-                            placeholder="0"
-                            {...form.register("cost", {
-                                valueAsNumber: true,
                             })}
                         />
                     </div>

@@ -132,9 +132,6 @@ export function ChatGiveawayDetail() {
                         <div className="flex gap-2 mt-3">
                             <Badge variant="outline">Palavra-chave: {giveaway.keyword}</Badge>
                             <Badge variant="outline">Tier mínimo: {tierLabels[giveaway.minimumTier]}</Badge>
-                            {giveaway.cost > 0 && (
-                                <Badge variant="outline">Custo: {giveaway.cost} pontos</Badge>
-                            )}
                         </div>
                     </div>
                     <Button
