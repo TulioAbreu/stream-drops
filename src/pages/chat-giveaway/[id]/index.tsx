@@ -9,21 +9,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Sparkles } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import {
     generateMockChatMessages,
     convertMessageToParticipant,
     filterParticipantsByMinimumTier
 } from "../hooks/use-mock-chat";
-import type { ChatMessage, ChatParticipant } from "../types";
+import type { ChatParticipant } from "../types";
 import { drawWinner } from "@/service/chat-giveaway";
 import { toast } from "sonner";
+import { useTwitchApi } from "@/hooks/use-twitch-api";
+import { composeTwitchChatEmbedUrl } from "@/lib/utils";
 
 export function ChatGiveawayDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { getChatGiveaway, updateChatGiveaway } = useChatGiveawayDb();
+    const { userData } = useTwitchApi();
     const [giveaway, setGiveaway] = useState<ChatGiveawayFormData | null>(null);
-    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [participants, setParticipants] = useState<ChatParticipant[]>([]);
     const [isDrawing, setIsDrawing] = useState(false);
 
@@ -38,9 +41,8 @@ export function ChatGiveawayDetail() {
             }
             setGiveaway(data);
 
-            // Generate mock chat messages
+            // Generate mock chat messages for participants (não exibimos mais as mensagens)
             const messages = generateMockChatMessages(50);
-            setChatMessages(messages);
 
             // Convert messages to participants based on keyword
             const newParticipants = messages
@@ -206,44 +208,29 @@ export function ChatGiveawayDetail() {
                     {/* Chat Column */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Chat</CardTitle>
+                            <CardTitle>Chat da Twitch</CardTitle>
                             <CardDescription>
-                                {chatMessages.length} mensagens
+                                {userData?.login ? `Canal: ${userData.login}` : "Carregando canal..."}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <ScrollArea className="h-[500px] pr-4">
-                                <div className="space-y-3">
-                                    {chatMessages.map((message) => (
-                                        <div
-                                            key={message.id}
-                                            className="flex items-start gap-3 p-2 rounded-lg hover:bg-accent"
-                                        >
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={message.avatar} />
-                                                <AvatarFallback>
-                                                    {message.displayName[0].toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-medium text-sm">
-                                                        {message.displayName}
-                                                    </p>
-                                                    {message.tier !== "free" && (
-                                                        <Badge variant="secondary" className="text-xs">
-                                                            {tierLabels[message.tier]}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {message.message}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
+                            {userData?.login ? (
+                                <iframe
+                                    src={composeTwitchChatEmbedUrl(userData.login)}
+                                    className="w-full h-[500px] border-0 rounded-lg"
+                                    title={`Chat do canal ${userData.login}`}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-[500px] bg-muted rounded-lg p-6">
+                                    <AlertCircle className="h-8 w-8 text-destructive mb-3" />
+                                    <p className="text-center text-destructive font-medium">
+                                        Não foi possível montar o chat: dados do usuário ausentes.
+                                    </p>
+                                    <p className="text-center text-sm text-muted-foreground mt-2">
+                                        Verifique se você está autenticado com a conta Twitch correta.
+                                    </p>
                                 </div>
-                            </ScrollArea>
+                            )}
                         </CardContent>
                     </Card>
 
