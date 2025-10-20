@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Trophy, Sparkles } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
@@ -27,10 +28,13 @@ export function ChatGiveawayDetail() {
     // Use chat listener when we have user data and giveaway data
     const {
         participants,
+        allParticipants,
         isConnected,
         connectionStatus,
         error: chatError,
-        reconnect
+        reconnect,
+        filterParticipants,
+        nameFilter
     } = useChatListener({
         channel: userData?.login || "",
         keyword: giveaway?.keyword || "",
@@ -176,7 +180,16 @@ export function ChatGiveawayDetail() {
                                 )}
                             </CardTitle>
                             <CardDescription>
-                                {participants.length} participantes elegíveis
+                                {nameFilter.trim() ? (
+                                    <>
+                                        {participants.length} participantes encontrados 
+                                        <span className="text-muted-foreground">
+                                            {" "}(de {allParticipants.length} total)
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>{participants.length} participantes elegíveis</>
+                                )}
                                 {chatError && (
                                     <p className="text-destructive text-sm mt-1">
                                         Erro no chat: {chatError}
@@ -185,7 +198,15 @@ export function ChatGiveawayDetail() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <ScrollArea className="h-[500px] pr-4">
+                            <div className="space-y-3">
+                                <Input
+                                    placeholder="Filtrar por nome..."
+                                    value={nameFilter}
+                                    onChange={(e) => filterParticipants(e.target.value)}
+                                    className="h-8"
+                                />
+                            </div>
+                            <ScrollArea className="h-[460px] pr-4 mt-3">
                                 <div className="space-y-3">
                                     {participants.map((participant) => (
                                         <div

@@ -11,12 +11,15 @@ interface UseChatListenerOptions {
 
 interface UseChatListenerReturn {
     participants: ChatParticipant[];
+    allParticipants: ChatParticipant[];
     messages: ChatMessage[];
     isConnected: boolean;
     connectionStatus: "connecting" | "connected" | "disconnected" | "error";
     error: string | null;
     reconnect: () => void;
     clearParticipants: () => void;
+    filterParticipants: (nameFilter: string) => void;
+    nameFilter: string;
 }
 
 export function useChatListener({
@@ -24,7 +27,9 @@ export function useChatListener({
     keyword,
     minimumTier
 }: UseChatListenerOptions): UseChatListenerReturn {
+    const [allParticipants, setAllParticipants] = useState<ChatParticipant[]>([]);
     const [participants, setParticipants] = useState<ChatParticipant[]>([]);
+    const [nameFilter, setNameFilter] = useState<string>("");
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected" | "error">("disconnected");
@@ -159,7 +164,7 @@ export function useChatListener({
                 // Check if this message creates a participant
                 const participant = convertMessageToParticipant(chatMessage);
                 if (participant) {
-                    setParticipants(prev => {
+                    setAllParticipants(prev => {
                         // Remove duplicates by user ID, keep the latest entry
                         const filtered = prev.filter(p => p.id !== participant.id);
                         return [...filtered, participant];
@@ -194,8 +199,32 @@ export function useChatListener({
 
     // Clear participants function
     const clearParticipants = useCallback(() => {
+        setAllParticipants([]);
         setParticipants([]);
     }, []);
+
+    // Filter participants by name/display name
+    const filterParticipants = useCallback((nameFilter: string) => {
+        setNameFilter(nameFilter);
+    }, []);
+
+    // Effect to filter participants when nameFilter or allParticipants change
+    useEffect(() => {
+        if (!nameFilter.trim()) {
+            // Se não há filtro, mostra todos os participantes
+            setParticipants(allParticipants);
+        } else {
+            // Se há filtro, aplica a busca
+            const filtered = allParticipants.filter(participant => {
+                const searchTerm = nameFilter.toLowerCase();
+                return (
+                    participant.name.toLowerCase().includes(searchTerm) ||
+                    participant.displayName.toLowerCase().includes(searchTerm)
+                );
+            });
+            setParticipants(filtered);
+        }
+    }, [nameFilter, allParticipants]);
 
     // Effect to handle connection
     useEffect(() => {
@@ -225,16 +254,19 @@ export function useChatListener({
             }
         });
 
-        setParticipants(newParticipants);
+        setAllParticipants(newParticipants);
     }, [messages, convertMessageToParticipant]);
 
     return {
         participants,
+        allParticipants,
         messages,
         isConnected,
         connectionStatus,
         error,
         reconnect,
         clearParticipants,
+        filterParticipants,
+        nameFilter,
     };
 }
