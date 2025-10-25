@@ -46,7 +46,7 @@ export function WinnerConfirmationModal({
         if (pendingWinner && !confirmationStartTime) {
             setConfirmationStartTime(new Date());
             setElapsedSeconds(0);
-            
+
             // Fire confetti with realistic look
             const count = 200;
             const defaults = {
