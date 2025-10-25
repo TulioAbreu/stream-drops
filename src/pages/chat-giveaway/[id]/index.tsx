@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Trophy, Sparkles } from "lucide-react";
+import { Trophy, Sparkles, ArrowLeftIcon } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
 import { drawWinner } from "@/service/chat-giveaway";
@@ -17,10 +17,12 @@ import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl } from "@/lib/utils";
 import { SubscriptionTierWithFree } from "@/service/twitch/types";
+import { useTranslation } from "react-i18next";
 
 export function ChatGiveawayDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { getChatGiveaway, updateChatGiveaway } = useChatGiveawayDb();
     const { userData } = useTwitchApi();
     const [giveaway, setGiveaway] = useState<ChatGiveawayFormData | null>(null);
@@ -56,6 +58,10 @@ export function ChatGiveawayDetail() {
 
         loadGiveaway();
     }, [id, getChatGiveaway, navigate]);
+
+    const onClickBack = () => {
+        navigate("/dashboard/chat-giveaway");
+    };
 
     const handleDraw = async () => {
         if (!giveaway || participants.length === 0) {
@@ -99,14 +105,14 @@ export function ChatGiveawayDetail() {
 
             toast.success(`🎉 ${winner.displayName} foi sorteado(a)!`);
             setIsDrawing(false);
-        }, 1500);
+        }, 500);
     };
 
     if (!giveaway) {
         return (
             <Layout>
                 <div className="flex items-center justify-center h-full">
-                    <p>Carregando...</p>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
             </Layout>
         );
@@ -121,11 +127,11 @@ export function ChatGiveawayDetail() {
 
     return (
         <Layout>
-            <div className="flex flex-col gap-6">
-                {/* Header */}
-                <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-4">
+                {/* Header with Actions */}
+                <div className="flex flex-row justify-between items-center flex-wrap gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold mb-2">{giveaway.title}</h1>
+                        <h1 className="text-2xl font-bold">{giveaway.title}</h1>
                         {giveaway.description && (
                             <p className="text-muted-foreground">{giveaway.description}</p>
                         )}
@@ -134,24 +140,30 @@ export function ChatGiveawayDetail() {
                             <Badge variant="outline">Tier mínimo: {tierLabels[giveaway.minimumTier]}</Badge>
                         </div>
                     </div>
-                    <Button
-                        onClick={handleDraw}
-                        disabled={isDrawing || participants.length === 0}
-                        size="lg"
-                        className="gap-2"
-                    >
-                        {isDrawing ? (
-                            <>
-                                <Sparkles className="h-5 w-5 animate-spin" />
-                                Sorteando...
-                            </>
-                        ) : (
-                            <>
-                                <Trophy className="h-5 w-5" />
-                                Sortear Vencedor
-                            </>
-                        )}
-                    </Button>
+                    <div className="flex flex-row gap-4 flex-wrap">
+                        <Button variant="ghost" size="lg" onClick={onClickBack}>
+                            <ArrowLeftIcon className="w-4 h-4 mr-2" />
+                            <span>{t("NAVIGATE_BACK", "Voltar")}</span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={handleDraw}
+                            disabled={isDrawing || participants.length === 0}
+                        >
+                            {isDrawing ? (
+                                <>
+                                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                                    Sorteando...
+                                </>
+                            ) : (
+                                <>
+                                    <Trophy className="w-4 h-4 mr-2" />
+                                    Sortear Vencedor
+                                </>
+                            )}
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Three columns */}
