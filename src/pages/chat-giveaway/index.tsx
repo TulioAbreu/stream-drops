@@ -114,8 +114,8 @@ export function ChatGiveaway() {
                             {giveaways.map((giveaway) => (
                                 <TableRow key={giveaway.id}>
                                     <TableCell>
-                                        <a 
-                                            href={`/dashboard/chat-giveaway/${giveaway.id}`} 
+                                        <a
+                                            href={`/dashboard/chat-giveaway/${giveaway.id}`}
                                             className="text-blue-500 hover:underline w-full"
                                         >
                                             {giveaway.title}
@@ -153,9 +153,9 @@ export function ChatGiveaway() {
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="icon" 
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
                                                             onClick={() => onClickEdit(giveaway.id)}
                                                         >
                                                             <Edit2Icon />
@@ -171,9 +171,9 @@ export function ChatGiveaway() {
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <DialogTrigger asChild>
-                                                                <Button 
-                                                                    variant="ghost" 
-                                                                    size="icon" 
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
                                                                     disabled={isDeletingGiveaway}
                                                                 >
                                                                     <TrashIcon className="w-4 h-4" />
