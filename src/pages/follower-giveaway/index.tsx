@@ -58,7 +58,7 @@ export function FollowerGiveaway() {
                     <span>{t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}</span>
                 </Button>
             </div>
-            
+
             {isLoading ? (
                 <div className="flex justify-center items-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -167,16 +167,16 @@ export function FollowerGiveaway() {
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
-                                                            </TooltipProvider>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                        }
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        )}
+                                            </TooltipProvider>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                            }
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
         </Layout>
     )
 }
