@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Wifi, WifiOff } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
@@ -268,30 +269,23 @@ export function ChatGiveawayDetail() {
                                     </Empty>
                                 </div>
                             ) : (
-                                <ScrollArea className="h-[460px] pr-4 mt-3">
-                                    <div className="space-y-3">
-                                        {participants.map((participant) => (
-                                            <div
-                                                key={participant.id}
-                                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent"
-                                            >
-                                                <Avatar>
-                                                    <AvatarImage src={participant.avatar} />
-                                                    <AvatarFallback>
-                                                        {participant.displayName[0].toUpperCase()}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-sm truncate">
-                                                        {participant.displayName}
-                                                    </p>
-                                                    <Badge variant="secondary" className="text-xs">
-                                                        {tierLabels[participant.tier]}
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                <ScrollArea className="h-[460px] mt-3">
+                                    <Table>
+                                        <TableBody>
+                                            {participants.map((participant) => (
+                                                <TableRow key={participant.id}>
+                                                    <TableCell className="font-medium">
+                                                        <div className="flex items-center gap-2">
+                                                            {participant.displayName}
+                                                            <Badge variant="secondary" className="text-xs">
+                                                                {tierLabels[participant.tier]}
+                                                            </Badge>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
                                 </ScrollArea>
                             )}
                         </CardContent>
