@@ -3,17 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogDescription, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database/SubscriptionGiveaway";
 import { DialogTitle } from "@radix-ui/react-dialog";
-import { ArrowRight, Edit2Icon, PlusIcon, TrashIcon } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { ArrowRight, Edit2Icon, Gift, PlusIcon, TrashIcon } from "lucide-react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 
 export function FollowerGiveaway() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const [_isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const { getGiveaways, deleteGiveaway } = useSubscriptionGiveawayDb();
     const [giveaways, setGiveaways] = useState<FollowerGiveawayFormData[]>([]);
     const [isDeletingGiveaway, startIsDeletingGiveawayTransition] = useTransition();
@@ -30,12 +31,12 @@ export function FollowerGiveaway() {
         navigate("/dashboard/follower-giveaway/create");
     };
 
-    const fetchGiveaways = async () => {
+    const fetchGiveaways = useCallback(async () => {
         setIsLoading(true);
         const giveawaysData = await getGiveaways();
         setGiveaways(giveawaysData);
         setIsLoading(false);
-    };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const onClickConfirmDeleteGiveaway = async (giveawayId: string) => {
         startIsDeletingGiveawayTransition(async () => {
@@ -46,7 +47,7 @@ export function FollowerGiveaway() {
 
     useEffect(() => {
         fetchGiveaways();
-    }, []);
+    }, [fetchGiveaways]);
 
     return (
         <Layout>
@@ -57,23 +58,42 @@ export function FollowerGiveaway() {
                     <span>{t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}</span>
                 </Button>
             </div>
-            <div className="flex flex-col gap-4">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{t("FOLLOWER_GIVEAWAY_TABLE_HEADER_TITLE")}</TableHead>
-                            <TableHead>{t("FOLLOWER_GIVEAWAY_TABLE_HEADER_ACTIONS")}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {giveaways.length === 0 ? (
+            
+            {isLoading ? (
+                <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+            ) : giveaways.length === 0 ? (
+                <Empty>
+                    <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                            <Gift />
+                        </EmptyMedia>
+                        <EmptyTitle>
+                            {t("FOLLOWER_GIVEAWAY_EMPTY_TITLE", "Nenhum sorteio criado ainda")}
+                        </EmptyTitle>
+                        <EmptyDescription>
+                            {t("FOLLOWER_GIVEAWAY_EMPTY_DESCRIPTION", "Comece criando seu primeiro sorteio de inscritos para engajar sua comunidade.")}
+                        </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                        <Button onClick={onClickCreate}>
+                            <PlusIcon />
+                            {t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}
+                        </Button>
+                    </EmptyContent>
+                </Empty>
+            ) : (
+                <div className="flex flex-col gap-4">
+                    <Table>
+                        <TableHeader>
                             <TableRow>
-                                <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
-                                    {t("FOLLOWER_GIVEAWAY_TABLE_EMPTY", "Nenhum sorteio cadastrado.")}
-                                </TableCell>
+                                <TableHead>{t("FOLLOWER_GIVEAWAY_TABLE_HEADER_TITLE")}</TableHead>
+                                <TableHead>{t("FOLLOWER_GIVEAWAY_TABLE_HEADER_ACTIONS")}</TableHead>
                             </TableRow>
-                        ) : (
-                            giveaways.map((giveaway) => (
+                        </TableHeader>
+                        <TableBody>
+                            {giveaways.map((giveaway) => (
                                 <TableRow key={giveaway.id}>
                                     <TableCell>
                                         <a href={`/dashboard/follower-giveaway/${giveaway.id}`} className="text-blue-500 hover:underline w-full">
@@ -147,15 +167,16 @@ export function FollowerGiveaway() {
                                                         </DialogFooter>
                                                     </DialogContent>
                                                 </Dialog>
-                                            </TooltipProvider>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))
+                                                            </TooltipProvider>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        }
+                                    </TableBody>
+                                </Table>
+                            </div>
                         )}
-                    </TableBody>
-                </Table>
-            </div>
         </Layout>
     )
 }
