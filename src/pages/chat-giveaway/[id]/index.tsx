@@ -9,7 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Trophy, Sparkles, ArrowLeftIcon } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Trophy, Sparkles, ArrowLeftIcon, XIcon } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
 import { drawWinner } from "@/service/chat-giveaway";
@@ -18,6 +20,8 @@ import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl } from "@/lib/utils";
 import { SubscriptionTierWithFree } from "@/service/twitch/types";
 import { useTranslation } from "react-i18next";
+import type { ChatParticipant } from "../types";
+import { WinnerConfirmationModal } from "./components/winner-confirmation-modal";
 
 export function ChatGiveawayDetail() {
     const { id } = useParams<{ id: string }>();
@@ -28,10 +32,14 @@ export function ChatGiveawayDetail() {
     const [giveaway, setGiveaway] = useState<ChatGiveawayFormData | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
 
+    // Winner confirmation modal state
+    const [pendingWinner, setPendingWinner] = useState<ChatParticipant | null>(null);
+
     // Use chat listener when we have user data and giveaway data
     const {
         participants,
         allParticipants,
+        messages,
         isConnected,
         connectionStatus,
         error: chatError,
@@ -86,26 +94,58 @@ export function ChatGiveawayDetail() {
                 return;
             }
 
-            const newWinner: ChatGiveawayWinner = {
-                id: winner.id,
-                name: winner.displayName,
-                twitchId: winner.id,
-                avatar: winner.avatar,
-                drawnAt: new Date().toISOString(),
-            };
-
-            const updatedGiveaway = {
-                ...giveaway,
-                winners: [...giveaway.winners, newWinner],
-                updatedAt: new Date().toISOString(),
-            };
-
-            await updateChatGiveaway(updatedGiveaway);
-            setGiveaway(updatedGiveaway);
-
-            toast.success(`🎉 ${winner.displayName} foi sorteado(a)!`);
+            // Open confirmation modal instead of adding directly to winners
+            setPendingWinner(winner);
             setIsDrawing(false);
         }, 500);
+    };
+
+    const handleConfirmWinner = async () => {
+        if (!giveaway || !pendingWinner) return;
+
+        const newWinner: ChatGiveawayWinner = {
+            id: pendingWinner.id,
+            name: pendingWinner.displayName,
+            twitchId: pendingWinner.id,
+            avatar: pendingWinner.avatar,
+            drawnAt: new Date().toISOString(),
+        };
+
+        const updatedGiveaway = {
+            ...giveaway,
+            winners: [...giveaway.winners, newWinner],
+            updatedAt: new Date().toISOString(),
+        };
+
+        await updateChatGiveaway(updatedGiveaway);
+        setGiveaway(updatedGiveaway);
+
+        toast.success(`🎉 ${pendingWinner.displayName} foi confirmado como vencedor!`);
+
+        // Reset modal state
+        setPendingWinner(null);
+    };
+
+    const handleCancelWinner = () => {
+        setPendingWinner(null);
+        toast.info("Sorteio cancelado");
+    };
+
+    const onClickRemoveWinner = async (winnerId: string) => {
+        if (!giveaway) return;
+
+        const newWinners = giveaway.winners.filter((winner) => winner.id !== winnerId);
+
+        const updatedGiveaway = {
+            ...giveaway,
+            winners: newWinners,
+            updatedAt: new Date().toISOString(),
+        };
+
+        await updateChatGiveaway(updatedGiveaway);
+        setGiveaway(updatedGiveaway);
+
+        toast.success("Vencedor removido com sucesso!");
     };
 
     if (!giveaway) {
@@ -309,9 +349,18 @@ export function ChatGiveawayDetail() {
                             <ScrollArea className="h-[500px] pr-4">
                                 <div className="space-y-3">
                                     {giveaway.winners.length === 0 ? (
-                                        <p className="text-center text-muted-foreground py-8">
-                                            Nenhum vencedor ainda
-                                        </p>
+                                        <div className="flex items-center justify-center h-full min-h-[400px]">
+                                            <Empty>
+                                                <EmptyHeader>
+                                                    <EmptyMedia variant="icon">
+                                                        <Trophy />
+                                                    </EmptyMedia>
+                                                    <EmptyTitle>
+                                                        Nenhum vencedor ainda
+                                                    </EmptyTitle>
+                                                </EmptyHeader>
+                                            </Empty>
+                                        </div>
                                     ) : (
                                         giveaway.winners.map((winner, index) => (
                                             <div
@@ -335,6 +384,22 @@ export function ChatGiveawayDetail() {
                                                         {new Date(winner.drawnAt).toLocaleTimeString('pt-BR')}
                                                     </p>
                                                 </div>
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => onClickRemoveWinner(winner.id)}
+                                                            >
+                                                                <XIcon className="w-4 h-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            Remover vencedor
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                             </div>
                                         ))
                                     )}
@@ -344,6 +409,14 @@ export function ChatGiveawayDetail() {
                     </Card>
                 </div>
             </div>
+
+            {/* Winner Confirmation Modal */}
+            <WinnerConfirmationModal
+                pendingWinner={pendingWinner}
+                messages={messages}
+                onConfirm={handleConfirmWinner}
+                onCancel={handleCancelWinner}
+            />
         </Layout>
     );
 }
