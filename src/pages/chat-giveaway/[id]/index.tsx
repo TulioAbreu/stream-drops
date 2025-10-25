@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Trophy, Sparkles, ArrowLeftIcon, XIcon } from "lucide-react";
+import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Wifi, WifiOff } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
 import { drawWinner } from "@/service/chat-giveaway";
@@ -256,31 +256,44 @@ export function ChatGiveawayDetail() {
                                     className="h-8"
                                 />
                             </div>
-                            <ScrollArea className="h-[460px] pr-4 mt-3">
-                                <div className="space-y-3">
-                                    {participants.map((participant) => (
-                                        <div
-                                            key={participant.id}
-                                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent"
-                                        >
-                                            <Avatar>
-                                                <AvatarImage src={participant.avatar} />
-                                                <AvatarFallback>
-                                                    {participant.displayName[0].toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-sm truncate">
-                                                    {participant.displayName}
-                                                </p>
-                                                <Badge variant="secondary" className="text-xs">
-                                                    {tierLabels[participant.tier]}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    ))}
+                            {participants.length === 0 ? (
+                                <div className="flex items-center justify-center h-[460px] mt-3">
+                                    <Empty>
+                                        <EmptyHeader>
+                                            <EmptyMedia variant="icon">
+                                                <Sparkles />
+                                            </EmptyMedia>
+                                            <EmptyTitle>Nenhum participante</EmptyTitle>
+                                        </EmptyHeader>
+                                    </Empty>
                                 </div>
-                            </ScrollArea>
+                            ) : (
+                                <ScrollArea className="h-[460px] pr-4 mt-3">
+                                    <div className="space-y-3">
+                                        {participants.map((participant) => (
+                                            <div
+                                                key={participant.id}
+                                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent"
+                                            >
+                                                <Avatar>
+                                                    <AvatarImage src={participant.avatar} />
+                                                    <AvatarFallback>
+                                                        {participant.displayName[0].toUpperCase()}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-medium text-sm truncate">
+                                                        {participant.displayName}
+                                                    </p>
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        {tierLabels[participant.tier]}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -289,29 +302,24 @@ export function ChatGiveawayDetail() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 Chat da Twitch
-                                {isConnected && (
-                                    <Badge variant="secondary" className="text-xs">
-                                        Ao vivo
-                                    </Badge>
+                                {isConnected ? (
+                                    <Wifi className="w-4 h-4 text-muted-foreground" />
+                                ) : (
+                                    <WifiOff className="w-4 h-4 text-destructive animate-pulse" />
                                 )}
                             </CardTitle>
                             <CardDescription>
                                 {userData?.login ? `Canal: ${userData.login}` : "Carregando canal..."}
-                                {!isConnected && userData?.login && (
+                                {!isConnected && userData?.login && connectionStatus === "error" && (
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-sm text-muted-foreground">
-                                            Status: {connectionStatus}
-                                        </span>
-                                        {connectionStatus === "error" && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={reconnect}
-                                                className="h-6 px-2 text-xs"
-                                            >
-                                                Reconectar
-                                            </Button>
-                                        )}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={reconnect}
+                                            className="h-6 px-2 text-xs"
+                                        >
+                                            Reconectar
+                                        </Button>
                                     </div>
                                 )}
                             </CardDescription>

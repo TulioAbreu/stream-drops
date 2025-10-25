@@ -167,7 +167,8 @@ export function useChatListener({
                     setAllParticipants(prev => {
                         // Remove duplicates by user ID, keep the latest entry
                         const filtered = prev.filter(p => p.id !== participant.id);
-                        return [...filtered, participant];
+                        // Add to the beginning so newest participants appear first
+                        return [participant, ...filtered];
                     });
                 }
             });
