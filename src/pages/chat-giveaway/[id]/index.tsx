@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout";
 import { useParams, useNavigate } from "react-router";
 import { useChatGiveawayDb, type ChatGiveawayWinner } from "@/database/ChatGiveaway";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Wifi, WifiOff } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
@@ -23,6 +22,7 @@ import { SubscriptionTierWithFree } from "@/service/twitch/types";
 import { useTranslation } from "react-i18next";
 import type { ChatParticipant } from "../types";
 import { WinnerConfirmationModal } from "./components/winner-confirmation-modal";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export function ChatGiveawayDetail() {
     const { id } = useParams<{ id: string }>();
@@ -35,6 +35,9 @@ export function ChatGiveawayDetail() {
 
     // Winner confirmation modal state
     const [pendingWinner, setPendingWinner] = useState<ChatParticipant | null>(null);
+
+    // Ref for virtual scrolling
+    const parentRef = useRef<HTMLDivElement>(null);
 
     // Use chat listener when we have user data and giveaway data
     const {
@@ -51,6 +54,14 @@ export function ChatGiveawayDetail() {
         channel: userData?.login || "",
         keyword: giveaway?.keyword || "",
         minimumTier: giveaway?.minimumTier || "free",
+    });
+
+    // Virtual scrolling for participants list
+    const rowVirtualizer = useVirtualizer({
+        count: participants.length,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 53, // Estimated row height
+        overscan: 5, // Render 5 items outside visible area
     });
 
     useEffect(() => {
@@ -269,24 +280,42 @@ export function ChatGiveawayDetail() {
                                     </Empty>
                                 </div>
                             ) : (
-                                <ScrollArea className="h-[460px] mt-3">
-                                    <Table>
-                                        <TableBody>
-                                            {participants.map((participant) => (
-                                                <TableRow key={participant.id}>
-                                                    <TableCell className="font-medium">
-                                                        <div className="flex items-center gap-2">
-                                                            {participant.displayName}
-                                                            <Badge variant="secondary" className="text-xs">
-                                                                {tierLabels[participant.tier]}
-                                                            </Badge>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </ScrollArea>
+                                <div
+                                    ref={parentRef}
+                                    className="h-[460px] mt-3 overflow-auto"
+                                >
+                                    <div
+                                        style={{
+                                            height: `${rowVirtualizer.getTotalSize()}px`,
+                                            width: '100%',
+                                            position: 'relative',
+                                        }}
+                                    >
+                                        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                            const participant = participants[virtualRow.index];
+                                            return (
+                                                <div
+                                                    key={virtualRow.key}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        width: '100%',
+                                                        height: `${virtualRow.size}px`,
+                                                        transform: `translateY(${virtualRow.start}px)`,
+                                                    }}
+                                                >
+                                                    <div className="flex items-center gap-2 px-4 py-3 border-b hover:bg-accent font-medium">
+                                                        {participant.displayName}
+                                                        <Badge variant="secondary" className="text-xs">
+                                                            {tierLabels[participant.tier]}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             )}
                         </CardContent>
                     </Card>
