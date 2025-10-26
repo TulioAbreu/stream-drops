@@ -19,6 +19,8 @@ export function useTwitchApi() {
     const [twitchApiClient, setTwitchApiClient] = useState<ReturnType<typeof makeTwitchApiClient> | null>(null);
     const [isTokenValid, setIsTokenValid] = useState(false);
     const [userData, setUserData] = useState<TwitchUser | null>(null);
+    const [expiresAt, setExpiresAt] = useState<number | null>(null);
+    const [expiresInSeconds, setExpiresInSeconds] = useState<number | null>(null);
 
     useEffect(() => {
         if (!twitchAccessToken) {
@@ -26,6 +28,8 @@ export function useTwitchApi() {
             setIsTokenValid(false);
             setUserData(null);
             setTwitchApiClient(null);
+            setExpiresAt(null);
+            setExpiresInSeconds(null);
             return;
         }
 
@@ -58,6 +62,8 @@ export function useTwitchApi() {
                             profileImageUrl: user.profile_image_url,
                             expiresIn: expires_in,
                         });
+                        setExpiresAt(Date.now() + expires_in * 1000);
+                        setExpiresInSeconds(expires_in);
                     } else {
                         console.error("Erro ao obter dados do usuário:", userResult.isErr() && userResult.error);
                         setUserData(null);
@@ -67,12 +73,16 @@ export function useTwitchApi() {
                     setIsTokenValid(false);
                     setUserData(null);
                     setTwitchApiClient(null);
+                    setExpiresAt(null);
+                    setExpiresInSeconds(null);
                 }
             } else {
                 console.error("Token inválido ou expirado.");
                 setIsTokenValid(false);
                 setUserData(null);
                 setTwitchApiClient(null);
+                setExpiresAt(null);
+                setExpiresInSeconds(null);
             }
         };
 
@@ -93,5 +103,5 @@ export function useTwitchApi() {
         return twitchApiClient.getUsers({ login: userName });
     }
 
-    return { twitchApiClient, isTokenValid, userData, getUserByLogin };
+    return { twitchApiClient, isTokenValid, userData, getUserByLogin, expiresAt, expiresInSeconds };
 }
