@@ -50,7 +50,6 @@ export function LoginPage() {
 
     useEffect(() => {
         function handleMessage(event: MessageEvent) {
-            // Garante que a mensagem veio do mesmo origin
             if (event.origin !== window.location.origin) return;
             if (event.data?.type === "twitch-auth" && event.data.accessToken) {
                 setTwitchAccessToken(event.data.accessToken);
