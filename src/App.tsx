@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router"
 import { ThemeProvider } from "./components/theme-provider"
-import { LoginPage } from "./pages/login"
+import { LoginPage } from "./pages/login/index"
 import { DashboardPage } from "./pages/dashboard"
 import { FollowerGiveawayCreate } from "./pages/follower-giveaway/create"
 import { LoginRedirectPage } from "./pages/login-redirect"
