@@ -9,12 +9,13 @@ import { AvatarImage } from "@radix-ui/react-avatar";
 import { CheckIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { composeTwitchAuthorizationURL } from "./utils/compose-authorization-url";
 
-const AUTHORIZATION_URL = new URL("/oauth2/authorize", "https://id.twitch.tv");
-AUTHORIZATION_URL.searchParams.set("client_id", import.meta.env.VITE_TWITCH_CLIENT_ID);
-AUTHORIZATION_URL.searchParams.set("redirect_uri", import.meta.env.VITE_TWITCH_REDIRECT_URL);
-AUTHORIZATION_URL.searchParams.set("response_type", "token");
-AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions");
+const AUTHORIZATION_URL = composeTwitchAuthorizationURL({
+    twitchClientId: import.meta.env.VITE_TWITCH_CLIENT_ID,
+    redirectUri: import.meta.env.VITE_TWITCH_REDIRECT_URL,
+    scope: "channel:read:subscriptions",
+});
 
 export function LoginPage() {
     const { t } = useTranslation();
