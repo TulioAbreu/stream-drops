@@ -39,17 +39,37 @@ export function useExclusionListDb() {
         return new Promise<void>((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
             const store = tx.objectStore(STORE_NAME);
-            const index = store.index("username");
-            const req = index.get(username);
-            req.onsuccess = () => {
-                if (req.result) {
-                    store.delete(req.result.twitchUserId);
-                    tx.oncomplete = () => resolve();
-                } else {
-                    reject(new Error(`Exclusion with username ${username} not found`));
-                }
-            };
-            req.onerror = () => reject(req.error);
+
+            try {
+                const index = store.index("username");
+                const req = index.get(username);
+
+                req.onsuccess = () => {
+                    if (req.result) {
+                        const deleteReq = store.delete(req.result.twitchUserId);
+                        deleteReq.onsuccess = () => resolve();
+                        deleteReq.onerror = () => reject(deleteReq.error);
+                    } else {
+                        reject(new Error(`Exclusion with username ${username} not found`));
+                    }
+                };
+                req.onerror = () => reject(req.error);
+            } catch {
+                // Fallback: search through all records if index doesn't exist
+                const getAllReq = store.getAll();
+                getAllReq.onsuccess = () => {
+                    const allRecords = getAllReq.result;
+                    const record = allRecords.find(r => r.username === username);
+                    if (record) {
+                        const deleteReq = store.delete(record.twitchUserId);
+                        deleteReq.onsuccess = () => resolve();
+                        deleteReq.onerror = () => reject(deleteReq.error);
+                    } else {
+                        reject(new Error(`Exclusion with username ${username} not found`));
+                    }
+                };
+                getAllReq.onerror = () => reject(getAllReq.error);
+            }
         });
     };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { makeTwitchApiClient } from "@/service/twitch";
 import { makeTwitchIdApiClient } from "@/service/twitch-id";
 import { useLoginStore } from "@/storage/login";
@@ -14,76 +14,95 @@ interface TwitchUser {
 
 export type TwitchApiClient = ReturnType<typeof makeTwitchApiClient>;
 
+// Função para validar token e obter dados do usuário
+async function fetchTwitchUserData(twitchAccessToken: string): Promise<TwitchUser | null> {
+    if (!twitchAccessToken) {
+        throw new Error("Token de acesso não encontrado");
+    }
+
+    const twitchIdClient = makeTwitchIdApiClient();
+    const result = await twitchIdClient.validateToken(twitchAccessToken);
+    
+    if (!result.isOk()) {
+        throw new Error("Token inválido ou expirado");
+    }
+
+    const { client_id, user_id, expires_in } = result.value;
+
+    // Verifica se o token pertence ao cliente correto
+    if (client_id !== import.meta.env.VITE_TWITCH_CLIENT_ID) {
+        throw new Error("O token não pertence ao cliente configurado");
+    }
+
+    // Inicializa o cliente da API da Twitch
+    const apiClient = makeTwitchApiClient({
+        clientId: import.meta.env.VITE_TWITCH_CLIENT_ID,
+        accessToken: twitchAccessToken,
+    });
+
+    // Faz uma nova requisição para obter o profileImageUrl
+    const userResult = await apiClient.getUsers({ id: user_id });
+    if (!userResult.isOk() || userResult.value.data.length === 0) {
+        throw new Error("Erro ao obter dados do usuário");
+    }
+
+    const user = userResult.value.data[0];
+    return {
+        id: user.id,
+        login: user.login,
+        displayName: user.display_name,
+        profileImageUrl: user.profile_image_url,
+        expiresIn: expires_in,
+    };
+}
+
 export function useTwitchApi() {
     const { twitchAccessToken } = useLoginStore();
-    const [twitchApiClient, setTwitchApiClient] = useState<ReturnType<typeof makeTwitchApiClient> | null>(null);
-    const [isTokenValid, setIsTokenValid] = useState(false);
-    const [userData, setUserData] = useState<TwitchUser | null>(null);
+    const queryClient = useQueryClient();
 
-    useEffect(() => {
-        if (!twitchAccessToken) {
-            console.warn("Nenhum token de acesso encontrado.");
-            setIsTokenValid(false);
-            setUserData(null);
-            setTwitchApiClient(null);
-            return;
-        }
-
-        const twitchIdClient = makeTwitchIdApiClient();
-
-        const validateToken = async () => {
-            const result = await twitchIdClient.validateToken(twitchAccessToken);
-            if (result.isOk()) {
-                const { client_id, user_id, expires_in } = result.value;
-
-                // Verifica se o token pertence ao cliente correto
-                if (client_id === import.meta.env.VITE_TWITCH_CLIENT_ID) {
-                    setIsTokenValid(true);
-
-                    // Inicializa o cliente da API da Twitch
-                    const apiClient = makeTwitchApiClient({
-                        clientId: import.meta.env.VITE_TWITCH_CLIENT_ID,
-                        accessToken: twitchAccessToken,
-                    });
-                    setTwitchApiClient(apiClient);
-
-                    // Faz uma nova requisição para obter o profileImageUrl
-                    const userResult = await apiClient.getUsers({ id: user_id });
-                    if (userResult.isOk() && userResult.value.data.length > 0) {
-                        const user = userResult.value.data[0];
-                        setUserData({
-                            id: user.id,
-                            login: user.login,
-                            displayName: user.display_name,
-                            profileImageUrl: user.profile_image_url,
-                            expiresIn: expires_in,
-                        });
-                    } else {
-                        console.error("Erro ao obter dados do usuário:", userResult.isErr() && userResult.error);
-                        setUserData(null);
-                    }
-                } else {
-                    console.error("O token não pertence ao cliente configurado.");
-                    setIsTokenValid(false);
-                    setUserData(null);
-                    setTwitchApiClient(null);
-                }
-            } else {
-                console.error("Token inválido ou expirado.");
-                setIsTokenValid(false);
-                setUserData(null);
-                setTwitchApiClient(null);
+    // Query para obter dados do usuário Twitch
+    const {
+        data: userData,
+        isLoading,
+        isError,
+        error,
+        isSuccess
+    } = useQuery({
+        queryKey: ['twitchUser', twitchAccessToken],
+        queryFn: () => fetchTwitchUserData(twitchAccessToken!),
+        enabled: !!twitchAccessToken, // Só roda se tiver token
+        staleTime: 10 * 60 * 1000, // 10 minutos
+        gcTime: 15 * 60 * 1000, // 15 minutos
+        retry: (failureCount, error) => {
+            // Não tenta novamente se for erro de token inválido
+            if (error instanceof Error && 
+                (error.message.includes("Token inválido") || 
+                 error.message.includes("não pertence ao cliente"))) {
+                return false;
             }
-        };
+            return failureCount < 2;
+        },
+        refetchInterval: 30 * 60 * 1000, // Revalida a cada 30 minutos
+    });
 
-        // Valida o token ao montar o hook
-        validateToken();
+    // Função para criar cliente da API (memo baseado no token)
+    const getTwitchApiClient = (): TwitchApiClient | null => {
+        if (!twitchAccessToken || !isSuccess) {
+            return null;
+        }
+        
+        return makeTwitchApiClient({
+            clientId: import.meta.env.VITE_TWITCH_CLIENT_ID,
+            accessToken: twitchAccessToken,
+        });
+    };
 
-        // Valida o token periodicamente (ex.: a cada 5 minutos)
-        const interval = setInterval(validateToken, 5 * 60 * 1000);
+    const twitchApiClient = getTwitchApiClient();
 
-        return () => clearInterval(interval);
-    }, [twitchAccessToken]);
+    // Função para invalidar cache quando necessário
+    const invalidateUserData = () => {
+        queryClient.invalidateQueries({ queryKey: ['twitchUser'] });
+    };
 
     const getUserByLogin = async (userName: string) => {
         if (!twitchApiClient) {
@@ -91,7 +110,16 @@ export function useTwitchApi() {
             return err("Twitch API client not initialized.");
         }
         return twitchApiClient.getUsers({ login: userName });
-    }
+    };
 
-    return { twitchApiClient, isTokenValid, userData, getUserByLogin };
+    return { 
+        twitchApiClient, 
+        isTokenValid: isSuccess && !isError, 
+        userData: userData || null, 
+        getUserByLogin,
+        isLoading,
+        isError,
+        error,
+        invalidateUserData
+    };
 }

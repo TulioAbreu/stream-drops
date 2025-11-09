@@ -2,6 +2,7 @@ import {
   UserRoundCheck,
   Settings,
   LogOutIcon,
+  MessageSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,6 +36,11 @@ const items: NavbarItem[] = [
     title: "DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY",
     icon: <UserRoundCheck />,
     url: "/dashboard/follower-giveaway",
+  },
+  {
+    title: "DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY",
+    icon: <MessageSquare />,
+    url: "/dashboard/chat-giveaway",
   },
   // {
   //     title: "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY",

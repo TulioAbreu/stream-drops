@@ -4,58 +4,69 @@ import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogDescription, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database/SubscriptionGiveaway";
-import { DialogTitle } from "@radix-ui/react-dialog";
-import { ArrowRight, Edit2Icon, Gift, PlusIcon, TrashIcon } from "lucide-react";
+import { useChatGiveawayDb } from "@/database/ChatGiveaway";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { useTranslation } from "react-i18next";
+import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { useNavigate } from "react-router";
+import { ArrowRight, MessageSquare, Plus, TrashIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DialogTitle } from "@radix-ui/react-dialog";
+import { useTranslation } from "react-i18next";
 
-export function FollowerGiveaway() {
+export function ChatGiveaway() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
-    const { getGiveaways, deleteGiveaway } = useSubscriptionGiveawayDb();
-    const [giveaways, setGiveaways] = useState<FollowerGiveawayFormData[]>([]);
+    const { getChatGiveaways, deleteChatGiveaway } = useChatGiveawayDb();
+    const [giveaways, setGiveaways] = useState<ChatGiveawayFormData[]>([]);
     const [isDeletingGiveaway, startIsDeletingGiveawayTransition] = useTransition();
 
-    const onClickEdit = (id: string) => {
-        navigate(`/dashboard/follower-giveaway/${id}/edit`);
+    const tierLabels: Record<string, string> = {
+        "free": "Free",
+        "1000": "Tier 1",
+        "2000": "Tier 2",
+        "3000": "Tier 3",
     };
 
     const onClickView = (id: string) => {
-        navigate(`/dashboard/follower-giveaway/${id}`);
+        navigate(`/dashboard/chat-giveaway/${id}`);
     };
 
     const onClickCreate = () => {
-        navigate("/dashboard/follower-giveaway/create");
+        navigate("/dashboard/chat-giveaway/create");
     };
 
     const fetchGiveaways = useCallback(async () => {
         setIsLoading(true);
-        const giveawaysData = await getGiveaways();
+        const giveawaysData = await getChatGiveaways();
         setGiveaways(giveawaysData);
         setIsLoading(false);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const onClickConfirmDeleteGiveaway = async (giveawayId: string) => {
         startIsDeletingGiveawayTransition(async () => {
-            await deleteGiveaway(giveawayId);
+            await deleteChatGiveaway(giveawayId);
             fetchGiveaways();
         });
     };
 
     useEffect(() => {
-        fetchGiveaways();
-    }, [fetchGiveaways]);
+        const loadGiveaways = async () => {
+            const data = await getChatGiveaways();
+            setGiveaways(data);
+        };
+        loadGiveaways();
+    }, [getChatGiveaways]);
 
     return (
         <Layout>
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
+                <h1 className="text-2xl font-bold mb-6">
+                    {t("CHAT_GIVEAWAY_TITLE", "Chat Giveaways")}
+                </h1>
                 <Button variant="outline" onClick={onClickCreate} size="lg">
-                    <PlusIcon />
-                    <span>{t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}</span>
+                    <Plus />
+                    <span>{t("CHAT_GIVEAWAY_CREATE_BUTTON", "Novo Sorteio")}</span>
                 </Button>
             </div>
 
@@ -67,19 +78,19 @@ export function FollowerGiveaway() {
                 <Empty>
                     <EmptyHeader>
                         <EmptyMedia variant="icon">
-                            <Gift />
+                            <MessageSquare />
                         </EmptyMedia>
                         <EmptyTitle>
-                            {t("FOLLOWER_GIVEAWAY_EMPTY_TITLE", "Nenhum sorteio criado ainda")}
+                            {t("CHAT_GIVEAWAY_EMPTY_TITLE", "Nenhum sorteio de chat criado ainda")}
                         </EmptyTitle>
                         <EmptyDescription>
-                            {t("FOLLOWER_GIVEAWAY_EMPTY_DESCRIPTION", "Comece criando seu primeiro sorteio de inscritos para engajar sua comunidade.")}
+                            {t("CHAT_GIVEAWAY_EMPTY_DESCRIPTION", "Comece criando seu primeiro sorteio baseado em mensagens do chat para engajar sua comunidade.")}
                         </EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent>
                         <Button onClick={onClickCreate}>
-                            <PlusIcon />
-                            {t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}
+                            <Plus />
+                            {t("CHAT_GIVEAWAY_CREATE_BUTTON", "Criar Sorteio")}
                         </Button>
                     </EmptyContent>
                 </Empty>
@@ -88,17 +99,34 @@ export function FollowerGiveaway() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>{t("FOLLOWER_GIVEAWAY_TABLE_HEADER_TITLE")}</TableHead>
-                                <TableHead>{t("FOLLOWER_GIVEAWAY_TABLE_HEADER_ACTIONS")}</TableHead>
+                                <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_TITLE", "Título")}</TableHead>
+                                <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_KEYWORD", "Palavra-chave")}</TableHead>
+                                <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_TIER", "Tier Mínima")}</TableHead>
+                                <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_WINNERS", "Vencedores")}</TableHead>
+                                <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_ACTIONS", "Ações")}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {giveaways.map((giveaway) => (
                                 <TableRow key={giveaway.id}>
                                     <TableCell>
-                                        <a href={`/dashboard/follower-giveaway/${giveaway.id}`} className="text-blue-500 hover:underline w-full">
+                                        <a
+                                            href={`/dashboard/chat-giveaway/${giveaway.id}`}
+                                            className="text-blue-500 hover:underline w-full"
+                                        >
                                             {giveaway.title}
                                         </a>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{giveaway.keyword}</Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">
+                                            {tierLabels[giveaway.minimumTier] || giveaway.minimumTier}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        {giveaway.winners.length}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-row gap-2">
@@ -114,41 +142,51 @@ export function FollowerGiveaway() {
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_OPEN")}
+                                                        {t("CHAT_GIVEAWAY_TABLE_ACTIONS_OPEN", "Abrir")}
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
-                                            <TooltipProvider>
+                                            {/* <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" onClick={() => onClickEdit(giveaway.id)}>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => onClickEdit(giveaway.id)}
+                                                        >
                                                             <Edit2Icon />
                                                         </Button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>
-                                                        {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_EDIT")}
+                                                        {t("CHAT_GIVEAWAY_TABLE_ACTIONS_EDIT", "Editar")}
                                                     </TooltipContent>
                                                 </Tooltip>
-                                            </TooltipProvider>
+                                            </TooltipProvider> */}
                                             <TooltipProvider>
                                                 <Dialog>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <DialogTrigger asChild>
-                                                                <Button variant="ghost" size="icon" disabled={isDeletingGiveaway}>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    disabled={isDeletingGiveaway}
+                                                                >
                                                                     <TrashIcon className="w-4 h-4" />
                                                                 </Button>
                                                             </DialogTrigger>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            {t("FOLLOWER_GIVEAWAY_TABLE_ACTIONS_DELETE")}
+                                                            {t("CHAT_GIVEAWAY_TABLE_ACTIONS_DELETE", "Excluir")}
                                                         </TooltipContent>
                                                     </Tooltip>
                                                     <DialogContent>
                                                         <DialogHeader>
-                                                            <DialogTitle>{t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_TITLE", "Confirmar exclusão")}</DialogTitle>
+                                                            <DialogTitle>
+                                                                {t("CHAT_GIVEAWAY_DELETE_DIALOG_TITLE", "Confirmar exclusão")}
+                                                            </DialogTitle>
                                                             <DialogDescription>
-                                                                {t("FOLLOWER_GIVEAWAY_DELETE_DIALOG_DESCRIPTION", "Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.")}
+                                                                {t("CHAT_GIVEAWAY_DELETE_DIALOG_DESCRIPTION", "Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.")}
                                                             </DialogDescription>
                                                         </DialogHeader>
                                                         <DialogFooter>
@@ -171,12 +209,11 @@ export function FollowerGiveaway() {
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))
-                            }
+                            ))}
                         </TableBody>
                     </Table>
                 </div>
             )}
         </Layout>
-    )
+    );
 }

@@ -7,7 +7,22 @@ export interface TwitchPagination<T> {
     points: number;
 }
 
-export type TwitchSubscriptionTier = "1000" | "2000" | "3000";
+export const TwitchSubscriptionTier = {
+    TIER_1: "1000",
+    TIER_2: "2000", 
+    TIER_3: "3000"
+} as const;
+
+export type TwitchSubscriptionTier = typeof TwitchSubscriptionTier[keyof typeof TwitchSubscriptionTier];
+
+export const SubscriptionTierWithFree = {
+    FREE: "free",
+    TIER_1: "1000",
+    TIER_2: "2000",
+    TIER_3: "3000"
+} as const;
+
+export type SubscriptionTierWithFree = typeof SubscriptionTierWithFree[keyof typeof SubscriptionTierWithFree];
 
 export type GetTwitchBroadcasterSubscriptionsParams = {
     broadcaster_id: string;
