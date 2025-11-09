@@ -56,6 +56,7 @@ export function generateMockChatMessages(count: number = 50): ChatMessage[] {
             message: mockMessages[Math.floor(Math.random() * mockMessages.length)],
             timestamp: new Date(now - (count - i) * 5000).toISOString(),
             tier,
+            subscriptionMonths: tier === SubscriptionTierWithFree.FREE ? undefined : Math.floor(Math.random() * 24) + 1,
         });
     }
 

@@ -8,7 +8,7 @@ import { useChatGiveawayDb } from "@/database/ChatGiveaway";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { useNavigate } from "react-router";
-import { ArrowRight, Edit2Icon, MessageSquare, Plus, TrashIcon } from "lucide-react";
+import { ArrowRight, MessageSquare, Plus, TrashIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { useTranslation } from "react-i18next";
@@ -26,10 +26,6 @@ export function ChatGiveaway() {
         "1000": "Tier 1",
         "2000": "Tier 2",
         "3000": "Tier 3",
-    };
-
-    const onClickEdit = (id: string) => {
-        navigate(`/dashboard/chat-giveaway/${id}/edit`);
     };
 
     const onClickView = (id: string) => {
