@@ -87,8 +87,12 @@ export function useChatListener({
             }
         }
 
+        // Use TMI message ID as the primary identifier to prevent duplicates
+        // If not available, fall back to timestamp-based ID
+        const messageId = userstate.id || `${Date.now()}-${Math.random()}`;
+
         return {
-            id: `${userstate.id || Date.now()}-${Math.random()}`,
+            id: messageId,
             userId: userstate["user-id"] || "unknown",
             userName: userstate.username || "unknown",
             displayName: userstate["display-name"] || userstate.username || "Unknown",
@@ -177,7 +181,13 @@ export function useChatListener({
                 const chatMessage = convertTmiMessage(userstate, message);
                 
                 // Add to messages list (keep last 100 messages)
+                // Deduplicate by message ID to prevent duplicate messages in the modal
                 setMessages(prev => {
+                    // Check if message with this ID already exists
+                    const exists = prev.some(msg => msg.id === chatMessage.id);
+                    if (exists) {
+                        return prev; // Don't add duplicate
+                    }
                     const newMessages = [...prev, chatMessage];
                     return newMessages.slice(-100);
                 });
@@ -266,7 +276,8 @@ export function useChatListener({
         const seenUserIds = new Set<string>();
 
         // Process messages in reverse order to get the latest entry for each user
-        messages.reverse().forEach(message => {
+        // Create a copy to avoid mutating the original array
+        [...messages].reverse().forEach(message => {
             if (!seenUserIds.has(message.userId)) {
                 const participant = convertMessageToParticipant(message);
                 if (participant) {
