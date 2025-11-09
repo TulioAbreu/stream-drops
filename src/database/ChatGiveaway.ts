@@ -16,6 +16,7 @@ export interface ChatGiveawayFormData {
     keyword: string;
     cost: number;
     minimumTier: SubscriptionTierWithFree;
+    minimumSuscriptionTimeInMonths: number;
     subscriberMultiplier: Record<TwitchSubscriptionTier, number>;
     winners: ChatGiveawayWinner[];
     createdAt: string;
