@@ -5,6 +5,7 @@ export interface ChatGiveawayForm {
     description: string;
     keyword: string;
     minimumTier: SubscriptionTierWithFree;
+    minimumSuscriptionTimeInMonths: number;
     subscriberMultiplier: Record<TwitchSubscriptionTier, number>;
 }
 
