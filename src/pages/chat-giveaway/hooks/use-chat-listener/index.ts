@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import tmi from "tmi.js";
-import type { ChatMessage, ChatParticipant } from "../types";
+import type { ChatMessage, ChatParticipant } from "../../types";
 import { TwitchSubscriptionTier, SubscriptionTierWithFree, type SubscriptionTierWithFree as SubscriptionTierWithFreeType } from "@/service/twitch/types";
+import { parseBadgeRaw } from "./utils";
 
 interface UseChatListenerOptions {
     channel: string;
@@ -74,7 +75,16 @@ export function useChatListener({
         message: string
     ): ChatMessage => {
         const tier = getUserTier(userstate.badges);
-        
+        const badgeInfo = parseBadgeRaw(userstate["badge-info-raw"]);
+        const rawSubscriptionMonths = badgeInfo["founder"] ?? badgeInfo["subscriber"];
+        let subscriptionMonths = undefined;
+        if (rawSubscriptionMonths) {
+            const parsed = parseInt(rawSubscriptionMonths, 10);
+            if (!isNaN(parsed)) {
+                subscriptionMonths = parsed;
+            }
+        }
+
         return {
             id: `${userstate.id || Date.now()}-${Math.random()}`,
             userId: userstate["user-id"] || "unknown",
@@ -84,6 +94,7 @@ export function useChatListener({
             message: message,
             timestamp: new Date().toISOString(),
             tier: tier,
+            subscriptionMonths: subscriptionMonths,
         };
     }, [getUserTier]);
 

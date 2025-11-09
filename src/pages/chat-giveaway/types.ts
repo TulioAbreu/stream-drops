@@ -27,4 +27,5 @@ export interface ChatMessage {
     message: string;
     timestamp: string;
     tier: SubscriptionTierWithFree;
+    subscriptionMonths: number | undefined;
 }
