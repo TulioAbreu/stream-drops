@@ -150,7 +150,7 @@ export function ChatGiveaway() {
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
-                                            <TooltipProvider>
+                                            {/* <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <Button
@@ -165,7 +165,7 @@ export function ChatGiveaway() {
                                                         {t("CHAT_GIVEAWAY_TABLE_ACTIONS_EDIT", "Editar")}
                                                     </TooltipContent>
                                                 </Tooltip>
-                                            </TooltipProvider>
+                                            </TooltipProvider> */}
                                             <TooltipProvider>
                                                 <Dialog>
                                                     <Tooltip>
