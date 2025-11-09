@@ -1,4 +1,4 @@
-export function parseBadgeRaw(badgeInfoRaw: string | undefined = "") {
+export function parseBadgeRaw(badgeInfoRaw: string) {
     const badgeInfo: Record<string, string> = {};
 
     const rawBadges = badgeInfoRaw.split(",");

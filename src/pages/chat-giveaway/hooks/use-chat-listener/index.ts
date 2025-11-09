@@ -75,7 +75,7 @@ export function useChatListener({
         message: string
     ): ChatMessage => {
         const tier = getUserTier(userstate.badges);
-        const badgeInfo = parseBadgeRaw(userstate["badge-info-raw"]);
+        const badgeInfo = parseBadgeRaw(userstate["badge-info-raw"] ?? "");
         const rawSubscriptionMonths = badgeInfo["founder"] ?? badgeInfo["subscriber"];
         let subscriptionMonths = undefined;
         if (rawSubscriptionMonths) {
