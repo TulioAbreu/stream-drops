@@ -190,6 +190,11 @@ export function ChatGiveawayDetail() {
                         <div className="flex gap-2 mt-3">
                             <Badge variant="outline">Palavra-chave: {giveaway.keyword}</Badge>
                             <Badge variant="outline">Tier mínimo: {tierLabels[giveaway.minimumTier]}</Badge>
+                            {giveaway.minimumSuscriptionTimeInMonths > 0 && (
+                                <Badge variant="outline">
+                                    Mínimo: {giveaway.minimumSuscriptionTimeInMonths} {giveaway.minimumSuscriptionTimeInMonths === 1 ? 'mês' : 'meses'} de sub
+                                </Badge>
+                            )}
                         </div>
                     </div>
                     <div className="flex flex-row gap-4 flex-wrap">
