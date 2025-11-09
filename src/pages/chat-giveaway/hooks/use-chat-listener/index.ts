@@ -8,6 +8,7 @@ interface UseChatListenerOptions {
     channel: string;
     keyword: string;
     minimumTier: SubscriptionTierWithFreeType;
+    minimumSuscriptionTimeInMonths?: number;
 }
 
 interface UseChatListenerReturn {
@@ -26,7 +27,8 @@ interface UseChatListenerReturn {
 export function useChatListener({
     channel,
     keyword,
-    minimumTier
+    minimumTier,
+    minimumSuscriptionTimeInMonths = 0
 }: UseChatListenerOptions): UseChatListenerReturn {
     const [allParticipants, setAllParticipants] = useState<ChatParticipant[]>([]);
     const [participants, setParticipants] = useState<ChatParticipant[]>([]);
@@ -112,6 +114,14 @@ export function useChatListener({
             return null;
         }
 
+        // Check if user meets minimum subscription time requirement
+        if (minimumSuscriptionTimeInMonths > 0) {
+            // If subscription months is undefined or less than minimum, exclude
+            if (!chatMessage.subscriptionMonths || chatMessage.subscriptionMonths < minimumSuscriptionTimeInMonths) {
+                return null;
+            }
+        }
+
         return {
             id: chatMessage.userId,
             name: chatMessage.userName,
@@ -121,7 +131,7 @@ export function useChatListener({
             message: chatMessage.message,
             timestamp: chatMessage.timestamp,
         };
-    }, [keyword, meetsMinimumTier]);
+    }, [keyword, meetsMinimumTier, minimumSuscriptionTimeInMonths]);
 
     // Connect to Twitch chat
     const connect = useCallback(async () => {

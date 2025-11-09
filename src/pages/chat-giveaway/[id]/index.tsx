@@ -54,6 +54,7 @@ export function ChatGiveawayDetail() {
         channel: userData?.login || "",
         keyword: giveaway?.keyword || "",
         minimumTier: giveaway?.minimumTier || "free",
+        minimumSuscriptionTimeInMonths: giveaway?.minimumSuscriptionTimeInMonths || 0,
     });
 
     // Virtual scrolling for participants list
