@@ -32,6 +32,7 @@ export function ChatGiveawayCreate() {
             description: "",
             keyword: "",
             minimumTier: "free",
+            minimumSuscriptionTimeInMonths: 0,
             subscriberMultiplier: {
                 "1000": 1,
                 "2000": 1,
@@ -53,6 +54,7 @@ export function ChatGiveawayCreate() {
                 keyword: data.keyword,
                 cost: 0,
                 minimumTier: data.minimumTier,
+                minimumSuscriptionTimeInMonths: data.minimumSuscriptionTimeInMonths,
                 subscriberMultiplier: data.subscriberMultiplier,
                 winners: [],
                 createdAt: now,
@@ -101,6 +103,18 @@ export function ChatGiveawayCreate() {
                             placeholder="!sorteio"
                             {...form.register("keyword", {
                                 required: "Palavra-chave é obrigatória",
+                            })}
+                        />
+                    </div>
+
+                    <div className={FIELD_CONTAINER}>
+                        <Label>Tempo mínimo de inscrição (meses, opcional)</Label>
+                        <Input
+                            type="number"
+                            placeholder="0"
+                            {...form.register("minimumSuscriptionTimeInMonths", {
+                                valueAsNumber: true,
+                                min: 0,
                             })}
                         />
                     </div>
