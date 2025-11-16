@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import tmi from "tmi.js";
 import type { ChatMessage, ChatParticipant } from "../../types";
-import { TwitchSubscriptionTier, SubscriptionTierWithFree, type SubscriptionTierWithFree as SubscriptionTierWithFreeType } from "@/service/twitch/types";
+import { SubscriptionTierWithFree, type SubscriptionTierWithFree as SubscriptionTierWithFreeType } from "@/service/twitch/types";
 import { parseBadgeRaw } from "./utils";
 
 interface UseChatListenerOptions {
