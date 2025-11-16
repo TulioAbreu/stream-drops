@@ -24,6 +24,7 @@ import { Button } from "./ui/button";
 import { Tooltip, TooltipContent } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { Badge } from "./ui/badge";
 
 interface NavbarItem {
   title: string;
@@ -87,6 +88,9 @@ export function AppSidebar() {
                     <Link to={item.url}>
                       {item.icon}
                       <span>{t(item.title)}</span>
+                      {item.title === "DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY" && (
+                        <Badge variant="secondary" className="ml-auto text-xs">BETA</Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
