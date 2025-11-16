@@ -7,6 +7,7 @@ interface UseChatListenerOptions {
     channel: string;
     keyword: string;
     minimumSuscriptionTimeInMonths?: number;
+    subscribersOnly?: boolean;
 }
 
 interface UseChatListenerReturn {
@@ -25,7 +26,8 @@ interface UseChatListenerReturn {
 export function useChatListener({
     channel,
     keyword,
-    minimumSuscriptionTimeInMonths = 0
+    minimumSuscriptionTimeInMonths = 0,
+    subscribersOnly = false
 }: UseChatListenerOptions): UseChatListenerReturn {
     const [allParticipants, setAllParticipants] = useState<ChatParticipant[]>([]);
     const [participants, setParticipants] = useState<ChatParticipant[]>([]);
@@ -77,6 +79,11 @@ export function useChatListener({
             return null;
         }
 
+        // Check if subscribersOnly is enabled and user is not a subscriber
+        if (subscribersOnly && !chatMessage.subscriber) {
+            return null;
+        }
+
         // Check if user meets minimum subscription time requirement
         if (minimumSuscriptionTimeInMonths > 0) {
             // If subscription months is undefined or less than minimum, exclude
@@ -94,7 +101,7 @@ export function useChatListener({
             message: chatMessage.message,
             timestamp: chatMessage.timestamp,
         };
-    }, [keyword, minimumSuscriptionTimeInMonths]);
+    }, [keyword, minimumSuscriptionTimeInMonths, subscribersOnly]);
 
     // Connect to Twitch chat
     const connect = useCallback(async () => {
