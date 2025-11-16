@@ -80,8 +80,8 @@ export function convertMessageToParticipant(
         name: chatMessage.userName,
         displayName: chatMessage.displayName,
         subscriber: chatMessage.subscriber,
+        subscriptionMonths: chatMessage.subscriptionMonths,
         avatar: chatMessage.avatar,
-        message: chatMessage.message,
-        timestamp: chatMessage.timestamp,
+        joinedAt: Date.now(),
     };
 }

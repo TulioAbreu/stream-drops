@@ -38,6 +38,7 @@ export function useChatListener({
     const [error, setError] = useState<string | null>(null);
     
     const clientRef = useRef<tmi.Client | null>(null);
+    const seenUserIdsRef = useRef<Set<string>>(new Set());
 
     // Connect to Twitch chat
     const connect = useCallback(async () => {
@@ -118,6 +119,7 @@ export function useChatListener({
     const clearParticipants = useCallback(() => {
         setAllParticipants([]);
         setParticipants([]);
+        seenUserIdsRef.current.clear();
     }, []);
 
     // Filter participants by name/display name
@@ -154,30 +156,53 @@ export function useChatListener({
         };
     }, [channel, connect, disconnect]);
 
-    // Effect to update participants when keyword or tier requirements change
+    // Effect to update participants when new messages arrive
     useEffect(() => {
-        // Re-filter existing messages when keyword or tier requirements change
-        const newParticipants: ChatParticipant[] = [];
-        const seenUserIds = new Set<string>();
+        if (messages.length === 0) return;
 
-        // Process messages in reverse order to get the latest entry for each user
-        // Create a reversed copy to avoid mutating the original array
-        [...messages].reverse().forEach(message => {
-            if (!seenUserIds.has(message.userId)) {
+        const lastMessage = messages[messages.length - 1];
+        
+        // Only process if we haven't seen this user yet
+        if (!seenUserIdsRef.current.has(lastMessage.userId)) {
+            const participant = convertMessageToParticipant(lastMessage, {
+                keyword,
+                minimumSuscriptionTimeInMonths,
+                subscribersOnly
+            });
+            
+            if (participant) {
+                seenUserIdsRef.current.add(lastMessage.userId);
+                setAllParticipants(prev => [...prev, participant]);
+            }
+        }
+    }, [messages, keyword, minimumSuscriptionTimeInMonths, subscribersOnly]);
+
+    // Effect to re-filter all participants when keyword or tier requirements change
+    // (excluding messages from dependencies to avoid reprocessing on every message)
+    useEffect(() => {
+        // Only reprocess when criteria change, not when messages change
+        const currentMessages = messages;
+        
+        seenUserIdsRef.current.clear();
+        const newParticipants: ChatParticipant[] = [];
+
+        currentMessages.forEach(message => {
+            if (!seenUserIdsRef.current.has(message.userId)) {
                 const participant = convertMessageToParticipant(message, {
                     keyword,
                     minimumSuscriptionTimeInMonths,
                     subscribersOnly
                 });
                 if (participant) {
-                    newParticipants.push(participant); // Add to end, array is reversed so newest appear first
-                    seenUserIds.add(message.userId);
+                    newParticipants.push(participant);
+                    seenUserIdsRef.current.add(message.userId);
                 }
             }
         });
 
         setAllParticipants(newParticipants);
-    }, [messages, keyword, minimumSuscriptionTimeInMonths, subscribersOnly]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [keyword, minimumSuscriptionTimeInMonths, subscribersOnly]);
 
     return {
         participants,

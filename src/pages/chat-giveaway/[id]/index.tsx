@@ -64,6 +64,9 @@ export function ChatGiveawayDetail() {
         overscan: 5, // Render 5 items outside visible area
     });
 
+    // Sort participants by joinedAt (newest first) for display only
+    const sortedParticipants = [...participants].sort((a, b) => b.joinedAt - a.joinedAt);
+
     useEffect(() => {
         if (!id) return;
 
@@ -297,7 +300,7 @@ export function ChatGiveawayDetail() {
                                         }}
                                     >
                                         {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                                            const participant = participants[virtualRow.index];
+                                            const participant = sortedParticipants[virtualRow.index];
                                             return (
                                                 <div
                                                     key={virtualRow.key}

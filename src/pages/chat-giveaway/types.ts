@@ -13,8 +13,8 @@ export interface ChatParticipant {
     displayName: string;
     avatar: string;
     subscriber: boolean;
-    message: string;
-    timestamp: string;
+    subscriptionMonths?: number;
+    joinedAt: number; // timestamp in milliseconds
 }
 
 export interface ChatMessage {
