@@ -2,12 +2,11 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trophy, CheckIcon, XIcon, Clock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Trophy, CheckIcon, XIcon, Clock, Star } from "lucide-react";
 import confetti from "canvas-confetti";
 import type { ChatParticipant, ChatMessage } from "../../types";
-import { SubscriptionTierWithFree } from "@/service/twitch/types";
 
 interface WinnerConfirmationModalProps {
     pendingWinner: ChatParticipant | null;
@@ -24,13 +23,6 @@ export function WinnerConfirmationModal({
 }: WinnerConfirmationModalProps) {
     const [confirmationStartTime, setConfirmationStartTime] = useState<Date | null>(null);
     const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
-
-    const tierLabels: Record<string, string> = {
-        [SubscriptionTierWithFree.FREE]: "Free",
-        [SubscriptionTierWithFree.TIER_1]: "Tier 1",
-        [SubscriptionTierWithFree.TIER_2]: "Tier 2",
-        [SubscriptionTierWithFree.TIER_3]: "Tier 3",
-    };
 
     // Format seconds to HH:MM:SS
     const formatElapsedTime = (seconds: number): string => {
@@ -131,8 +123,21 @@ export function WinnerConfirmationModal({
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
-                                <p className="text-xl font-bold">{pendingWinner.displayName}</p>
-                                <Badge variant="secondary">{tierLabels[pendingWinner.tier]}</Badge>
+                                <p className="text-xl font-bold flex items-center gap-2">
+                                    {pendingWinner.displayName}
+                                    {pendingWinner.subscriber && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Subscriber</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
+                                </p>
                             </div>
                             <div className="absolute top-2 right-2 flex items-center gap-1 text-xs font-mono text-muted-foreground">
                                 <Clock className="w-3 h-3" />
