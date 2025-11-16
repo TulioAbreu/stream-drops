@@ -27,7 +27,6 @@ interface UseChatListenerReturn {
 export function useChatListener({
     channel,
     keyword,
-    minimumTier,
     minimumSuscriptionTimeInMonths = 0
 }: UseChatListenerOptions): UseChatListenerReturn {
     const [allParticipants, setAllParticipants] = useState<ChatParticipant[]>([]);
@@ -40,45 +39,16 @@ export function useChatListener({
     
     const clientRef = useRef<tmi.Client | null>(null);
 
-    // Function to determine user tier based on badges
-    const getUserTier = useCallback((badges: tmi.Badges | undefined): SubscriptionTierWithFreeType => {
-        if (!badges) return SubscriptionTierWithFree.FREE;
-        
-        if (badges.subscriber) {
-            // Subscriber badge format is typically "tier/months"
-            // We need to check the tier from the badge info
-            const subscriberBadge = badges.subscriber;
-            if (subscriberBadge.includes("3")) return TwitchSubscriptionTier.TIER_3;
-            if (subscriberBadge.includes("2")) return TwitchSubscriptionTier.TIER_2;
-            if (subscriberBadge.includes("1")) return TwitchSubscriptionTier.TIER_1;
-            return TwitchSubscriptionTier.TIER_1; // Default to tier 1 if subscriber but unclear tier
-        }
-        
-        return SubscriptionTierWithFree.FREE;
-    }, []);
-
-    // Function to check if user meets minimum tier requirement
-    const meetsMinimumTier = useCallback((userTier: SubscriptionTierWithFreeType): boolean => {
-        if (minimumTier === SubscriptionTierWithFree.FREE) return true;
-        
-        const tierOrder: Record<SubscriptionTierWithFreeType, number> = {
-            [SubscriptionTierWithFree.FREE]: 0,
-            [SubscriptionTierWithFree.TIER_1]: 1,
-            [SubscriptionTierWithFree.TIER_2]: 2,
-            [SubscriptionTierWithFree.TIER_3]: 3,
-        };
-        
-        return tierOrder[userTier] >= tierOrder[minimumTier];
-    }, [minimumTier]);
 
     // Function to convert TMI message to our ChatMessage format
     const convertTmiMessage = useCallback((
         userstate: tmi.ChatUserstate,
         message: string
     ): ChatMessage => {
-        const tier = getUserTier(userstate.badges);
+        console.log("Userstate:", userstate);
+
         const badgeInfo = parseBadgeRaw(userstate["badge-info-raw"] ?? "");
-        const rawSubscriptionMonths = badgeInfo["founder"] ?? badgeInfo["subscriber"];
+        const rawSubscriptionMonths = badgeInfo["founder"] ?? userstate["badge-info"]?.subscriber;
         let subscriptionMonths = undefined;
         if (rawSubscriptionMonths) {
             const parsed = parseInt(rawSubscriptionMonths, 10);
@@ -95,10 +65,10 @@ export function useChatListener({
             avatar: `https://static-cdn.jtvnw.net/user-default-pictures-uv/ebe4cd89-b4f4-4cd9-adac-2f30151b4209-profile_image-70x70.png`,
             message: message,
             timestamp: new Date().toISOString(),
-            tier: tier,
+            tier: SubscriptionTierWithFree.FREE,
             subscriptionMonths: subscriptionMonths,
         };
-    }, [getUserTier]);
+    }, []);
 
     // Function to convert ChatMessage to ChatParticipant if it contains keyword
     const convertMessageToParticipant = useCallback((
@@ -106,11 +76,6 @@ export function useChatListener({
     ): ChatParticipant | null => {
         // Check if message contains the keyword
         if (keyword.length > 0 && !chatMessage.message.toLowerCase().includes(keyword.toLowerCase())) {
-            return null;
-        }
-
-        // Check if user meets minimum tier requirement
-        if (!meetsMinimumTier(chatMessage.tier)) {
             return null;
         }
 
@@ -126,12 +91,12 @@ export function useChatListener({
             id: chatMessage.userId,
             name: chatMessage.userName,
             displayName: chatMessage.displayName,
+            tier: SubscriptionTierWithFree.FREE,
             avatar: chatMessage.avatar,
-            tier: chatMessage.tier,
             message: chatMessage.message,
             timestamp: chatMessage.timestamp,
         };
-    }, [keyword, meetsMinimumTier, minimumSuscriptionTimeInMonths]);
+    }, [keyword, minimumSuscriptionTimeInMonths]);
 
     // Connect to Twitch chat
     const connect = useCallback(async () => {
