@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { type ChatGiveawayForm } from "../types";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export function ChatGiveawayCreate() {
             keyword: "",
             minimumSuscriptionTimeInMonths: 0,
             subscriberMultiplier: 1,
+            subscribersOnly: false,
         },
     });
 
@@ -36,6 +38,7 @@ export function ChatGiveawayCreate() {
                 cost: 0,
                 minimumSuscriptionTimeInMonths: data.minimumSuscriptionTimeInMonths,
                 subscriberMultiplier: data.subscriberMultiplier,
+                subscribersOnly: data.subscribersOnly,
                 winners: [],
                 createdAt: now,
                 updatedAt: now,
@@ -102,6 +105,17 @@ export function ChatGiveawayCreate() {
                     <p className="text-sm text-muted-foreground">
                         Subscribers terão este multiplicador aplicado às suas chances de ganhar (padrão: 1)
                     </p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                    <Checkbox
+                        id="subscribersOnly"
+                        checked={form.watch("subscribersOnly")}
+                        onCheckedChange={(checked) => form.setValue("subscribersOnly", checked as boolean)}
+                    />
+                    <Label htmlFor="subscribersOnly" className="cursor-pointer">
+                        Apenas subscribers podem participar
+                    </Label>
                 </div>
 
                 <div className="flex flex-row items-center justify-end">

@@ -53,6 +53,7 @@ export function ChatGiveawayDetail() {
         channel: userData?.login || "",
         keyword: giveaway?.keyword || "",
         minimumSuscriptionTimeInMonths: giveaway?.minimumSuscriptionTimeInMonths || 0,
+        subscribersOnly: giveaway?.subscribersOnly || false,
     });
 
     // Virtual scrolling for participants list
@@ -181,6 +182,9 @@ export function ChatGiveawayDetail() {
                         )}
                         <div className="flex gap-2 mt-3">
                             <Badge variant="outline">Palavra-chave: {giveaway.keyword}</Badge>
+                            {giveaway.subscribersOnly && (
+                                <Badge variant="secondary">Apenas Subscribers</Badge>
+                            )}
                             {giveaway.minimumSuscriptionTimeInMonths > 0 && (
                                 <Badge variant="outline">
                                     Mínimo: {giveaway.minimumSuscriptionTimeInMonths} {giveaway.minimumSuscriptionTimeInMonths === 1 ? 'mês' : 'meses'} de sub

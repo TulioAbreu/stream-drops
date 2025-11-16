@@ -4,6 +4,7 @@ export interface ChatGiveawayForm {
     keyword: string;
     minimumSuscriptionTimeInMonths: number;
     subscriberMultiplier: number;
+    subscribersOnly: boolean;
 }
 
 export interface ChatParticipant {

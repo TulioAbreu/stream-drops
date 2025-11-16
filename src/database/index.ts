@@ -1,5 +1,5 @@
 const DATABASE_NAME = "stream-drops-db";
-const DATABASE_VERSION = 8;
+const DATABASE_VERSION = 9;
 
 // Singleton cache for database connection
 let dbInstance: IDBDatabase | null = null;

@@ -16,6 +16,7 @@ export interface ChatGiveawayFormData {
     cost: number;
     minimumSuscriptionTimeInMonths: number;
     subscriberMultiplier: number;
+    subscribersOnly: boolean;
     winners: ChatGiveawayWinner[];
     createdAt: string;
     updatedAt: string;
