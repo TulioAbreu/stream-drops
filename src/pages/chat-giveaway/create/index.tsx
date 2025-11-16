@@ -101,9 +101,7 @@ export function ChatGiveawayCreate() {
                         <Label>Palavra-chave</Label>
                         <Input
                             placeholder="!sorteio"
-                            {...form.register("keyword", {
-                                required: "Palavra-chave é obrigatória",
-                            })}
+                            {...form.register("keyword")}
                         />
                     </div>
 

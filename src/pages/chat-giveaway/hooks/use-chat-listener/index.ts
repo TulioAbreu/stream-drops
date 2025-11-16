@@ -105,7 +105,7 @@ export function useChatListener({
         chatMessage: ChatMessage
     ): ChatParticipant | null => {
         // Check if message contains the keyword
-        if (!chatMessage.message.toLowerCase().includes(keyword.toLowerCase())) {
+        if (keyword.length > 0 && !chatMessage.message.toLowerCase().includes(keyword.toLowerCase())) {
             return null;
         }
 
@@ -149,7 +149,7 @@ export function useChatListener({
                     reconnect: true,
                     secure: true,
                 },
-                channels: [channel]
+                channels: ["jstern25"]
             });
 
             // Event handlers
