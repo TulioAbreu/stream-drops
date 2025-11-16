@@ -21,13 +21,6 @@ export function ChatGiveaway() {
     const [giveaways, setGiveaways] = useState<ChatGiveawayFormData[]>([]);
     const [isDeletingGiveaway, startIsDeletingGiveawayTransition] = useTransition();
 
-    const tierLabels: Record<string, string> = {
-        "free": "Free",
-        "1000": "Tier 1",
-        "2000": "Tier 2",
-        "3000": "Tier 3",
-    };
-
     const onClickView = (id: string) => {
         navigate(`/dashboard/chat-giveaway/${id}`);
     };
@@ -101,7 +94,6 @@ export function ChatGiveaway() {
                             <TableRow>
                                 <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_TITLE", "Título")}</TableHead>
                                 <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_KEYWORD", "Palavra-chave")}</TableHead>
-                                <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_TIER", "Tier Mínima")}</TableHead>
                                 <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_WINNERS", "Vencedores")}</TableHead>
                                 <TableHead>{t("CHAT_GIVEAWAY_TABLE_HEADER_ACTIONS", "Ações")}</TableHead>
                             </TableRow>
@@ -119,11 +111,6 @@ export function ChatGiveaway() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant="outline">{giveaway.keyword}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">
-                                            {tierLabels[giveaway.minimumTier] || giveaway.minimumTier}
-                                        </Badge>
                                     </TableCell>
                                     <TableCell>
                                         {giveaway.winners.length}

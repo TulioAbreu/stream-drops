@@ -1,4 +1,3 @@
-import type { TwitchSubscriptionTier, SubscriptionTierWithFree } from "@/service/twitch/types";
 import { openDb } from ".";
 
 export interface ChatGiveawayWinner {
@@ -15,9 +14,8 @@ export interface ChatGiveawayFormData {
     description: string;
     keyword: string;
     cost: number;
-    minimumTier: SubscriptionTierWithFree;
     minimumSuscriptionTimeInMonths: number;
-    subscriberMultiplier: Record<TwitchSubscriptionTier, number>;
+    subscriberMultiplier: number;
     winners: ChatGiveawayWinner[];
     createdAt: string;
     updatedAt: string;

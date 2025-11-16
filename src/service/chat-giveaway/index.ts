@@ -1,10 +1,8 @@
 import type { ChatParticipant } from "@/pages/chat-giveaway/types";
-import type { TwitchSubscriptionTier } from "../twitch/types";
-import { SubscriptionTierWithFree } from "../twitch/types";
 
 export interface DrawWinnerParams {
     participants: ChatParticipant[];
-    subscriberMultiplier: Record<TwitchSubscriptionTier, number>;
+    subscriberMultiplier: number;
     excludeIds?: string[];
 }
 
@@ -16,9 +14,9 @@ export function drawWinner({ participants, subscriberMultiplier, excludeIds = []
         return null;
     }
 
-    // Calculate total tickets based on tier multipliers
+    // Calculate total tickets based on subscriber status
     const participantsWithTickets = eligibleParticipants.map(participant => {
-        const multiplier = participant.tier === SubscriptionTierWithFree.FREE ? 1 : subscriberMultiplier[participant.tier] || 1;
+        const multiplier = participant.subscriber ? subscriberMultiplier : 1;
         return {
             participant,
             tickets: multiplier

@@ -1,13 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import tmi from "tmi.js";
 import type { ChatMessage, ChatParticipant } from "../../types";
-import { SubscriptionTierWithFree, type SubscriptionTierWithFree as SubscriptionTierWithFreeType } from "@/service/twitch/types";
 import { parseBadgeRaw } from "./utils";
 
 interface UseChatListenerOptions {
     channel: string;
     keyword: string;
-    minimumTier: SubscriptionTierWithFreeType;
     minimumSuscriptionTimeInMonths?: number;
 }
 
@@ -65,7 +63,7 @@ export function useChatListener({
             avatar: `https://static-cdn.jtvnw.net/user-default-pictures-uv/ebe4cd89-b4f4-4cd9-adac-2f30151b4209-profile_image-70x70.png`,
             message: message,
             timestamp: new Date().toISOString(),
-            tier: SubscriptionTierWithFree.FREE,
+            subscriber: userstate.subscriber || false,
             subscriptionMonths: subscriptionMonths,
         };
     }, []);
@@ -91,7 +89,7 @@ export function useChatListener({
             id: chatMessage.userId,
             name: chatMessage.userName,
             displayName: chatMessage.displayName,
-            tier: SubscriptionTierWithFree.FREE,
+            subscriber: chatMessage.subscriber,
             avatar: chatMessage.avatar,
             message: chatMessage.message,
             timestamp: chatMessage.timestamp,

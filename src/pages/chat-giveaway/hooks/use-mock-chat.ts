@@ -1,6 +1,5 @@
 // Mock chat data generator
 import type { ChatMessage, ChatParticipant } from "../types";
-import { TwitchSubscriptionTier, SubscriptionTierWithFree, type SubscriptionTierWithFree as SubscriptionTierWithFreeType } from "@/service/twitch/types";
 
 const mockUsernames = [
     "StreamMaster",
@@ -45,7 +44,7 @@ export function generateMockChatMessages(count: number = 50): ChatMessage[] {
 
     for (let i = 0; i < count; i++) {
         const username = mockUsernames[Math.floor(Math.random() * mockUsernames.length)];
-        const tier = getMockTier();
+        const subscriber = Math.random() < 0.6; // 60% chance of being a subscriber
 
         messages.push({
             id: `msg-${i}-${Date.now()}`,
@@ -55,20 +54,12 @@ export function generateMockChatMessages(count: number = 50): ChatMessage[] {
             avatar: mockAvatars[Math.floor(Math.random() * mockAvatars.length)],
             message: mockMessages[Math.floor(Math.random() * mockMessages.length)],
             timestamp: new Date(now - (count - i) * 5000).toISOString(),
-            tier,
-            subscriptionMonths: tier === SubscriptionTierWithFree.FREE ? undefined : Math.floor(Math.random() * 24) + 1,
+            subscriber,
+            subscriptionMonths: subscriber ? Math.floor(Math.random() * 24) + 1 : undefined,
         });
     }
 
     return messages;
-}
-
-function getMockTier(): SubscriptionTierWithFreeType {
-    const rand = Math.random();
-    if (rand < 0.4) return SubscriptionTierWithFree.FREE;
-    if (rand < 0.7) return TwitchSubscriptionTier.TIER_1;
-    if (rand < 0.9) return TwitchSubscriptionTier.TIER_2;
-    return TwitchSubscriptionTier.TIER_3;
 }
 
 export function convertMessageToParticipant(
@@ -85,31 +76,9 @@ export function convertMessageToParticipant(
         name: message.userName,
         displayName: message.displayName,
         avatar: message.avatar,
-        tier: message.tier,
+        subscriber: message.subscriber,
         message: message.message,
         timestamp: message.timestamp,
     };
 }
 
-export function filterParticipantsByMinimumTier(
-    participants: ChatParticipant[],
-    minimumTier: SubscriptionTierWithFreeType
-): ChatParticipant[] {
-    if (minimumTier === SubscriptionTierWithFree.FREE) {
-        return participants;
-    }
-
-    const tierOrder: Record<SubscriptionTierWithFreeType, number> = {
-        [SubscriptionTierWithFree.FREE]: 0,
-        [SubscriptionTierWithFree.TIER_1]: 1,
-        [SubscriptionTierWithFree.TIER_2]: 2,
-        [SubscriptionTierWithFree.TIER_3]: 3,
-    };
-
-    const minTierValue = tierOrder[minimumTier];
-
-    return participants.filter(p => {
-        const participantTierValue = tierOrder[p.tier];
-        return participantTierValue >= minTierValue;
-    });
-}
