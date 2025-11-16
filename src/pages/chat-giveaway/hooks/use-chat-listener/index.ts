@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import tmi from "tmi.js";
 import type { ChatMessage, ChatParticipant } from "../../types";
-import { parseBadgeRaw } from "./utils";
+import { convertTmiMessage, convertMessageToParticipant } from "./utils";
 
 interface UseChatListenerOptions {
     channel: string;
@@ -38,70 +38,6 @@ export function useChatListener({
     const [error, setError] = useState<string | null>(null);
     
     const clientRef = useRef<tmi.Client | null>(null);
-
-
-    // Function to convert TMI message to our ChatMessage format
-    const convertTmiMessage = useCallback((
-        userstate: tmi.ChatUserstate,
-        message: string
-    ): ChatMessage => {
-        console.log("Userstate:", userstate);
-
-        const badgeInfo = parseBadgeRaw(userstate["badge-info-raw"] ?? "");
-        const rawSubscriptionMonths = badgeInfo["founder"] ?? userstate["badge-info"]?.subscriber;
-        let subscriptionMonths = undefined;
-        if (rawSubscriptionMonths) {
-            const parsed = parseInt(rawSubscriptionMonths, 10);
-            if (!isNaN(parsed)) {
-                subscriptionMonths = parsed;
-            }
-        }
-
-        return {
-            id: `${userstate.id || Date.now()}-${Math.random()}`,
-            userId: userstate["user-id"] || "unknown",
-            userName: userstate.username || "unknown",
-            displayName: userstate["display-name"] || userstate.username || "Unknown",
-            avatar: `https://static-cdn.jtvnw.net/user-default-pictures-uv/ebe4cd89-b4f4-4cd9-adac-2f30151b4209-profile_image-70x70.png`,
-            message: message,
-            timestamp: new Date().toISOString(),
-            subscriber: userstate.subscriber || false,
-            subscriptionMonths: subscriptionMonths,
-        };
-    }, []);
-
-    // Function to convert ChatMessage to ChatParticipant if it contains keyword
-    const convertMessageToParticipant = useCallback((
-        chatMessage: ChatMessage
-    ): ChatParticipant | null => {
-        // Check if message contains the keyword
-        if (keyword.length > 0 && !chatMessage.message.toLowerCase().includes(keyword.toLowerCase())) {
-            return null;
-        }
-
-        // Check if subscribersOnly is enabled and user is not a subscriber
-        if (subscribersOnly && !chatMessage.subscriber) {
-            return null;
-        }
-
-        // Check if user meets minimum subscription time requirement
-        if (minimumSuscriptionTimeInMonths > 0) {
-            // If subscription months is undefined or less than minimum, exclude
-            if (!chatMessage.subscriptionMonths || chatMessage.subscriptionMonths < minimumSuscriptionTimeInMonths) {
-                return null;
-            }
-        }
-
-        return {
-            id: chatMessage.userId,
-            name: chatMessage.userName,
-            displayName: chatMessage.displayName,
-            subscriber: chatMessage.subscriber,
-            avatar: chatMessage.avatar,
-            message: chatMessage.message,
-            timestamp: chatMessage.timestamp,
-        };
-    }, [keyword, minimumSuscriptionTimeInMonths, subscribersOnly]);
 
     // Connect to Twitch chat
     const connect = useCallback(async () => {
@@ -153,7 +89,11 @@ export function useChatListener({
                 });
 
                 // Check if this message creates a participant
-                const participant = convertMessageToParticipant(chatMessage);
+                const participant = convertMessageToParticipant(chatMessage, {
+                    keyword,
+                    minimumSuscriptionTimeInMonths,
+                    subscribersOnly
+                });
                 if (participant) {
                     setAllParticipants(prev => {
                         // Remove duplicates by user ID, keep the latest entry
@@ -172,7 +112,7 @@ export function useChatListener({
             setError(err instanceof Error ? err.message : "Unknown error");
             setConnectionStatus("error");
         }
-    }, [channel, convertTmiMessage, convertMessageToParticipant]);
+    }, [channel, keyword, minimumSuscriptionTimeInMonths, subscribersOnly]);
 
     // Disconnect from chat
     const disconnect = useCallback(async () => {
@@ -238,7 +178,11 @@ export function useChatListener({
         // Process messages in reverse order to get the latest entry for each user
         messages.reverse().forEach(message => {
             if (!seenUserIds.has(message.userId)) {
-                const participant = convertMessageToParticipant(message);
+                const participant = convertMessageToParticipant(message, {
+                    keyword,
+                    minimumSuscriptionTimeInMonths,
+                    subscribersOnly
+                });
                 if (participant) {
                     newParticipants.unshift(participant); // Add to beginning to maintain chronological order
                     seenUserIds.add(message.userId);
@@ -247,7 +191,7 @@ export function useChatListener({
         });
 
         setAllParticipants(newParticipants);
-    }, [messages, convertMessageToParticipant]);
+    }, [messages, keyword, minimumSuscriptionTimeInMonths, subscribersOnly]);
 
     return {
         participants,
