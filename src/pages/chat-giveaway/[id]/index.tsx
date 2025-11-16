@@ -313,7 +313,16 @@ export function ChatGiveawayDetail() {
                                                     <div className="flex items-center gap-2 px-4 py-3 border-b hover:bg-accent font-medium">
                                                         {participant.displayName}
                                                         {participant.subscriber && (
-                                                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>Subscriber</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
                                                         )}
                                                     </div>
                                                 </div>

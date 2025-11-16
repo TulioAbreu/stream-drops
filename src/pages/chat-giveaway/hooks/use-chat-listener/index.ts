@@ -55,7 +55,7 @@ export function useChatListener({
                     reconnect: true,
                     secure: true,
                 },
-                channels: ["jstern25"]
+                channels: [channel]
             });
 
             // Event handlers
@@ -170,7 +170,7 @@ export function useChatListener({
                     subscribersOnly
                 });
                 if (participant) {
-                    newParticipants.unshift(participant); // Add to beginning to maintain chronological order
+                    newParticipants.push(participant); // Add to end, array is reversed so newest appear first
                     seenUserIds.add(message.userId);
                 }
             }
