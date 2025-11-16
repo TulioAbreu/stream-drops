@@ -87,21 +87,6 @@ export function useChatListener({
                     const newMessages = [...prev, chatMessage];
                     return newMessages.slice(-100);
                 });
-
-                // Check if this message creates a participant
-                const participant = convertMessageToParticipant(chatMessage, {
-                    keyword,
-                    minimumSuscriptionTimeInMonths,
-                    subscribersOnly
-                });
-                if (participant) {
-                    setAllParticipants(prev => {
-                        // Remove duplicates by user ID, keep the latest entry
-                        const filtered = prev.filter(p => p.id !== participant.id);
-                        // Add to the beginning so newest participants appear first
-                        return [participant, ...filtered];
-                    });
-                }
             });
 
             await client.connect();
@@ -112,7 +97,7 @@ export function useChatListener({
             setError(err instanceof Error ? err.message : "Unknown error");
             setConnectionStatus("error");
         }
-    }, [channel, keyword, minimumSuscriptionTimeInMonths, subscribersOnly]);
+    }, [channel]);
 
     // Disconnect from chat
     const disconnect = useCallback(async () => {
@@ -176,7 +161,8 @@ export function useChatListener({
         const seenUserIds = new Set<string>();
 
         // Process messages in reverse order to get the latest entry for each user
-        messages.reverse().forEach(message => {
+        // Create a reversed copy to avoid mutating the original array
+        [...messages].reverse().forEach(message => {
             if (!seenUserIds.has(message.userId)) {
                 const participant = convertMessageToParticipant(message, {
                     keyword,
