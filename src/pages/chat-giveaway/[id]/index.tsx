@@ -11,14 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Wifi, WifiOff } from "lucide-react";
+import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Wifi, WifiOff, Star } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
 import { drawWinner } from "@/service/chat-giveaway";
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl } from "@/lib/utils";
-import { SubscriptionTierWithFree } from "@/service/twitch/types";
 import { useTranslation } from "react-i18next";
 import type { ChatParticipant } from "../types";
 import { WinnerConfirmationModal } from "./components/winner-confirmation-modal";
@@ -53,7 +52,6 @@ export function ChatGiveawayDetail() {
     } = useChatListener({
         channel: userData?.login || "",
         keyword: giveaway?.keyword || "",
-        minimumTier: giveaway?.minimumTier || "free",
         minimumSuscriptionTimeInMonths: giveaway?.minimumSuscriptionTimeInMonths || 0,
     });
 
@@ -171,13 +169,6 @@ export function ChatGiveawayDetail() {
         );
     }
 
-    const tierLabels: Record<string, string> = {
-        [SubscriptionTierWithFree.FREE]: "Free",
-        [SubscriptionTierWithFree.TIER_1]: "Tier 1",
-        [SubscriptionTierWithFree.TIER_2]: "Tier 2",
-        [SubscriptionTierWithFree.TIER_3]: "Tier 3",
-    };
-
     return (
         <Layout>
             <div className="flex flex-col gap-4">
@@ -190,10 +181,14 @@ export function ChatGiveawayDetail() {
                         )}
                         <div className="flex gap-2 mt-3">
                             <Badge variant="outline">Palavra-chave: {giveaway.keyword}</Badge>
-                            <Badge variant="outline">Tier mínimo: {tierLabels[giveaway.minimumTier]}</Badge>
                             {giveaway.minimumSuscriptionTimeInMonths > 0 && (
                                 <Badge variant="outline">
                                     Mínimo: {giveaway.minimumSuscriptionTimeInMonths} {giveaway.minimumSuscriptionTimeInMonths === 1 ? 'mês' : 'meses'} de sub
+                                </Badge>
+                            )}
+                            {giveaway.subscriberMultiplier > 1 && (
+                                <Badge variant="outline">
+                                    Multiplicador Sub: {giveaway.subscriberMultiplier}x
                                 </Badge>
                             )}
                         </div>
@@ -313,9 +308,9 @@ export function ChatGiveawayDetail() {
                                                 >
                                                     <div className="flex items-center gap-2 px-4 py-3 border-b hover:bg-accent font-medium">
                                                         {participant.displayName}
-                                                        <Badge variant="secondary" className="text-xs">
-                                                            {tierLabels[participant.tier]}
-                                                        </Badge>
+                                                        {participant.subscriber && (
+                                                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
