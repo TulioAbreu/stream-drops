@@ -122,7 +122,11 @@ export function ChatGiveaway() {
                                             </a>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">{giveaway.keyword}</Badge>
+                                            {giveaway.keyword ? (
+                                                <Badge variant="outline">{giveaway.keyword}</Badge>
+                                            ) : (
+                                                <span className="text-muted-foreground text-sm">-</span>
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             {firstWinnerDate}
