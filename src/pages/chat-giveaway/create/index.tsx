@@ -54,7 +54,10 @@ export function ChatGiveawayCreate() {
             <h1 className="text-2xl font-bold mb-6">Criar Chat Giveaway</h1>
             <div className="flex flex-col gap-4">
                 <div className={FIELD_CONTAINER}>
-                    <Label>Título</Label>
+                    <Label>
+                        Título
+                        <span className="text-destructive ml-1">*</span>
+                    </Label>
                     <Input
                         placeholder="Título do sorteio"
                         {...form.register("title", {
@@ -64,7 +67,7 @@ export function ChatGiveawayCreate() {
                 </div>
 
                 <div className={FIELD_CONTAINER}>
-                    <Label>Descrição (opcional)</Label>
+                    <Label>Descrição</Label>
                     <Textarea
                         placeholder="Descrição do sorteio"
                         className="resize-none"
@@ -81,7 +84,7 @@ export function ChatGiveawayCreate() {
                 </div>
 
                 <div className={FIELD_CONTAINER}>
-                    <Label>Tempo mínimo de inscrição (meses, opcional)</Label>
+                    <Label>Tempo mínimo de inscrição (meses)</Label>
                     <Input
                         type="number"
                         placeholder="0"
