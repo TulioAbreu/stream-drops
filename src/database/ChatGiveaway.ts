@@ -1,4 +1,5 @@
 import { openDb } from ".";
+import type { ChatParticipant } from "@/pages/chat-giveaway/types";
 
 export interface ChatGiveawayWinner {
     id: string;
@@ -18,6 +19,7 @@ export interface ChatGiveawayFormData {
     subscriberMultiplier: number;
     subscribersOnly: boolean;
     winners: ChatGiveawayWinner[];
+    participants?: ChatParticipant[];
     createdAt: string;
     updatedAt: string;
 }

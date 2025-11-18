@@ -40,6 +40,7 @@ export function ChatGiveawayCreate() {
                 subscriberMultiplier: data.subscriberMultiplier,
                 subscribersOnly: data.subscribersOnly,
                 winners: [],
+                participants: [],
                 createdAt: now,
                 updatedAt: now,
             });

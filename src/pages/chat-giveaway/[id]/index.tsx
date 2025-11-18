@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout";
 import { useParams, useNavigate } from "react-router";
 import { useChatGiveawayDb, type ChatGiveawayWinner } from "@/database/ChatGiveaway";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +40,7 @@ export function ChatGiveawayDetail() {
 
     // Use chat listener when we have user data and giveaway data
     const {
-        participants,
+        participants: liveParticipants,
         allParticipants,
         messages,
         isConnected,
@@ -55,6 +55,20 @@ export function ChatGiveawayDetail() {
         minimumSuscriptionTimeInMonths: giveaway?.minimumSuscriptionTimeInMonths || 0,
         subscribersOnly: giveaway?.subscribersOnly || false,
     });
+
+    // Merge saved participants with live participants (deduplicate by id)
+    const participants = useMemo(() => {
+        const savedParticipants = giveaway?.participants || [];
+        const participantsMap = new Map<string, ChatParticipant>();
+
+        // Add saved participants first
+        savedParticipants.forEach(p => participantsMap.set(p.id, p));
+
+        // Add/update with live participants
+        liveParticipants.forEach(p => participantsMap.set(p.id, p));
+
+        return Array.from(participantsMap.values());
+    }, [giveaway?.participants, liveParticipants]);
 
     // Virtual scrolling for participants list
     const rowVirtualizer = useVirtualizer({
@@ -129,13 +143,19 @@ export function ChatGiveawayDetail() {
         const updatedGiveaway = {
             ...giveaway,
             winners: [...giveaway.winners, newWinner],
+            participants: participants,
             updatedAt: new Date().toISOString(),
         };
 
-        await updateChatGiveaway(updatedGiveaway);
-        setGiveaway(updatedGiveaway);
+        try {
+            await updateChatGiveaway(updatedGiveaway);
+            setGiveaway(updatedGiveaway);
 
-        toast.success(`🎉 ${pendingWinner.displayName} foi confirmado como vencedor!`);
+            toast.success(`🎉 ${pendingWinner.displayName} foi confirmado como vencedor!`);
+        } catch (error) {
+            console.error("Error saving winner and participants:", error);
+            toast.error("Erro ao salvar vencedor. Tente novamente.");
+        }
 
         // Reset modal state
         setPendingWinner(null);
