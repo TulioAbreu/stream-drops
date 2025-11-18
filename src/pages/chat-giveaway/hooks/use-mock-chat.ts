@@ -77,8 +77,8 @@ export function convertMessageToParticipant(
         displayName: message.displayName,
         avatar: message.avatar,
         subscriber: message.subscriber,
-        message: message.message,
-        timestamp: message.timestamp,
+        joinedAt: Date.parse(message.timestamp),
+        subscriptionMonths: message.subscriptionMonths,
     };
 }
 
