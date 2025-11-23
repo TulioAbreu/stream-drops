@@ -50,7 +50,7 @@ export function ChatGiveawayDetail() {
         filterParticipants,
         nameFilter
     } = useChatListener({
-        channel: "antedeguemonn",
+        channel: userData?.login || "",
         keyword: giveaway?.keyword || "",
         minimumSuscriptionTimeInMonths: giveaway?.minimumSuscriptionTimeInMonths || 0,
         subscribersOnly: giveaway?.subscribersOnly || false,
