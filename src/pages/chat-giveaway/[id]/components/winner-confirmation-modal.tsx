@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Trophy, CheckIcon, XIcon, Clock, Star } from "lucide-react";
 import confetti from "canvas-confetti";
 import type { ChatParticipant, ChatMessage } from "../../types";
+import { ChatContainer } from "./chat-container";
 
 interface WinnerConfirmationModalProps {
     pendingWinner: ChatParticipant | null;
@@ -25,6 +25,16 @@ export function WinnerConfirmationModal({
     const [timerStartTimestamp, setTimerStartTimestamp] = useState<number | null>(null);
     const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
     const [isPaused, setIsPaused] = useState<boolean>(false);
+
+    // Filter winner messages once - only messages after they were drawn
+    const winnerMessages = useMemo(() => {
+        if (!pendingWinner || !timerStartTimestamp) return [];
+
+        return messages.filter(
+            msg => msg.userId === pendingWinner.id &&
+                new Date(msg.timestamp).getTime() > timerStartTimestamp
+        );
+    }, [messages, pendingWinner, timerStartTimestamp]);
 
     // Format seconds to HH:MM:SS
     const formatElapsedTime = (seconds: number): string => {
@@ -94,15 +104,10 @@ export function WinnerConfirmationModal({
     useEffect(() => {
         if (!pendingWinner || !timerStartTimestamp || isPaused) return;
 
-        // Find messages from winner after timer started
-        const newMessagesAfterTimer = messages.filter(
-            msg => msg.userId === pendingWinner.id && new Date(msg.timestamp).getTime() > timerStartTimestamp
-        );
-
-        if (newMessagesAfterTimer.length > 0) {
+        if (winnerMessages.length > 0) {
             setIsPaused(true);
         }
-    }, [messages, pendingWinner, timerStartTimestamp, isPaused]);
+    }, [winnerMessages, timerStartTimestamp, isPaused, pendingWinner]);
 
     // Timer effect
     useEffect(() => {
@@ -170,28 +175,15 @@ export function WinnerConfirmationModal({
 
                         {/* Winner Messages */}
                         <div className="border rounded-lg">
-                            <ScrollArea className="h-[300px]">
-                                <div className="p-3 space-y-2">
-                                    {messages
-                                        .filter(msg => msg.userId === pendingWinner.id)
-                                        .slice(-20) // Last 20 messages
-                                        .map((msg) => (
-                                            <div key={msg.id} className="flex gap-2 p-2 rounded bg-muted/50">
-                                                <div className="flex-1">
-                                                    <p className="text-sm">{msg.message}</p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {new Date(msg.timestamp).toLocaleTimeString('pt-BR')}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    {messages.filter(msg => msg.userId === pendingWinner.id).length === 0 && (
-                                        <p className="text-center text-muted-foreground text-sm py-8">
-                                            Nenhuma mensagem do vencedor ainda
-                                        </p>
-                                    )}
-                                </div>
-                            </ScrollArea>
+                            <ChatContainer
+                                messages={winnerMessages}
+                                className="h-[300px] overflow-auto"
+                                emptyState={
+                                    <p className="text-center text-muted-foreground text-sm py-8">
+                                        Nenhuma mensagem do vencedor ainda
+                                    </p>
+                                }
+                            />
                         </div>
                     </div>
                 )}
