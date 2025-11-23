@@ -22,7 +22,9 @@ export function WinnerConfirmationModal({
     onCancel
 }: WinnerConfirmationModalProps) {
     const [confirmationStartTime, setConfirmationStartTime] = useState<Date | null>(null);
+    const [timerStartTimestamp, setTimerStartTimestamp] = useState<number | null>(null);
     const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+    const [isPaused, setIsPaused] = useState<boolean>(false);
 
     // Format seconds to HH:MM:SS
     const formatElapsedTime = (seconds: number): string => {
@@ -36,8 +38,11 @@ export function WinnerConfirmationModal({
     // Start timer when modal opens with a pending winner
     useEffect(() => {
         if (pendingWinner && !confirmationStartTime) {
-            setConfirmationStartTime(new Date());
+            const now = new Date();
+            setConfirmationStartTime(now);
+            setTimerStartTimestamp(now.getTime());
             setElapsedSeconds(0);
+            setIsPaused(false);
 
             // Fire confetti with realistic look
             const count = 200;
@@ -78,14 +83,30 @@ export function WinnerConfirmationModal({
 
         } else if (!pendingWinner && confirmationStartTime) {
             setConfirmationStartTime(null);
+            setTimerStartTimestamp(null);
             setElapsedSeconds(0);
+            setIsPaused(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingWinner]); // Only depend on pendingWinner to avoid infinite loop
 
+    // Check for new messages from winner after timer started
+    useEffect(() => {
+        if (!pendingWinner || !timerStartTimestamp || isPaused) return;
+
+        // Find messages from winner after timer started
+        const newMessagesAfterTimer = messages.filter(
+            msg => msg.userId === pendingWinner.id && new Date(msg.timestamp).getTime() > timerStartTimestamp
+        );
+
+        if (newMessagesAfterTimer.length > 0) {
+            setIsPaused(true);
+        }
+    }, [messages, pendingWinner, timerStartTimestamp, isPaused]);
+
     // Timer effect
     useEffect(() => {
-        if (!confirmationStartTime) return;
+        if (!confirmationStartTime || isPaused) return;
 
         const interval = setInterval(() => {
             const now = new Date();
@@ -94,11 +115,13 @@ export function WinnerConfirmationModal({
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [confirmationStartTime]);
+    }, [confirmationStartTime, isPaused]);
 
     const handleCancel = () => {
         setConfirmationStartTime(null);
+        setTimerStartTimestamp(null);
         setElapsedSeconds(0);
+        setIsPaused(false);
         onCancel();
     };
 
@@ -139,7 +162,7 @@ export function WinnerConfirmationModal({
                                     )}
                                 </p>
                             </div>
-                            <div className="absolute top-2 right-2 flex items-center gap-1 text-xs font-mono text-muted-foreground">
+                            <div className={`absolute top-2 right-2 flex items-center gap-1 text-xs font-mono ${isPaused ? 'text-orange-500' : 'text-muted-foreground'}`}>
                                 <Clock className="w-3 h-3" />
                                 {formatElapsedTime(elapsedSeconds)}
                             </div>
@@ -152,8 +175,8 @@ export function WinnerConfirmationModal({
                                     {messages
                                         .filter(msg => msg.userId === pendingWinner.id)
                                         .slice(-20) // Last 20 messages
-                                        .map((msg, index) => (
-                                            <div key={`${msg.id}-${index}`} className="flex gap-2 p-2 rounded bg-muted/50">
+                                        .map((msg) => (
+                                            <div key={msg.id} className="flex gap-2 p-2 rounded bg-muted/50">
                                                 <div className="flex-1">
                                                     <p className="text-sm">{msg.message}</p>
                                                     <p className="text-xs text-muted-foreground">
