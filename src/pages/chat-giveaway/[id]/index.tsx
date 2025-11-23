@@ -50,7 +50,7 @@ export function ChatGiveawayDetail() {
         filterParticipants,
         nameFilter
     } = useChatListener({
-        channel: userData?.login || "",
+        channel: "antedeguemonn",
         keyword: giveaway?.keyword || "",
         minimumSuscriptionTimeInMonths: giveaway?.minimumSuscriptionTimeInMonths || 0,
         subscribersOnly: giveaway?.subscribersOnly || false,
@@ -321,6 +321,31 @@ export function ChatGiveawayDetail() {
                                     >
                                         {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                                             const participant = sortedParticipants[virtualRow.index];
+
+                                            // Determine badge style based on subscription months
+                                            const getSubBadgeStyle = (months: number | undefined) => {
+                                                if (!months) return "";
+
+                                                if (months >= 48) {
+                                                    // Ultra rare: animated rainbow gradient
+                                                    return "bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 bg-[length:200%_100%] animate-[gradient_3s_ease_infinite] text-white border-0";
+                                                } else if (months >= 36) {
+                                                    // Gold
+                                                    return "bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 bg-[length:200%_100%] animate-[gradient_3s_ease_infinite] text-black border-0";
+                                                } else if (months >= 24) {
+                                                    // Purple
+                                                    return "bg-gradient-to-r from-purple-500 via-purple-600 to-purple-500 bg-[length:200%_100%] animate-[gradient_3s_ease_infinite] text-white border-0";
+                                                } else if (months >= 12) {
+                                                    // Blue
+                                                    return "bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 bg-[length:200%_100%] animate-[gradient_3s_ease_infinite] text-white border-0";
+                                                }
+                                                return "";
+                                            };
+
+                                            const badgeStyle = giveaway && giveaway.minimumSuscriptionTimeInMonths > 0
+                                                ? getSubBadgeStyle(participant.subscriptionMonths)
+                                                : "";
+
                                             return (
                                                 <div
                                                     key={virtualRow.key}
@@ -346,6 +371,14 @@ export function ChatGiveawayDetail() {
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             </TooltipProvider>
+                                                        )}
+                                                        {giveaway && giveaway.minimumSuscriptionTimeInMonths > 0 && participant.subscriptionMonths && (
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className={`text-xs font-semibold ${badgeStyle}`}
+                                                            >
+                                                                {participant.subscriptionMonths} {participant.subscriptionMonths === 1 ? 'mês' : 'meses'}
+                                                            </Badge>
                                                         )}
                                                     </div>
                                                 </div>
