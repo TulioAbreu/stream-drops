@@ -101,47 +101,52 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <div className="p-4 flex space-between items-center">
-          {userData ? (
-            <div className="flex flex-row items-center w-full justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={userData.profileImageUrl} alt={userData.displayName} />
-                  <AvatarFallback>{userData.displayName.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="text-sm">{userData.displayName}</div>
-                </div>
-              </div>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <LogOutIcon className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogTitle>{t("SIDEBAR_LOGOUT_DIALOG_TITLE")}</DialogTitle>
-                      <DialogDescription>
-                        {t("SIDEBAR_LOGOUT_DIALOG_DESCRIPTION")}
-                      </DialogDescription>
-                      <DialogFooter>
-                        <Button variant="destructive" onClick={handleLogout}>
-                          <LogOutIcon className="h-4 w-4" />
-                          {t("SIDEBAR_LOGOUT_BUTTON")}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {t("SIDEBAR_LOGOUT_BUTTON_TOOLTIP")}
-                </TooltipContent>
-              </Tooltip>
+          <div className="flex flex-row items-center w-full justify-between">
+            <div className="flex items-center gap-3">
+              {userData ? (
+                <>
+                  <Avatar>
+                    <AvatarImage src={userData.profileImageUrl} alt={userData.displayName} />
+                    <AvatarFallback>{userData.displayName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="text-sm">{userData.displayName}</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Skeleton className="w-10 h-10 rounded-full" />
+                  <Skeleton className="w-24 h-4 rounded-md" />
+                </>
+              )}
             </div>
-          ) : (
-            <Skeleton className="w-full h-10 rounded-md" />
-          )}
+            <Tooltip>
+              <TooltipTrigger>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <LogOutIcon className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogTitle>{t("SIDEBAR_LOGOUT_DIALOG_TITLE")}</DialogTitle>
+                    <DialogDescription>
+                      {t("SIDEBAR_LOGOUT_DIALOG_DESCRIPTION")}
+                    </DialogDescription>
+                    <DialogFooter>
+                      <Button variant="destructive" onClick={handleLogout}>
+                        <LogOutIcon className="h-4 w-4" />
+                        {t("SIDEBAR_LOGOUT_BUTTON")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {t("SIDEBAR_LOGOUT_BUTTON_TOOLTIP")}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>
