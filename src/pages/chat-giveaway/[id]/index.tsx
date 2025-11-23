@@ -203,14 +203,21 @@ export function ChatGiveawayDetail() {
                         {giveaway.description && (
                             <p className="text-muted-foreground">{giveaway.description}</p>
                         )}
+                        {giveaway.keyword && (
+                            <p className="text-muted-foreground mt-2 flex items-center gap-2 flex-wrap">
+                                Envie <Badge variant="secondary" className="font-mono">{giveaway.keyword}</Badge> no chat para participar
+                            </p>
+                        )}
                         <div className="flex gap-2 mt-3">
-                            <Badge variant="outline">Palavra-chave: {giveaway.keyword}</Badge>
+                            {giveaway.keyword && (
+                                <Badge variant="outline">Palavra-chave: {giveaway.keyword}</Badge>
+                            )}
                             {giveaway.subscribersOnly && (
                                 <Badge variant="secondary">Apenas Subscribers</Badge>
                             )}
                             {giveaway.minimumSuscriptionTimeInMonths > 0 && (
                                 <Badge variant="outline">
-                                    Mínimo: {giveaway.minimumSuscriptionTimeInMonths} {giveaway.minimumSuscriptionTimeInMonths === 1 ? 'mês' : 'meses'} de sub
+                                    Necessário ter {giveaway.minimumSuscriptionTimeInMonths} {giveaway.minimumSuscriptionTimeInMonths === 1 ? 'mês' : 'meses'} de Subscription
                                 </Badge>
                             )}
                             {giveaway.subscriberMultiplier > 1 && (
