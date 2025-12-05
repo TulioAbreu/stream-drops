@@ -8,7 +8,7 @@ import { useChatGiveawayDb } from "@/database/ChatGiveaway";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { useNavigate } from "react-router";
-import { ArrowRight, Copy, MessageSquare, Plus, TrashIcon, MoreHorizontal, FilePlus } from "lucide-react";
+import { ArrowRight, Copy, MessageSquare, Plus, TrashIcon, MoreHorizontal, FilePlus, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { v7 } from "uuid";
 import { DialogTitle } from "@radix-ui/react-dialog";
@@ -413,6 +413,27 @@ export function ChatGiveaway() {
                                 <Copy className="mr-2 h-4 w-4" />
                                 <span>{t("CHAT_GIVEAWAY_TABLE_ACTIONS_DUPLICATE", "Duplicar")}</span>
                               </DropdownMenuItem>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <DropdownMenuItem
+                                        className="cursor-pointer"
+                                        onClick={() => navigate(`/dashboard/chat-giveaway/${giveaway.id}/edit`)}
+                                        disabled={giveaway.winners.length > 0}
+                                      >
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        <span>Editar</span>
+                                      </DropdownMenuItem>
+                                    </span>
+                                  </TooltipTrigger>
+                                  {giveaway.winners.length > 0 && (
+                                    <TooltipContent side="left">
+                                      <p>Este sorteio já ocorreu e não pode mais ser editado.</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
+                              </TooltipProvider>
                               <DropdownMenuItem className="cursor-pointer" onClick={() => onClickCreateTemplate(giveaway)}>
                                 <FilePlus className="mr-2 h-4 w-4" />
                                 <span>Criar Template</span>
