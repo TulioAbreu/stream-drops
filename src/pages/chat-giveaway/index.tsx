@@ -32,68 +32,53 @@ export function ChatGiveaway() {
     navigate("/dashboard/chat-giveaway/create");
   };
 
-  const fetchGiveaways = useCallback(async () => {
-    setIsLoading(true);
+  const fetchGiveaways = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
     const giveawaysData = await getChatGiveaways();
     setGiveaways(giveawaysData);
-    setIsLoading(false);
+    if (showLoading) setIsLoading(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onClickConfirmDeleteGiveaway = async (giveawayId: string) => {
     startIsDeletingGiveawayTransition(async () => {
       await deleteChatGiveaway(giveawayId);
-      fetchGiveaways();
+      fetchGiveaways(false);
     });
-  };
-
-  const computeDuplicatedTitle = (originalTitle: string, existingTitles: string[]) => {
-    // If original already ends with " (Cópia)" or " (Cópia N)", consider base without that suffix
-    const suffixRegex = /(.*)\s\(Cópia(?: (\d+))?\)$/;
-    const m = originalTitle.match(suffixRegex);
-    const base = m ? m[1] : originalTitle;
-
-    // Escape base for regex
-    const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const escapedBase = escapeRegExp(base);
-
-    // Match titles that are copies of this base: "Base (Cópia)" or "Base (Cópia N)"
-    const copyMatch = new RegExp(`^${escapedBase} \\(Cópia(?: (\\d+))?\\)$`);
-
-    let max = 0;
-    for (const t of existingTitles) {
-      if (t === base) continue; // skip the original base title
-      const mm = t.match(copyMatch);
-      if (mm) {
-        const numStr = mm[1];
-        const num = numStr ? parseInt(numStr, 10) : 1;
-        if (!Number.isNaN(num) && num > max) max = num;
-      }
-    }
-
-    const next = max + 1;
-    return next === 1 ? `${base} (Cópia)` : `${base} (Cópia ${next})`;
   };
 
   const onClickDuplicateGiveaway = async (giveaway: ChatGiveawayFormData) => {
     setDuplicatingId(giveaway.id);
     startIsDuplicatingGiveawayTransition(async () => {
       try {
-        // Re-fetch existing giveaways to compute proper counter
-        const existing = await getChatGiveaways();
-        const existingTitles = existing.map((g) => g.title);
-        const newTitle = computeDuplicatedTitle(giveaway.title, existingTitles);
+        const now = new Date();
+        const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }).format(now);
 
-        const now = new Date().toISOString();
+        const timestampRegex = /\s\(\d{2}\/\d{2}\/\d{2},?\s\d{2}:\d{2}:\d{2}\)$/;
+        let baseTitle = giveaway.title;
+        if (timestampRegex.test(baseTitle)) {
+          baseTitle = baseTitle.replace(timestampRegex, "");
+        }
+
+        const newTitle = `${baseTitle} (${formattedDate})`;
+
+        const nowIso = now.toISOString();
         const duplicatedGiveaway: ChatGiveawayFormData = {
           ...giveaway,
           id: v7(),
           title: newTitle,
           winners: [],
-          createdAt: now,
-          updatedAt: now,
+          createdAt: nowIso,
+          updatedAt: nowIso,
         };
         await addChatGiveaway(duplicatedGiveaway);
-        await fetchGiveaways();
+        await fetchGiveaways(false);
       } finally {
         setDuplicatingId(null);
       }
@@ -101,12 +86,8 @@ export function ChatGiveaway() {
   };
 
   useEffect(() => {
-    const loadGiveaways = async () => {
-      const data = await getChatGiveaways();
-      setGiveaways(data);
-    };
-    loadGiveaways();
-  }, [getChatGiveaways]);
+    fetchGiveaways();
+  }, [fetchGiveaways]);
 
   return (
     <Layout>
