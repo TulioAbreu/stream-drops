@@ -35,6 +35,7 @@ export function ChatGiveaway() {
   const fetchGiveaways = useCallback(async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
     const giveawaysData = await getChatGiveaways();
+    giveawaysData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setGiveaways(giveawaysData);
     if (showLoading) setIsLoading(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
