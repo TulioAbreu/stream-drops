@@ -68,5 +68,6 @@
     "SIDEBAR_LOGOUT_DIALOG_TITLE": "Confirmar Logout",
     "SIDEBAR_LOGOUT_DIALOG_DESCRIPTION": "Ao sair da conta, o histórico dos seus sorteios será apagado. Deseja continuar?",
     "SIDEBAR_LOGOUT_BUTTON": "Sair da conta",
-    "APP_NAME": "StreamDrops"
+    "APP_NAME": "StreamDrops",
+    "CHAT_GIVEAWAY_TABLE_ACTIONS_DUPLICATE": "Duplicar"
 }
