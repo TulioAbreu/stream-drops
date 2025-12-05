@@ -1,5 +1,5 @@
 const DATABASE_NAME = "stream-drops-db";
-const DATABASE_VERSION = 9;
+const DATABASE_VERSION = 10;
 
 // Singleton cache for database connection
 let dbInstance: IDBDatabase | null = null;
@@ -48,6 +48,13 @@ const stores: DatabaseTable[] = [
         }
     },
     {
+        name: "chat-giveaway-templates",
+        primaryKey: {
+            keyPath: "id",
+            options: { keyPath: "id" }
+        }
+    },
+    {
         name: "chat-participants",
         primaryKey: {
             keyPath: "id",
@@ -61,7 +68,7 @@ const stores: DatabaseTable[] = [
             },
             {
                 name: "userId",
-                keyPath: "userId", 
+                keyPath: "userId",
                 options: { unique: false }
             }
         ]
@@ -73,12 +80,12 @@ export function openDb(): Promise<IDBDatabase> {
     if (dbInstance) {
         return Promise.resolve(dbInstance);
     }
-    
+
     // Return pending promise if connection is in progress
     if (dbPromise) {
         return dbPromise;
     }
-    
+
     // Create new connection
     dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
         console.log(`🗄️ Abrindo banco de dados: ${DATABASE_NAME} v${DATABASE_VERSION}`);
@@ -109,28 +116,28 @@ export function openDb(): Promise<IDBDatabase> {
         request.onsuccess = () => {
             console.log(`✅ Banco de dados aberto com sucesso`);
             dbInstance = request.result;
-            
+
             // Clear promise cache after successful connection
             dbPromise = null;
-            
+
             resolve(request.result);
         };
-        
+
         request.onerror = () => {
             console.error(`❌ Erro ao abrir banco de dados:`, request.error);
-            
+
             // Clear caches on error
             dbPromise = null;
             dbInstance = null;
-            
+
             reject(request.error);
         };
-        
+
         request.onblocked = () => {
             console.warn(`⚠️ Banco de dados bloqueado - fechando outras abas pode resolver`);
         };
     });
-    
+
     return dbPromise;
 }
 
@@ -138,26 +145,26 @@ export function openDb(): Promise<IDBDatabase> {
 export function clearDatabase(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         console.log(`🧹 Limpando banco de dados: ${DATABASE_NAME}`);
-        
+
         // Close existing connection if any
         if (dbInstance) {
             dbInstance.close();
             dbInstance = null;
         }
         dbPromise = null;
-        
+
         const deleteRequest = indexedDB.deleteDatabase(DATABASE_NAME);
-        
+
         deleteRequest.onsuccess = () => {
             console.log(`✅ Banco de dados limpo com sucesso`);
             resolve();
         };
-        
+
         deleteRequest.onerror = () => {
             console.error(`❌ Erro ao limpar banco de dados:`, deleteRequest.error);
             reject(deleteRequest.error);
         };
-        
+
         deleteRequest.onblocked = () => {
             console.warn(`⚠️ Limpeza do banco bloqueada - fechando outras abas pode resolver`);
         };
