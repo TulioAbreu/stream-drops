@@ -13,6 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import { v7 } from "uuid";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { useTranslation } from "react-i18next";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 
 export function ChatGiveaway() {
   const { t } = useTranslation();
@@ -23,6 +32,99 @@ export function ChatGiveaway() {
   const [isDeletingGiveaway, startIsDeletingGiveawayTransition] = useTransition();
   const [, startIsDuplicatingGiveawayTransition] = useTransition();
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+  const ITEMS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(giveaways.length / ITEMS_PER_PAGE);
+  const currentGiveaways = giveaways.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              isActive={i === currentPage}
+              onClick={() => setCurrentPage(i)}
+              className="cursor-pointer"
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    } else {
+      // Always show first page
+      items.push(
+        <PaginationItem key={1}>
+          <PaginationLink
+            isActive={1 === currentPage}
+            onClick={() => setCurrentPage(1)}
+            className="cursor-pointer"
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+
+      // Ellipsis after first page
+      if (currentPage > 3) {
+        items.push(
+          <PaginationItem key="ellipsis-start">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+
+      // Middle pages
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              isActive={i === currentPage}
+              onClick={() => setCurrentPage(i)}
+              className="cursor-pointer"
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+
+      // Ellipsis before last page
+      if (currentPage < totalPages - 2) {
+        items.push(
+          <PaginationItem key="ellipsis-end">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+
+      // Always show last page
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            isActive={totalPages === currentPage}
+            onClick={() => setCurrentPage(totalPages)}
+            className="cursor-pointer"
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    return items;
+  };
 
   const onClickView = (id: string) => {
     navigate(`/dashboard/chat-giveaway/${id}`);
@@ -75,6 +177,7 @@ export function ChatGiveaway() {
           id: v7(),
           title: newTitle,
           winners: [],
+          participants: [],
           createdAt: nowIso,
           updatedAt: nowIso,
         };
@@ -139,7 +242,7 @@ export function ChatGiveaway() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {giveaways.map((giveaway) => {
+              {currentGiveaways.map((giveaway) => {
                 const firstWinnerDate = giveaway.winners.length > 0
                   ? new Date(giveaway.winners[0].drawnAt).toLocaleString('pt-BR', {
                     day: '2-digit',
@@ -276,6 +379,28 @@ export function ChatGiveaway() {
               })}
             </TableBody>
           </Table>
+
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+
+                {renderPaginationItems()}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       )}
     </Layout>
