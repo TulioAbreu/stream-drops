@@ -33,6 +33,41 @@ export function makeTwitchApiClient(params: TwitchApiClientParams) {
                 return err(error as AxiosError);
             }
         },
+        fetchSubscriptionsByUserIds: async (
+            broadcasterId: string,
+            userIds: string[]
+        ): Promise<Result<Map<string, number | null>, AxiosError>> => {
+            try {
+                // Build query string with multiple user_id parameters using URLSearchParams
+                const params = new URLSearchParams();
+                params.append('broadcaster_id', broadcasterId);
+                userIds.forEach(id => params.append('user_id', id));
+                
+                const url = `/subscriptions?${params.toString()}`;
+
+                const response = await apiClient.get<GetTwitchBroadcasterSubscriptionsResponse>(url);
+
+                // Create a map of userId -> tier
+                const tierMap = new Map<string, number | null>();
+
+                // Add fetched subscribers to map with their tiers
+                response.data.data.forEach(sub => {
+                    const tierValue = Number(sub.tier);
+                    tierMap.set(sub.user_id, tierValue);
+                });
+
+                // Add non-subscribers to map with null tier
+                userIds.forEach(userId => {
+                    if (!tierMap.has(userId)) {
+                        tierMap.set(userId, null);
+                    }
+                });
+
+                return ok(tierMap);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        },
         getUsers: async (params: GetTwitchUsersParams): Promise<Result<GetTwitchUsersResponse, AxiosError>> => {
             try {
                 const response = await apiClient.get<GetTwitchUsersResponse>("/users", {
