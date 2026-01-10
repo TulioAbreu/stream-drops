@@ -42,7 +42,7 @@ export function makeTwitchApiClient(params: TwitchApiClientParams) {
                 const params = new URLSearchParams();
                 params.append('broadcaster_id', broadcasterId);
                 userIds.forEach(id => params.append('user_id', id));
-                
+
                 const url = `/subscriptions?${params.toString()}`;
 
                 const response = await apiClient.get<GetTwitchBroadcasterSubscriptionsResponse>(url);
