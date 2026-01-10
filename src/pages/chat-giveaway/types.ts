@@ -14,6 +14,7 @@ export interface ChatParticipant {
     avatar: string;
     subscriber: boolean;
     subscriptionMonths?: number;
+    tier?: null | 1000 | 2000 | 3000;
     joinedAt: number; // timestamp in milliseconds
 }
 

@@ -21,6 +21,7 @@ import { composeTwitchChatEmbedUrl } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import type { ChatParticipant } from "../types";
 import { WinnerConfirmationModal } from "./components/winner-confirmation-modal";
+import { SubscriptionTierBadge } from "./components/subscription-tier-badge";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 export function ChatGiveawayDetail() {
@@ -28,7 +29,7 @@ export function ChatGiveawayDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { getChatGiveaway, updateChatGiveaway } = useChatGiveawayDb();
-  const { userData } = useTwitchApi();
+  const { userData, twitchApiClient } = useTwitchApi();
   const [giveaway, setGiveaway] = useState<ChatGiveawayFormData | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -54,6 +55,8 @@ export function ChatGiveawayDetail() {
     keyword: giveaway?.keyword || "",
     minimumSuscriptionTimeInMonths: giveaway?.minimumSuscriptionTimeInMonths || 0,
     subscribersOnly: giveaway?.subscribersOnly || false,
+    twitchApiClient: twitchApiClient || undefined,
+    broadcasterId: userData?.id,
   });
 
   // Merge saved participants with live participants (deduplicate by id)
@@ -401,6 +404,7 @@ export function ChatGiveawayDetail() {
                                 </Tooltip>
                               </TooltipProvider>
                             )}
+                            <SubscriptionTierBadge tier={participant.tier} />
                             {giveaway && giveaway.minimumSuscriptionTimeInMonths > 0 && participant.subscriptionMonths && (
                               <Badge
                                 variant="secondary"
