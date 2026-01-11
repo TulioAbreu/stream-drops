@@ -496,46 +496,54 @@ export function ChatGiveawayDetail() {
                       </Empty>
                     </div>
                   ) : (
-                    giveaway.winners.map((winner, index) => (
-                      <div
-                        key={winner.id}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20"
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
-                          {index + 1}
+                    giveaway.winners.map((winner, index) => {
+                      // Find participant data for this winner to get tier info
+                      const participantData = participants.find(p => p.id === winner.twitchId);
+
+                      return (
+                        <div
+                          key={winner.id}
+                          className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
+                            {index + 1}
+                          </div>
+                          <Avatar>
+                            <AvatarImage src={winner.avatar} />
+                            <AvatarFallback>
+                              {winner.name[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-medium text-sm truncate">
+                                {winner.name}
+                              </p>
+                              <SubscriptionTierBadge tier={participantData?.tier} />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(winner.drawnAt).toLocaleTimeString('pt-BR')}
+                            </p>
+                          </div>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => onClickRemoveWinner(winner.id)}
+                                >
+                                  <XIcon className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Remover vencedor
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
-                        <Avatar>
-                          <AvatarImage src={winner.avatar} />
-                          <AvatarFallback>
-                            {winner.name[0].toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">
-                            {winner.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(winner.drawnAt).toLocaleTimeString('pt-BR')}
-                          </p>
-                        </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => onClickRemoveWinner(winner.id)}
-                              >
-                                <XIcon className="w-4 h-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Remover vencedor
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </ScrollArea>
