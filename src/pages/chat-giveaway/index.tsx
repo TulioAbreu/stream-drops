@@ -298,7 +298,7 @@ export function ChatGiveaway() {
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Templates</h2>
           <div className="flex flex-wrap gap-4">
-            {templates.slice(0, 10).map((template) => (
+            {templates.map((template) => (
               <TemplateCard
                 key={template.id}
                 template={template}
