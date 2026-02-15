@@ -7,6 +7,8 @@ interface LoginStore {
     driveCode: string | null;
     setDriveCode: (driveCode: string) => void;
     setTwitchAccessToken: (twitchAccessToken: string | null) => void;
+    sessionExpired: boolean;
+    setSessionExpired: (sessionExpired: boolean) => void;
 }
 
 export const useLoginStore = create(
@@ -16,6 +18,8 @@ export const useLoginStore = create(
             setTwitchAccessToken: (twitchAccessToken: string | null) => set({ twitchAccessToken }),
             driveCode: null,
             setDriveCode: (driveCode: string) => set({ driveCode }),
+            sessionExpired: false,
+            setSessionExpired: (sessionExpired: boolean) => set({ sessionExpired }),
         }),
         {
             name: STORAGE_KEY_LOGIN_STORAGE,

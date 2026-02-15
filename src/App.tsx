@@ -16,6 +16,8 @@ import { ChatGiveawayDetail } from "./pages/chat-giveaway/[id]"
 import { ChatGiveaway } from "./pages/chat-giveaway"
 import { ChatGiveawayEdit } from "./pages/chat-giveaway/[id]/edit"
 
+import { SessionExpiredModal } from "./components/session-expired-modal"
+
 // Criar uma instância do QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +35,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <Toaster />
+        <SessionExpiredModal />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<LoginPage />} />

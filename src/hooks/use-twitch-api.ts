@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { makeTwitchApiClient } from "@/service/twitch";
 import { makeTwitchIdApiClient } from "@/service/twitch-id";
 import { useLoginStore } from "@/storage/login";
@@ -57,7 +58,7 @@ async function fetchTwitchUserData(twitchAccessToken: string): Promise<TwitchUse
 }
 
 export function useTwitchApi() {
-    const { twitchAccessToken } = useLoginStore();
+    const { twitchAccessToken, setSessionExpired } = useLoginStore();
     const queryClient = useQueryClient();
 
     // Query para obter dados do usuário Twitch
@@ -84,6 +85,15 @@ export function useTwitchApi() {
         },
         refetchInterval: 30 * 60 * 1000, // Revalida a cada 30 minutos
     });
+
+    useEffect(() => {
+        if (isError && error instanceof Error) {
+            if (error.message.includes("Token inválido") || 
+                error.message.includes("não pertence ao cliente")) {
+                setSessionExpired(true);
+            }
+        }
+    }, [isError, error, setSessionExpired]);
 
     // Função para criar cliente da API (memo baseado no token)
     const getTwitchApiClient = (): TwitchApiClient | null => {
