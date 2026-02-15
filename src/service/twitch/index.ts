@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { ok, err, Result } from "neverthrow";
-import type { GetTwitchBroadcasterSubscriptionsParams, GetTwitchBroadcasterSubscriptionsResponse, GetTwitchUsersParams, GetTwitchUsersResponse } from "./types";
+import type { GetTwitchBroadcasterSubscriptionsParams, GetTwitchBroadcasterSubscriptionsResponse, GetTwitchUsersParams, GetTwitchUsersResponse, SendTwitchChatMessageParams, SendTwitchChatMessageResponse } from "./types";
 
 interface TwitchApiClientParams {
     clientId: string;
@@ -74,6 +74,19 @@ export function makeTwitchApiClient(params: TwitchApiClientParams) {
                     params: {
                         ...params,
                     },
+                });
+                return ok(response.data);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        },
+        sendChatMessage: async (params: SendTwitchChatMessageParams): Promise<Result<SendTwitchChatMessageResponse, AxiosError>> => {
+            try {
+                const response = await apiClient.post<SendTwitchChatMessageResponse>("/chat/messages", {
+                    broadcaster_id: params.broadcaster_id,
+                    sender_id: params.sender_id,
+                    message: params.message,
+                    reply_parent_message_id: params.reply_parent_message_id,
                 });
                 return ok(response.data);
             } catch (error) {

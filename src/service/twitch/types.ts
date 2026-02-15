@@ -70,3 +70,17 @@ export type TwitchUser = {
     email: string;
     created_at: string;
 };
+
+export type SendTwitchChatMessageParams = {
+    broadcaster_id: string;
+    sender_id: string;
+    message: string;
+    reply_parent_message_id?: string;
+}
+
+export type SendTwitchChatMessageResponse = {
+    data: {
+        message_id: string;
+        is_sent: boolean;
+    }[];
+}
