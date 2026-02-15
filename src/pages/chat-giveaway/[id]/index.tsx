@@ -126,6 +126,29 @@ export function ChatGiveawayDetail() {
         return;
       }
 
+      // Calculate chance and send chat message
+      const eligibleParticipants = participants.filter(p => !excludeIds.includes(p.id));
+
+      const participantsWithTickets = eligibleParticipants.map(participant => {
+        const multiplier = participant.subscriber ? giveaway.subscriberMultiplier : 1;
+        return {
+          participant,
+          tickets: multiplier
+        };
+      });
+
+      const totalTickets = participantsWithTickets.reduce((sum, p) => sum + p.tickets, 0);
+      const winnerTickets = winner.subscriber ? giveaway.subscriberMultiplier : 1;
+      const winChance = ((winnerTickets / totalTickets) * 100).toFixed(2);
+
+      if (userData?.id && twitchApiClient) {
+        await twitchApiClient.sendChatMessage({
+          broadcaster_id: userData.id,
+          sender_id: userData.id,
+          message: `Parabéns @${winner.displayName}! Você ganhou o sorteio! (Chance: ${winChance}%, Tickets: ${winnerTickets})`
+        });
+      }
+
       // Open confirmation modal instead of adding directly to winners
       setPendingWinner(winner);
       setIsDrawing(false);
@@ -154,32 +177,8 @@ export function ChatGiveawayDetail() {
       await updateChatGiveaway(updatedGiveaway);
       setGiveaway(updatedGiveaway);
 
+
       toast.success(`🎉 ${pendingWinner.displayName} foi confirmado como vencedor!`);
-
-      // Calculate chance and send chat message
-      const excludeIds = giveaway.winners.map(w => w.twitchId);
-      const eligibleParticipants = participants.filter(p => !excludeIds.includes(p.id));
-
-      const participantsWithTickets = eligibleParticipants.map(participant => {
-        const multiplier = participant.subscriber ? giveaway.subscriberMultiplier : 1;
-        return {
-          participant,
-          tickets: multiplier
-        };
-      });
-
-      const totalTickets = participantsWithTickets.reduce((sum, p) => sum + p.tickets, 0);
-      const winnerTickets = pendingWinner.subscriber ? giveaway.subscriberMultiplier : 1;
-      const winChance = ((winnerTickets / totalTickets) * 100).toFixed(2);
-
-      if (userData?.id && twitchApiClient) {
-        await twitchApiClient.sendChatMessage({
-          broadcaster_id: userData.id,
-          sender_id: userData.id,
-          message: `Parabéns @${pendingWinner.displayName}! Você ganhou o sorteio! (Chance: ${winChance}%, Tickets: ${winnerTickets})`
-        });
-      }
-
     } catch (error) {
       console.error("Error saving winner and participants:", error);
       toast.error("Erro ao salvar vencedor. Tente novamente.");
