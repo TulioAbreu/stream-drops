@@ -14,7 +14,7 @@ const AUTHORIZATION_URL = new URL("/oauth2/authorize", "https://id.twitch.tv");
 AUTHORIZATION_URL.searchParams.set("client_id", import.meta.env.VITE_TWITCH_CLIENT_ID);
 AUTHORIZATION_URL.searchParams.set("redirect_uri", import.meta.env.VITE_TWITCH_REDIRECT_URL);
 AUTHORIZATION_URL.searchParams.set("response_type", "token");
-AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions");
+AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions user:read:chat user:write:chat");
 
 export function LoginPage() {
     const { t } = useTranslation();
