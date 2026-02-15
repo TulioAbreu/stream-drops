@@ -116,6 +116,44 @@ export function FollowerGiveawayId() {
             ...giveaway,
             winners,
         });
+
+        // Send chat message for new winners
+        if (twitchApiClient && userData) {
+            for (const winner of newWinners) {
+                // Calculate chance
+                // Re-create the pool of eligible participants at the time of drawing
+                const currentWinnersIds = giveaway.winners.map(w => w.user_id);
+                // Participants excluding already winners
+                let eligibleParticipants = (giveaway.participants ?? []).filter(p => !currentWinnersIds.includes(p.user_id));
+
+                // Filter by requirement
+                const requiredTier = giveaway.subscriptionRequirement ?? 0;
+                if (requiredTier > 0) {
+                    eligibleParticipants = eligibleParticipants.filter(p => Number(p.tier) >= requiredTier);
+                }
+
+                // Calculate total tickets
+                const multipliers = giveaway.subscriberMultiplier ?? { "1000": 1, "2000": 1, "3000": 1 };
+                const totalTickets = eligibleParticipants.reduce((sum, p) => {
+                    const multiplier = multipliers[p.tier] || 1;
+                    return sum + multiplier;
+                }, 0);
+
+                const winnerTickets = multipliers[winner.tier] || 1;
+                const winChance = totalTickets > 0 ? ((winnerTickets / totalTickets) * 100).toFixed(2) : "0.00";
+
+                try {
+                    await twitchApiClient.sendChatMessage({
+                        broadcaster_id: userData.id,
+                        sender_id: userData.id,
+                        message: `Parabéns @${winner.user_name}! Você ganhou o sorteio! (Chance: ${winChance}%, Tickets: ${winnerTickets})`
+                    });
+                } catch (error) {
+                    console.error("Failed to send chat message for winner", winner.user_name, error);
+                }
+            }
+        }
+
         await fetchGiveaway();
     };
 
@@ -210,7 +248,7 @@ export function FollowerGiveawayId() {
             if (twitchUser.isErr()) {
                 return;
             }
-    
+
             for (const exclusion of twitchUser.value.data) {
                 await addExclusion({
                     twitchUserId: exclusion.id,
@@ -220,7 +258,7 @@ export function FollowerGiveawayId() {
                     updatedAt: new Date().toISOString(),
                 });
             }
-    
+
             await onClickSearchParticipants();
         } catch (error) {
             console.error("Error excluding user:", error);
