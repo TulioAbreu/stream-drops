@@ -15,13 +15,17 @@ interface WinnerConfirmationModalProps {
   messages: ChatMessage[];
   onConfirm: () => void;
   onCancel: () => void;
+  onRedraw: () => void;
+  isRedrawing: boolean;
 }
 
 export function WinnerConfirmationModal({
   pendingWinner,
   messages,
   onConfirm,
-  onCancel
+  onCancel,
+  onRedraw,
+  isRedrawing
 }: WinnerConfirmationModalProps) {
   const [confirmationStartTime, setConfirmationStartTime] = useState<Date | null>(null);
   const [timerStartTimestamp, setTimerStartTimestamp] = useState<number | null>(null);
@@ -198,12 +202,16 @@ export function WinnerConfirmationModal({
           </div>
         )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={handleCancel}>
-            <XIcon className="w-4 h-4 mr-2" />
-            Cancelar Sorteio
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onRedraw} disabled={isRedrawing}>
+            {isRedrawing ? (
+              <XIcon className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <XIcon className="w-4 h-4 mr-2" />
+            )}
+            {isRedrawing ? "Sorteando..." : "Refazer Sorteio"}
           </Button>
-          <Button onClick={onConfirm}>
+          <Button onClick={onConfirm} disabled={isRedrawing}>
             <CheckIcon className="w-4 h-4 mr-2" />
             Confirmar Vencedor
           </Button>

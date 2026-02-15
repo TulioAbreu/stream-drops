@@ -103,6 +103,61 @@ export function ChatGiveawayDetail() {
     navigate("/dashboard/chat-giveaway");
   };
 
+  const [redrawExcludedIds, setRedrawExcludedIds] = useState<string[]>([]);
+  const [isRedrawing, setIsRedrawing] = useState(false);
+
+  // Clear redraw excluded IDs when modal is closed (confirmed or cancelled)
+  useEffect(() => {
+    if (!pendingWinner) {
+      setRedrawExcludedIds([]);
+    }
+  }, [pendingWinner]);
+
+  const executeDraw = async (excludeIds: string[]) => {
+    if (!giveaway) return;
+
+    const winner = drawWinner({
+      participants,
+      subscriberMultiplier: giveaway.subscriberMultiplier,
+      excludeIds,
+    });
+
+    if (!winner) {
+      toast.error("Todos os participantes já foram sorteados!");
+      setIsDrawing(false);
+      setIsRedrawing(false); // Make sure to stop this loading state too
+      return;
+    }
+
+    // Calculate chance and send chat message
+    const eligibleParticipants = participants.filter(p => !excludeIds.includes(p.id));
+
+    const participantsWithTickets = eligibleParticipants.map(participant => {
+      const multiplier = participant.subscriber ? giveaway.subscriberMultiplier : 1;
+      return {
+        participant,
+        tickets: multiplier
+      };
+    });
+
+    const totalTickets = participantsWithTickets.reduce((sum, p) => sum + p.tickets, 0);
+    const winnerTickets = winner.subscriber ? giveaway.subscriberMultiplier : 1;
+    const winChance = ((winnerTickets / totalTickets) * 100).toFixed(2);
+
+    if (userData?.id && twitchApiClient) {
+      await twitchApiClient.sendChatMessage({
+        broadcaster_id: userData.id,
+        sender_id: userData.id,
+        message: `Parabéns @${winner.displayName}! Você ganhou o sorteio! (Chance: ${winChance}%, Tickets: ${winnerTickets})`
+      });
+    }
+
+    // Open confirmation modal instead of adding directly to winners
+    setPendingWinner(winner);
+    setIsDrawing(false);
+    setIsRedrawing(false);
+  }
+
   const handleDraw = async () => {
     if (!giveaway || participants.length === 0) {
       toast.error("Não há participantes elegíveis para sortear!");
@@ -114,44 +169,28 @@ export function ChatGiveawayDetail() {
     // Simulate drawing animation delay
     setTimeout(async () => {
       const excludeIds = giveaway.winners.map(w => w.twitchId);
-      const winner = drawWinner({
-        participants,
-        subscriberMultiplier: giveaway.subscriberMultiplier,
-        excludeIds,
-      });
+      await executeDraw(excludeIds);
+    }, 500);
+  };
 
-      if (!winner) {
-        toast.error("Todos os participantes já foram sorteados!");
-        setIsDrawing(false);
-        return;
-      }
+  const handleRedraw = async () => {
+    if (!giveaway || !pendingWinner) return;
 
-      // Calculate chance and send chat message
-      const eligibleParticipants = participants.filter(p => !excludeIds.includes(p.id));
+    setIsRedrawing(true);
 
-      const participantsWithTickets = eligibleParticipants.map(participant => {
-        const multiplier = participant.subscriber ? giveaway.subscriberMultiplier : 1;
-        return {
-          participant,
-          tickets: multiplier
-        };
-      });
+    // Add current pending winner to excluded list for this session
+    const newExcludedIds = [...redrawExcludedIds, pendingWinner.id];
+    setRedrawExcludedIds(newExcludedIds);
 
-      const totalTickets = participantsWithTickets.reduce((sum, p) => sum + p.tickets, 0);
-      const winnerTickets = winner.subscriber ? giveaway.subscriberMultiplier : 1;
-      const winChance = ((winnerTickets / totalTickets) * 100).toFixed(2);
+    // Combine with already confirmed winners
+    const allExcludedIds = [
+      ...giveaway.winners.map(w => w.twitchId),
+      ...newExcludedIds
+    ];
 
-      if (userData?.id && twitchApiClient) {
-        await twitchApiClient.sendChatMessage({
-          broadcaster_id: userData.id,
-          sender_id: userData.id,
-          message: `Parabéns @${winner.displayName}! Você ganhou o sorteio! (Chance: ${winChance}%, Tickets: ${winnerTickets})`
-        });
-      }
-
-      // Open confirmation modal instead of adding directly to winners
-      setPendingWinner(winner);
-      setIsDrawing(false);
+    // Simulate drawing animation delay
+    setTimeout(async () => {
+      await executeDraw(allExcludedIds);
     }, 500);
   };
 
@@ -582,6 +621,9 @@ export function ChatGiveawayDetail() {
         messages={messages}
         onConfirm={handleConfirmWinner}
         onCancel={handleCancelWinner}
+        onRedraw={handleRedraw}
+        isRedrawing={isRedrawing}
+        key={pendingWinner?.id}
       />
     </Layout>
   );
