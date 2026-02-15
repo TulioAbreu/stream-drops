@@ -25,6 +25,10 @@ import { Tooltip, TooltipContent } from "./ui/tooltip";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Badge } from "./ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { useLoginStore } from "@/storage/login";
 
 interface NavbarItem {
   title: string;
@@ -59,14 +63,20 @@ export function AppSidebar() {
   const { t } = useTranslation();
   const { userData } = useTwitchApi();
   const location = useLocation();
+  const [deleteLocalData, setDeleteLocalData] = useState(false);
+  const setTwitchAccessToken = useLoginStore((state) => state.setTwitchAccessToken);
 
   const handleLogout = () => {
-    localStorage.clear();
-    indexedDB.databases().then((dbs) => {
-      dbs.forEach((db) => {
-        indexedDB.deleteDatabase(db.name!);
+    if (deleteLocalData) {
+      localStorage.clear();
+      indexedDB.databases().then((dbs) => {
+        dbs.forEach((db) => {
+          indexedDB.deleteDatabase(db.name!);
+        });
       });
-    });
+    } else {
+      setTwitchAccessToken(null);
+    }
     window.location.href = "/";
   }
 
@@ -133,6 +143,19 @@ export function AppSidebar() {
                     <DialogDescription>
                       {t("SIDEBAR_LOGOUT_DIALOG_DESCRIPTION")}
                     </DialogDescription>
+                    <div className="flex items-center space-x-2 py-4">
+                      <Checkbox
+                        id="delete-data"
+                        checked={deleteLocalData}
+                        onCheckedChange={(checked) => setDeleteLocalData(checked as boolean)}
+                      />
+                      <Label
+                        htmlFor="delete-data"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {t("SIDEBAR_LOGOUT_DELETE_DATA_LABEL")}
+                      </Label>
+                    </div>
                     <DialogFooter>
                       <Button variant="destructive" onClick={handleLogout}>
                         <LogOutIcon className="h-4 w-4" />

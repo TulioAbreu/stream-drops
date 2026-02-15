@@ -66,8 +66,9 @@
     "SETTINGS_EXCLUSION_LIST_REQUIRED": "O nome de usuário é obrigatório.",
     "SIDEBAR_LOGOUT_BUTTON_TOOLTIP": "Sair da conta",
     "SIDEBAR_LOGOUT_DIALOG_TITLE": "Confirmar Logout",
-    "SIDEBAR_LOGOUT_DIALOG_DESCRIPTION": "Ao sair da conta, o histórico dos seus sorteios será apagado. Deseja continuar?",
+    "SIDEBAR_LOGOUT_DIALOG_DESCRIPTION": "Você tem certeza que deseja sair?",
     "SIDEBAR_LOGOUT_BUTTON": "Sair da conta",
+    "SIDEBAR_LOGOUT_DELETE_DATA_LABEL": "Apagar dados locais (Histórico e Configurações)",
     "APP_NAME": "StreamDrops",
     "CHAT_GIVEAWAY_TABLE_ACTIONS_DUPLICATE": "Duplicar"
 }

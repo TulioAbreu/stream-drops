@@ -6,14 +6,14 @@ interface LoginStore {
     twitchAccessToken: string | null;
     driveCode: string | null;
     setDriveCode: (driveCode: string) => void;
-    setTwitchAccessToken: (twitchAccessToken: string) => void;
+    setTwitchAccessToken: (twitchAccessToken: string | null) => void;
 }
 
 export const useLoginStore = create(
     persist<LoginStore>(
         (set) => ({
             twitchAccessToken: null,
-            setTwitchAccessToken: (twitchAccessToken: string) => set({ twitchAccessToken }),
+            setTwitchAccessToken: (twitchAccessToken: string | null) => set({ twitchAccessToken }),
             driveCode: null,
             setDriveCode: (driveCode: string) => set({ driveCode }),
         }),
