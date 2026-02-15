@@ -70,5 +70,8 @@
     "SIDEBAR_LOGOUT_BUTTON": "Sair da conta",
     "SIDEBAR_LOGOUT_DELETE_DATA_LABEL": "Apagar dados locais (Histórico e Configurações)",
     "APP_NAME": "StreamDrops",
-    "CHAT_GIVEAWAY_TABLE_ACTIONS_DUPLICATE": "Duplicar"
+    "CHAT_GIVEAWAY_TABLE_ACTIONS_DUPLICATE": "Duplicar",
+    "SESSION_EXPIRED_TITLE": "Sessão Expirada",
+    "SESSION_EXPIRED_DESCRIPTION": "Sua sessão expirou. Por favor, faça login novamente para continuar.",
+    "OR": "ou"
 }
