@@ -98,9 +98,6 @@ export function AppSidebar() {
                     <Link to={item.url}>
                       {item.icon}
                       <span>{t(item.title)}</span>
-                      {item.title === "DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY" && (
-                        <Badge variant="secondary" className="ml-auto text-xs">BETA</Badge>
-                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
