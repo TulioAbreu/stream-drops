@@ -113,6 +113,17 @@ export function ChatGiveawayDetail() {
     }
   }, [pendingWinner]);
 
+  const formatChancePercentage = (value: number, decimalPlaces: number) => {
+    const rounded = Number(value.toFixed(decimalPlaces));
+    if (rounded === 0 && value > 0) {
+      const minDisplay = (1 / Math.pow(10, decimalPlaces)).toFixed(decimalPlaces);
+      return `<${minDisplay}%`;
+    }
+    return `${value.toFixed(decimalPlaces)}%`;
+  };
+
+  const chanceDecimalPlaces = 4;
+
   const executeDraw = async (excludeIds: string[]) => {
     if (!giveaway) return;
 
@@ -142,13 +153,14 @@ export function ChatGiveawayDetail() {
 
     const totalTickets = participantsWithTickets.reduce((sum, p) => sum + p.tickets, 0);
     const winnerTickets = winner.subscriber ? giveaway.subscriberMultiplier : 1;
-    const winChance = ((winnerTickets / totalTickets) * 100).toFixed(2);
+    const winChance = (winnerTickets / totalTickets) * 100;
+    const winChanceFormatted = formatChancePercentage(winChance, chanceDecimalPlaces);
 
     if (userData?.id && twitchApiClient) {
       await twitchApiClient.sendChatMessage({
         broadcaster_id: userData.id,
         sender_id: userData.id,
-        message: `Parabéns @${winner.displayName}! Você ganhou o sorteio! (Chance: ${winChance}%, Tickets: ${winnerTickets})`
+        message: `Parabéns @${winner.displayName}! Você ganhou o sorteio! (Chance: ${winChanceFormatted}, Tickets: ${winnerTickets})`
       });
     }
 
