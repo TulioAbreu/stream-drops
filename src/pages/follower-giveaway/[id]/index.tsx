@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useExclusionListDb } from "@/database/ExclusionListItem";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
+import { formatChancePercentage } from "@/lib/utils";
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
@@ -57,17 +58,6 @@ export function FollowerGiveawayId() {
     const onClickEdit = () => {
         navigate(`/dashboard/follower-giveaway/${id}/edit`);
     };
-
-    const formatChancePercentage = (value: number, decimalPlaces: number) => {
-        const rounded = Number(value.toFixed(decimalPlaces));
-        if (rounded === 0 && value > 0) {
-            const minDisplay = (1 / Math.pow(10, decimalPlaces)).toFixed(decimalPlaces);
-            return `<${minDisplay}%`;
-        }
-        return `${value.toFixed(decimalPlaces)}%`;
-    };
-
-    const chanceDecimalPlaces = 4;
 
     const onClickSearchParticipants = async () => {
         if (!twitchApiClient || !userData || !giveaway) {
@@ -152,7 +142,7 @@ export function FollowerGiveawayId() {
 
                 const winnerTickets = multipliers[winner.tier] || 1;
                 const winChance = totalTickets > 0 ? (winnerTickets / totalTickets) * 100 : 0;
-                const winChanceFormatted = formatChancePercentage(winChance, chanceDecimalPlaces);
+                const winChanceFormatted = formatChancePercentage(winChance);
 
                 try {
                     await twitchApiClient.sendChatMessage({

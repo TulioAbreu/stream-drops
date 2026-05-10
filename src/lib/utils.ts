@@ -5,6 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function formatChancePercentage(value: number, decimalPlaces = 4) {
+  const rounded = Number(value.toFixed(decimalPlaces))
+  if (rounded === 0 && value > 0) {
+    const minDisplay = (1 / Math.pow(10, decimalPlaces)).toFixed(decimalPlaces)
+    return `<${minDisplay}%`
+  }
+  return `${value.toFixed(decimalPlaces)}%`
+}
+
 /**
  * Composes a Twitch chat embed URL for the given channel
  * @param channelLogin The Twitch channel login name

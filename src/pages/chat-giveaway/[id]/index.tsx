@@ -17,7 +17,7 @@ import { useChatListener } from "../hooks/use-chat-listener";
 import { drawWinner } from "@/service/chat-giveaway";
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
-import { composeTwitchChatEmbedUrl } from "@/lib/utils";
+import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import type { ChatParticipant } from "../types";
 import { WinnerConfirmationModal } from "./components/winner-confirmation-modal";
@@ -113,17 +113,6 @@ export function ChatGiveawayDetail() {
     }
   }, [pendingWinner]);
 
-  const formatChancePercentage = (value: number, decimalPlaces: number) => {
-    const rounded = Number(value.toFixed(decimalPlaces));
-    if (rounded === 0 && value > 0) {
-      const minDisplay = (1 / Math.pow(10, decimalPlaces)).toFixed(decimalPlaces);
-      return `<${minDisplay}%`;
-    }
-    return `${value.toFixed(decimalPlaces)}%`;
-  };
-
-  const chanceDecimalPlaces = 4;
-
   const executeDraw = async (excludeIds: string[]) => {
     if (!giveaway) return;
 
@@ -154,7 +143,7 @@ export function ChatGiveawayDetail() {
     const totalTickets = participantsWithTickets.reduce((sum, p) => sum + p.tickets, 0);
     const winnerTickets = winner.subscriber ? giveaway.subscriberMultiplier : 1;
     const winChance = (winnerTickets / totalTickets) * 100;
-    const winChanceFormatted = formatChancePercentage(winChance, chanceDecimalPlaces);
+    const winChanceFormatted = formatChancePercentage(winChance);
 
     if (userData?.id && twitchApiClient) {
       await twitchApiClient.sendChatMessage({
