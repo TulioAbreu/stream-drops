@@ -58,6 +58,17 @@ export function FollowerGiveawayId() {
         navigate(`/dashboard/follower-giveaway/${id}/edit`);
     };
 
+    const formatChancePercentage = (value: number, decimalPlaces: number) => {
+        const rounded = Number(value.toFixed(decimalPlaces));
+        if (rounded === 0 && value > 0) {
+            const minDisplay = (1 / Math.pow(10, decimalPlaces)).toFixed(decimalPlaces);
+            return `<${minDisplay}%`;
+        }
+        return `${value.toFixed(decimalPlaces)}%`;
+    };
+
+    const chanceDecimalPlaces = 4;
+
     const onClickSearchParticipants = async () => {
         if (!twitchApiClient || !userData || !giveaway) {
             return;
@@ -140,13 +151,14 @@ export function FollowerGiveawayId() {
                 }, 0);
 
                 const winnerTickets = multipliers[winner.tier] || 1;
-                const winChance = totalTickets > 0 ? ((winnerTickets / totalTickets) * 100).toFixed(2) : "0.00";
+                const winChance = totalTickets > 0 ? (winnerTickets / totalTickets) * 100 : 0;
+                const winChanceFormatted = formatChancePercentage(winChance, chanceDecimalPlaces);
 
                 try {
                     await twitchApiClient.sendChatMessage({
                         broadcaster_id: userData.id,
                         sender_id: userData.id,
-                        message: `Parabéns @${winner.user_name}! Você ganhou o sorteio! (Chance: ${winChance}%, Tickets: ${winnerTickets})`
+                        message: `Parabéns @${winner.user_name}! Você ganhou o sorteio! (Chance: ${winChanceFormatted}, Tickets: ${winnerTickets})`
                     });
                 } catch (error) {
                     console.error("Failed to send chat message for winner", winner.user_name, error);
