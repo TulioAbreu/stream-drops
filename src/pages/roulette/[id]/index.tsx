@@ -55,7 +55,7 @@ export function RouletteDetailPage() {
 
   return (
     <Layout>
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-3 flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
@@ -63,7 +63,7 @@ export function RouletteDetailPage() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-bold truncate">
+        <h1 className="truncate text-xl font-bold">
           {roulette.title || t("ROULETTE_TITLE", "Roleta")}
         </h1>
       </div>

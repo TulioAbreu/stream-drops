@@ -209,40 +209,36 @@
 
 .roulette-wheel-shell {
   position: relative;
-  width: 100%;
-  max-width: 420px;
+  width: min(100%, 560px);
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
   margin-inline: auto;
+  overflow: visible;
+  /* Cantos do rotate(-45°) não devem capturar clique do botão Girar */
+  pointer-events: none;
 }
 
-.roulette-pointer-fixed {
-  position: absolute;
-  /* 14% = folga acima da roleta a 72%; puxa a ponta para a borda */
-  top: calc(14% - 10px);
-  left: 50%;
-  z-index: 30;
-  width: 36px;
-  height: 36px;
-  transform: translateX(-50%);
-  pointer-events: none;
-  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.55));
+.roulette-wheel-shell--empty {
+  background-clip: padding-box;
 }
 
 .roulette-wheel-frame {
   position: relative;
-  z-index: 10;
+  z-index: 1;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  height: 100%;
   display: grid;
   place-items: center;
+  overflow: visible;
 }
 
 /*
-  A lib ancora o eixo do vencedor no canto superior-direito (~1–2h).
-  Giramos o conjunto para mapear esse eixo às 12h, onde está a seta fixa.
-  72% evita que o bounding box do rotate estoure o frame.
+  Issues #94/#126: girar wheel + ponteiro juntos para o topo.
 */
 .roulette-wheel-orient {
-  width: 72%;
+  width: 100%;
+  height: 100%;
   aspect-ratio: 1 / 1;
   transform-origin: center center;
 }
@@ -252,27 +248,4 @@
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
-}
-
-.roulette-wheel-glow {
-  position: absolute;
-  inset: 14%;
-  z-index: 0;
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle,
-    color-mix(in oklab, #a78bfa 40%, transparent) 0%,
-    color-mix(in oklab, #22d3ee 20%, transparent) 42%,
-    transparent 70%
-  );
-  pointer-events: none;
-}
-
-.dark .roulette-wheel-glow {
-  background: radial-gradient(
-    circle,
-    color-mix(in oklab, #a78bfa 50%, transparent) 0%,
-    color-mix(in oklab, #22d3ee 28%, transparent) 40%,
-    transparent 72%
-  );
 }
