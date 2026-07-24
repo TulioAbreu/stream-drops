@@ -15,6 +15,9 @@ import { ChatGiveawayCreate } from "./pages/chat-giveaway/create"
 import { ChatGiveawayDetail } from "./pages/chat-giveaway/[id]"
 import { ChatGiveaway } from "./pages/chat-giveaway"
 import { ChatGiveawayEdit } from "./pages/chat-giveaway/[id]/edit"
+import { RoulettePage } from "./pages/roulette"
+import { RouletteNewPage } from "./pages/roulette/new"
+import { RouletteDetailPage } from "./pages/roulette/[id]"
 
 import { SessionExpiredModal } from "./components/session-expired-modal"
 
@@ -51,6 +54,9 @@ export function App() {
             <Route path="/dashboard/chat-giveaway/create" element={<ChatGiveawayCreate />} />
             <Route path="/dashboard/chat-giveaway/:id/edit" element={<ChatGiveawayEdit />} />
             <Route path="/dashboard/chat-giveaway/:id" element={<ChatGiveawayDetail />} />
+            <Route path="/dashboard/roulette" element={<RoulettePage />} />
+            <Route path="/dashboard/roulette/new" element={<RouletteNewPage />} />
+            <Route path="/dashboard/roulette/:id" element={<RouletteDetailPage />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
