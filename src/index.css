@@ -206,3 +206,31 @@
   opacity: 0;
   transform: scale(0.96) translateY(-8px);
 }
+
+.roulette-wheel-shell {
+  isolation: isolate;
+}
+
+.roulette-wheel-glow {
+  position: absolute;
+  inset: 8%;
+  z-index: 0;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, #a78bfa 35%, transparent) 0%,
+    color-mix(in oklab, #22d3ee 18%, transparent) 45%,
+    transparent 70%
+  );
+  filter: blur(18px);
+  pointer-events: none;
+}
+
+.dark .roulette-wheel-glow {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklab, #a78bfa 45%, transparent) 0%,
+    color-mix(in oklab, #22d3ee 25%, transparent) 40%,
+    transparent 72%
+  );
+}

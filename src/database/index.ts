@@ -1,5 +1,5 @@
 const DATABASE_NAME = "stream-drops-db";
-const DATABASE_VERSION = 10;
+const DATABASE_VERSION = 11;
 
 // Singleton cache for database connection
 let dbInstance: IDBDatabase | null = null;
@@ -72,6 +72,13 @@ const stores: DatabaseTable[] = [
                 options: { unique: false }
             }
         ]
+    },
+    {
+        name: "roulettes",
+        primaryKey: {
+            keyPath: "id",
+            options: { keyPath: "id" }
+        }
     }
 ];
 

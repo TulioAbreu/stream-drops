@@ -3,6 +3,7 @@ import {
   Settings,
   LogOutIcon,
   MessageSquare,
+  Disc3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -45,6 +46,11 @@ const items: NavbarItem[] = [
     title: "DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY",
     icon: <MessageSquare />,
     url: "/dashboard/chat-giveaway",
+  },
+  {
+    title: "DASHBOARD_SIDEBAR_ITEM_ROULETTE",
+    icon: <Disc3 />,
+    url: "/dashboard/roulette",
   },
   // {
   //     title: "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY",
