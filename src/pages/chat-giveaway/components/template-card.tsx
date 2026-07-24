@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type Ref } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrashIcon, Star, Play, MoreHorizontal } from "lucide-react";
+import { TrashIcon, Star, Play, MoreHorizontal, GripVertical } from "lucide-react";
 import type { ChatGiveawayTemplate } from "@/database/ChatGiveawayTemplate";
 import {
   DropdownMenu,
@@ -18,16 +20,31 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-interface TemplateCardProps {
+interface TemplateCardContentProps {
   template: ChatGiveawayTemplate;
-  onUse: (template: ChatGiveawayTemplate) => void;
-  onDelete: (id: string) => void;
+  onUse?: (template: ChatGiveawayTemplate) => void;
+  onDelete?: (id: string) => void;
   disabled?: boolean;
+  showGrip?: boolean;
+  gripProps?: HTMLAttributes<HTMLButtonElement>;
+  className?: string;
+  style?: CSSProperties;
+  cardRef?: Ref<HTMLDivElement>;
 }
 
 const MARQUEE_SPEED_PX_PER_SEC = 50;
 
-export function TemplateCard({ template, onUse, onDelete, disabled }: TemplateCardProps) {
+function TemplateCardContent({
+  template,
+  onUse,
+  onDelete,
+  disabled,
+  showGrip = true,
+  gripProps,
+  className,
+  style,
+  cardRef,
+}: TemplateCardContentProps) {
   const nameRef = useRef<HTMLDivElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -58,7 +75,28 @@ export function TemplateCard({ template, onUse, onDelete, disabled }: TemplateCa
   const showMarquee = isOverflowing && isHovering;
 
   return (
-    <Card className="flex flex-row items-center justify-between p-2 pl-4 gap-2 w-full min-w-0">
+    <Card
+      ref={cardRef}
+      style={style}
+      className={cn(
+        "flex flex-row items-center justify-between p-2 pl-2 gap-1 w-full min-w-0",
+        className,
+      )}
+    >
+      {showGrip && (
+        <button
+          type="button"
+          className={cn(
+            "shrink-0 touch-none p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-grab active:cursor-grabbing",
+            disabled && "pointer-events-none opacity-50",
+          )}
+          aria-label="Reordenar template"
+          {...gripProps}
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+      )}
+
       <TooltipProvider>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
@@ -124,8 +162,8 @@ export function TemplateCard({ template, onUse, onDelete, disabled }: TemplateCa
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => onUse(template)}
-                disabled={disabled}
+                onClick={() => onUse?.(template)}
+                disabled={disabled || !onUse}
               >
                 <Play className="w-4 h-4" />
               </Button>
@@ -135,14 +173,14 @@ export function TemplateCard({ template, onUse, onDelete, disabled }: TemplateCa
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" disabled={disabled} className="h-8 w-8">
+              <Button variant="ghost" size="icon" disabled={disabled || !onDelete} className="h-8 w-8">
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
                 className="cursor-pointer text-destructive focus:text-destructive"
-                onClick={() => onDelete(template.id)}
+                onClick={() => onDelete?.(template.id)}
               >
                 <TrashIcon className="mr-2 h-4 w-4" />
                 <span>Excluir</span>
@@ -152,5 +190,79 @@ export function TemplateCard({ template, onUse, onDelete, disabled }: TemplateCa
         </div>
       </TooltipProvider>
     </Card>
+  );
+}
+
+interface TemplateCardProps {
+  template: ChatGiveawayTemplate;
+  onUse: (template: ChatGiveawayTemplate) => void;
+  onDelete: (id: string) => void;
+  disabled?: boolean;
+}
+
+export function TemplateCard({
+  template,
+  onUse,
+  onDelete,
+  disabled,
+}: TemplateCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: template.id,
+    disabled,
+  });
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  if (isDragging) {
+    return (
+      <div ref={setNodeRef} style={style} className="w-full">
+        <TemplateCardPlaceholder />
+      </div>
+    );
+  }
+
+  return (
+    <TemplateCardContent
+      template={template}
+      onUse={onUse}
+      onDelete={onDelete}
+      disabled={disabled}
+      showGrip
+      gripProps={{ ...attributes, ...listeners }}
+      cardRef={setNodeRef}
+      style={style}
+    />
+  );
+}
+
+/** Floating card shown under the cursor while dragging */
+export function TemplateCardOverlay({ template }: { template: ChatGiveawayTemplate }) {
+  return (
+    <TemplateCardContent
+      template={template}
+      showGrip
+      className="shadow-lg cursor-grabbing"
+      disabled
+    />
+  );
+}
+
+/** Empty slot shown at the drop target while dragging */
+export function TemplateCardPlaceholder() {
+  return (
+    <div
+      className="w-full min-h-[52px] rounded-xl border border-dashed border-muted-foreground/40 bg-transparent"
+      aria-hidden
+    />
   );
 }

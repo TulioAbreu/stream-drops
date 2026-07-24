@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useChatGiveawayDb } from "@/database/ChatGiveaway";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { useNavigate } from "react-router";
 import { ArrowRight, Copy, MessageSquare, Plus, TrashIcon, MoreHorizontal, FilePlus, Edit } from "lucide-react";
@@ -13,6 +13,21 @@ import { Badge } from "@/components/ui/badge";
 import { v7 } from "uuid";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { useTranslation } from "react-i18next";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   Pagination,
   PaginationContent,
@@ -32,21 +47,34 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useChatGiveawayTemplateDb, type ChatGiveawayTemplate } from "@/database/ChatGiveawayTemplate";
-import { TemplateCard } from "./components/template-card";
+import { TemplateCard, TemplateCardOverlay } from "./components/template-card";
 
 export function ChatGiveaway() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const { getChatGiveaways, deleteChatGiveaway, addChatGiveaway } = useChatGiveawayDb();
-  const { getTemplates, addTemplate, deleteTemplate } = useChatGiveawayTemplateDb();
+  const { getTemplates, addTemplate, deleteTemplate, updateTemplatesOrder } = useChatGiveawayTemplateDb();
 
   const [giveaways, setGiveaways] = useState<ChatGiveawayFormData[]>([]);
   const [templates, setTemplates] = useState<ChatGiveawayTemplate[]>([]);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   const [isDeletingGiveaway, startIsDeletingGiveawayTransition] = useTransition();
   const [, startIsDuplicatingGiveawayTransition] = useTransition();
   const [, setDuplicatingId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+  );
+
+  const templateIds = useMemo(() => templates.map((t) => t.id), [templates]);
+  const activeDragTemplate = useMemo(
+    () => templates.find((t) => t.id === activeDragId) ?? null,
+    [templates, activeDragId],
+  );
 
   // Template creation state
   const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
@@ -182,12 +210,17 @@ export function ChatGiveaway() {
       const now = new Date().toISOString();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id, winners, participants, createdAt, updatedAt, ...settings } = selectedGiveawayForTemplate;
+      const nextSortOrder =
+        templates.length === 0
+          ? 0
+          : Math.max(...templates.map((t) => t.sortOrder)) + 1;
 
       const newTemplate: ChatGiveawayTemplate = {
         id: v7(),
         name: templateName,
         settings: settings,
         createdAt: now,
+        sortOrder: nextSortOrder,
       };
 
       await addTemplate(newTemplate);
@@ -196,6 +229,33 @@ export function ChatGiveaway() {
       setSelectedGiveawayForTemplate(null);
       setTemplateName("");
     });
+  };
+
+  const onDragStart = (event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
+  };
+
+  const onDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = templates.findIndex((t) => t.id === active.id);
+    const newIndex = templates.findIndex((t) => t.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const reordered = arrayMove(templates, oldIndex, newIndex).map((t, index) => ({
+      ...t,
+      sortOrder: index,
+    }));
+
+    setTemplates(reordered);
+    await updateTemplatesOrder(reordered.map((t) => t.id));
+  };
+
+  const onDragCancel = () => {
+    setActiveDragId(null);
   };
 
   const onClickUseTemplate = async (template: ChatGiveawayTemplate) => {
@@ -297,17 +357,32 @@ export function ChatGiveaway() {
       {templates.length > 0 && (
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Templates</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {templates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onUse={onClickUseTemplate}
-                onDelete={onClickDeleteTemplate}
-                disabled={isCreatingTemplate}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            onDragCancel={onDragCancel}
+          >
+            <SortableContext items={templateIds} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {templates.map((template) => (
+                  <TemplateCard
+                    key={template.id}
+                    template={template}
+                    onUse={onClickUseTemplate}
+                    onDelete={onClickDeleteTemplate}
+                    disabled={isCreatingTemplate}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay dropAnimation={null}>
+              {activeDragTemplate ? (
+                <TemplateCardOverlay template={activeDragTemplate} />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
       )}
 
