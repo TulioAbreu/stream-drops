@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface TemplateCardProps {
   template: ChatGiveawayTemplate;
@@ -23,14 +25,68 @@ interface TemplateCardProps {
   disabled?: boolean;
 }
 
+const MARQUEE_SPEED_PX_PER_SEC = 50;
+
 export function TemplateCard({ template, onUse, onDelete, disabled }: TemplateCardProps) {
+  const nameRef = useRef<HTMLDivElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+  const [marqueeDistance, setMarqueeDistance] = useState(0);
+  const [marqueeDuration, setMarqueeDuration] = useState(0);
+
+  const measureOverflow = useCallback(() => {
+    const el = nameRef.current;
+    if (!el) return;
+
+    const distance = Math.max(0, el.scrollWidth - el.clientWidth);
+    setIsOverflowing(distance > 0);
+    setMarqueeDistance(distance);
+    setMarqueeDuration(distance > 0 ? distance / MARQUEE_SPEED_PX_PER_SEC : 0);
+  }, []);
+
+  useEffect(() => {
+    measureOverflow();
+
+    const el = nameRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver(measureOverflow);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measureOverflow, template.name]);
+
+  const showMarquee = isOverflowing && isHovering;
+
   return (
-    <Card className="flex flex-row items-center justify-between p-2 pl-4 gap-2 w-fit max-w-full">
+    <Card className="flex flex-row items-center justify-between p-2 pl-4 gap-2 w-full min-w-0">
       <TooltipProvider>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
-            <div className="font-medium flex-grow cursor-default py-2 whitespace-nowrap">
-              {template.name}
+            <div
+              className="min-w-0 flex-1 overflow-hidden cursor-default py-2"
+              onMouseEnter={() => {
+                measureOverflow();
+                setIsHovering(true);
+              }}
+              onMouseLeave={() => setIsHovering(false)}
+            >
+              <div
+                ref={nameRef}
+                className={cn(
+                  "font-medium whitespace-nowrap",
+                  showMarquee ? "template-name-marquee" : "truncate",
+                )}
+                style={
+                  showMarquee
+                    ? ({
+                        "--marquee-distance": `${marqueeDistance}px`,
+                        "--marquee-duration": `${marqueeDuration}s`,
+                      } as CSSProperties)
+                    : undefined
+                }
+              >
+                {template.name}
+              </div>
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" align="start" sideOffset={10} className="max-w-[300px] p-3 bg-popover text-popover-foreground border [&_.tooltip-arrow]:bg-popover [&_.tooltip-arrow]:fill-popover">

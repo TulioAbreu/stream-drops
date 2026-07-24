@@ -134,6 +134,20 @@
   }
 }
 
+@keyframes template-name-marquee {
+  0%, 15% {
+    transform: translateX(0);
+  }
+  85%, 100% {
+    transform: translateX(calc(-1 * var(--marquee-distance, 0px)));
+  }
+}
+
+.template-name-marquee {
+  display: inline-block;
+  animation: template-name-marquee var(--marquee-duration, 3s) linear infinite alternate;
+}
+
 .winner-conic-frame {
   position: relative;
   overflow: hidden;
