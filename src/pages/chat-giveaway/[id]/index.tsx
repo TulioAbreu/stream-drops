@@ -1,7 +1,7 @@
 import { Layout } from "@/components/layout";
 import { useParams, useNavigate } from "react-router";
 import { useChatGiveawayDb, type ChatGiveawayWinner } from "@/database/ChatGiveaway";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Wifi, WifiOff, Star, Edit } from "lucide-react";
+import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Wifi, WifiOff, Edit } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
 import { drawWinner } from "@/service/chat-giveaway";
@@ -22,7 +22,7 @@ import { useTranslation } from "react-i18next";
 import type { ChatParticipant } from "../types";
 import { WinnerConfirmationModal } from "./components/winner-confirmation-modal";
 import { SubscriptionTierBadge } from "./components/subscription-tier-badge";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { ParticipantTag } from "./components/participant-tag";
 
 export function ChatGiveawayDetail() {
   const { id } = useParams<{ id: string }>();
@@ -35,9 +35,6 @@ export function ChatGiveawayDetail() {
 
   // Winner confirmation modal state
   const [pendingWinner, setPendingWinner] = useState<ChatParticipant | null>(null);
-
-  // Ref for virtual scrolling
-  const parentRef = useRef<HTMLDivElement>(null);
 
   // Use chat listener when we have user data and giveaway data
   const {
@@ -73,16 +70,20 @@ export function ChatGiveawayDetail() {
     return Array.from(participantsMap.values());
   }, [giveaway?.participants, liveParticipants]);
 
-  // Virtual scrolling for participants list
-  const rowVirtualizer = useVirtualizer({
-    count: participants.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 53, // Estimated row height
-    overscan: 5, // Render 5 items outside visible area
-  });
-
   // Sort participants by joinedAt (newest first) for display only
-  const sortedParticipants = [...participants].sort((a, b) => b.joinedAt - a.joinedAt);
+  const sortedParticipants = useMemo(
+    () => [...participants].sort((a, b) => b.joinedAt - a.joinedAt),
+    [participants]
+  );
+
+  // Sort winners by drawnAt (newest first) for display
+  const sortedWinners = useMemo(
+    () =>
+      [...(giveaway?.winners ?? [])].sort(
+        (a, b) => new Date(b.drawnAt).getTime() - new Date(a.drawnAt).getTime()
+      ),
+    [giveaway?.winners]
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -404,132 +405,15 @@ export function ChatGiveawayDetail() {
                   </Empty>
                 </div>
               ) : (
-                <div
-                  ref={parentRef}
-                  className="h-[460px] mt-3 overflow-auto"
-                >
-                  <div
-                    style={{
-                      height: `${rowVirtualizer.getTotalSize()}px`,
-                      width: '100%',
-                      position: 'relative',
-                    }}
-                  >
-                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                      const participant = sortedParticipants[virtualRow.index];
-
-                      // Determine badge style based on subscription months
-                      const getSubBadgeStyle = (months: number | undefined) => {
-                        if (!months) return "";
-
-                        if (months >= 48) {
-                          // Ultra rare: animated rainbow gradient
-                          return "bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 bg-[length:200%_100%] animate-[gradient_3s_ease_infinite] text-white border-0";
-                        } else if (months >= 36) {
-                          // Gold
-                          return "bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 bg-[length:200%_100%] animate-[gradient_3s_ease_infinite] text-black border-0";
-                        } else if (months >= 24) {
-                          // Purple
-                          return "bg-gradient-to-r from-purple-500 via-purple-600 to-purple-500 bg-[length:200%_100%] animate-[gradient_3s_ease_infinite] text-white border-0";
-                        } else if (months >= 12) {
-                          // Blue
-                          return "bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 bg-[length:200%_100%] animate-[gradient_3s_ease_infinite] text-white border-0";
-                        }
-                        return "";
-                      };
-
-                      const badgeStyle = giveaway && giveaway.minimumSuscriptionTimeInMonths > 0
-                        ? getSubBadgeStyle(participant.subscriptionMonths)
-                        : "";
-
-                      return (
-                        <div
-                          key={virtualRow.key}
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: `${virtualRow.size}px`,
-                            transform: `translateY(${virtualRow.start}px)`,
-                          }}
-                        >
-                          <div className="flex items-center gap-2 px-4 py-3 border-b hover:bg-accent font-medium">
-                            {participant.displayName}
-                            {participant.subscriber && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Subscriber</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                            <SubscriptionTierBadge tier={participant.tier} />
-                            {giveaway && giveaway.minimumSuscriptionTimeInMonths > 0 && participant.subscriptionMonths && (
-                              <Badge
-                                variant="secondary"
-                                className={`text-xs font-semibold ${badgeStyle}`}
-                              >
-                                {participant.subscriptionMonths} {participant.subscriptionMonths === 1 ? 'mês' : 'meses'}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                <div className="h-[460px] mt-3 overflow-auto content-start">
+                  <div className="flex flex-wrap gap-2 p-1">
+                    {sortedParticipants.map((participant) => (
+                      <ParticipantTag
+                        key={participant.id}
+                        participant={participant}
+                      />
+                    ))}
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Chat Column */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Chat da Twitch
-                {isConnected ? (
-                  <Wifi className="w-4 h-4 text-muted-foreground" />
-                ) : (
-                  <WifiOff className="w-4 h-4 text-destructive animate-pulse" />
-                )}
-              </CardTitle>
-              <CardDescription>
-                {userData?.login ? `Canal: ${userData.login}` : "Carregando canal..."}
-                {!isConnected && userData?.login && connectionStatus === "error" && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={reconnect}
-                      className="h-6 px-2 text-xs"
-                    >
-                      Reconectar
-                    </Button>
-                  </div>
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {userData?.login ? (
-                <iframe
-                  src={composeTwitchChatEmbedUrl(userData.login)}
-                  className="w-full h-[500px] border-0 rounded-lg"
-                  title={`Chat do canal ${userData.login}`}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-[500px] bg-muted rounded-lg p-6">
-                  <AlertCircle className="h-8 w-8 text-destructive mb-3" />
-                  <p className="text-center text-destructive font-medium">
-                    Não foi possível montar o chat: dados do usuário ausentes.
-                  </p>
-                  <p className="text-center text-sm text-muted-foreground mt-2">
-                    Verifique se você está autenticado com a conta Twitch correta.
-                  </p>
                 </div>
               )}
             </CardContent>
@@ -560,7 +444,7 @@ export function ChatGiveawayDetail() {
                       </Empty>
                     </div>
                   ) : (
-                    giveaway.winners.map((winner, index) => {
+                    sortedWinners.map((winner, index) => {
                       // Find participant data for this winner to get tier info
                       const participantData = participants.find(p => p.id === winner.twitchId);
 
@@ -613,6 +497,55 @@ export function ChatGiveawayDetail() {
               </ScrollArea>
             </CardContent>
           </Card>
+
+          {/* Chat Column */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Chat da Twitch
+                {isConnected ? (
+                  <Wifi className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <WifiOff className="w-4 h-4 text-destructive animate-pulse" />
+                )}
+              </CardTitle>
+              <CardDescription>
+                {userData?.login ? `Canal: ${userData.login}` : "Carregando canal..."}
+                {!isConnected && userData?.login && connectionStatus === "error" && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={reconnect}
+                      className="h-6 px-2 text-xs"
+                    >
+                      Reconectar
+                    </Button>
+                  </div>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {userData?.login ? (
+                <iframe
+                  src={composeTwitchChatEmbedUrl(userData.login)}
+                  className="w-full h-[500px] border-0 rounded-lg"
+                  title={`Chat do canal ${userData.login}`}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-[500px] bg-muted rounded-lg p-6">
+                  <AlertCircle className="h-8 w-8 text-destructive mb-3" />
+                  <p className="text-center text-destructive font-medium">
+                    Não foi possível montar o chat: dados do usuário ausentes.
+                  </p>
+                  <p className="text-center text-sm text-muted-foreground mt-2">
+                    Verifique se você está autenticado com a conta Twitch correta.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
         </div>
       </div>
 
