@@ -27,6 +27,7 @@ import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useLoginStore } from "@/storage/login";
 
@@ -34,6 +35,7 @@ interface NavbarItem {
   title: string;
   icon: React.ReactNode;
   url: string;
+  badge?: string;
 }
 
 const items: NavbarItem[] = [
@@ -51,6 +53,7 @@ const items: NavbarItem[] = [
     title: "DASHBOARD_SIDEBAR_ITEM_ROULETTE",
     icon: <Disc3 />,
     url: "/dashboard/roulette",
+    badge: "Beta",
   },
   // {
   //     title: "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY",
@@ -103,6 +106,14 @@ export function AppSidebar() {
                     <Link to={item.url}>
                       {item.icon}
                       <span>{t(item.title)}</span>
+                      {item.badge ? (
+                        <Badge
+                          variant="outline"
+                          className="ml-auto border-cyan-500/40 bg-cyan-500/10 px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wide text-cyan-300"
+                        >
+                          {item.badge}
+                        </Badge>
+                      ) : null}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -17,7 +17,6 @@ import {
   pickWinnerIndex,
 } from "@/service/roulette";
 import { RouletteWheel } from "./roulette-wheel";
-import { cn } from "@/lib/utils";
 
 export const DEFAULT_ROULETTE_TITLE = "Nova Roleta";
 
@@ -158,9 +157,9 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(280px,380px)_1fr]">
-      <aside className="flex flex-col gap-5">
-        <div className="space-y-2">
+    <div className="grid gap-4 lg:h-[calc(100dvh-8.5rem)] lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)] lg:items-stretch lg:overflow-hidden">
+      <aside className="order-2 flex min-h-0 flex-col gap-3 overflow-y-auto pr-1 lg:order-1">
+        <div className="shrink-0 space-y-1.5">
           <Label htmlFor="roulette-title">
             {t("ROULETTE_TITLE_FIELD", "Título")}
           </Label>
@@ -173,8 +172,8 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
           />
         </div>
 
-        <div className="flex flex-1 flex-col space-y-2">
-          <div className="flex items-center justify-between gap-2">
+        <div className="flex min-h-0 flex-1 flex-col space-y-1.5">
+          <div className="flex shrink-0 items-center justify-between gap-2">
             <Label htmlFor="roulette-options">
               {t("ROULETTE_OPTIONS_FIELD", "Opções")}
             </Label>
@@ -191,10 +190,10 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
               "ROULETTE_OPTIONS_PLACEHOLDER",
               "Uma opção por linha\nExemplo:\nAlice\nBob\nCarol"
             )}
-            className="min-h-[280px] flex-1 resize-y font-mono text-sm leading-relaxed"
+            className="min-h-[140px] flex-1 resize-none font-mono text-sm leading-relaxed"
             disabled={mustSpin}
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="shrink-0 text-xs text-muted-foreground">
             {t(
               "ROULETTE_OPTIONS_HINT",
               "Cada linha vira uma fatia. Remover a linha remove a fatia."
@@ -202,7 +201,7 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <Button
             onClick={handleSave}
             disabled={!isDirty || isSaving || mustSpin}
@@ -215,6 +214,7 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
             variant="secondary"
             onClick={handleSpin}
             disabled={options.length === 0 || mustSpin}
+            className="lg:hidden"
           >
             <Dices className="h-4 w-4" />
             {mustSpin
@@ -224,37 +224,49 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
         </div>
       </aside>
 
-      <section className="flex flex-col items-center justify-center gap-6">
-        <RouletteWheel
-          options={options}
-          mustSpin={mustSpin}
-          prizeIndex={prizeIndex}
-          onStopSpinning={handleStopSpinning}
-        />
+      <section className="order-1 flex min-h-0 min-w-0 flex-col items-center lg:order-2">
+        <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
+          <RouletteWheel
+            options={options}
+            mustSpin={mustSpin}
+            prizeIndex={prizeIndex}
+            onStopSpinning={handleStopSpinning}
+          />
+        </div>
 
-        <div
-          className={cn(
-            "w-full max-w-md transition-all duration-300",
-            winner ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
-          )}
-        >
-          {winner && (
-            <div className="winner-conic-frame">
-              <div className="relative z-10 flex items-center gap-3 rounded-[calc(var(--radius)+1px)] bg-card px-5 py-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500/20 text-violet-300">
-                  <Trophy className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                    {t("ROULETTE_WINNER_LABEL", "Vencedor")}
-                  </p>
-                  <p className="truncate text-lg font-bold text-foreground">
-                    {winner}
-                  </p>
+        <div className="relative z-20 flex w-full max-w-lg shrink-0 flex-col items-center gap-2 bg-background/80 pb-1 pt-2 backdrop-blur-sm">
+          <Button
+            size="lg"
+            onClick={handleSpin}
+            disabled={options.length === 0 || mustSpin}
+            className="hidden min-w-[180px] lg:inline-flex"
+          >
+            <Dices className="h-4 w-4" />
+            {mustSpin
+              ? t("ROULETTE_SPINNING", "Girando...")
+              : t("ROULETTE_SPIN_BUTTON", "Girar")}
+          </Button>
+
+          {/* Slot reservado: vencedor não empurra o layout / scroll */}
+          <div className="flex h-[4.25rem] w-full items-center">
+            {winner ? (
+              <div className="winner-conic-frame w-full">
+                <div className="relative z-10 flex items-center gap-3 rounded-[calc(var(--radius)+1px)] bg-card px-4 py-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-300">
+                    <Trophy className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {t("ROULETTE_WINNER_LABEL", "Vencedor")}
+                    </p>
+                    <p className="truncate text-base font-bold text-foreground">
+                      {winner}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            ) : null}
+          </div>
         </div>
       </section>
     </div>

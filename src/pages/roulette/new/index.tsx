@@ -11,7 +11,7 @@ export function RouletteNewPage() {
 
   return (
     <Layout>
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-3 flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
@@ -19,7 +19,7 @@ export function RouletteNewPage() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-xl font-bold">
           {t("ROULETTE_CREATE_TITLE", "Nova Roleta")}
         </h1>
       </div>

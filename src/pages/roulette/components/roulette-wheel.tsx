@@ -16,25 +16,34 @@ const SEGMENT_COLORS = [
   "#d97706",
 ];
 
-/** Imagem 1x1 transparente — esconde o ponteiro nativo da lib */
-const HIDDEN_POINTER_SRC =
-  "data:image/svg+xml," +
-  encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>`
-  );
-
 /**
- * A lib posiciona o ponteiro no canto superior-direito do quadrado (~1–2h)
- * e calibra o ângulo do vencedor para esse eixo (~43°).
- *
- * Estratégia anti-desync:
- * 1. Escondemos o ponteiro nativo
- * 2. Giramos o wheel inteiro ~-60° para mapear esse eixo para as 12h
- * 3. Desenhamos nossa seta fixa no topo (fora do rotate)
- *
- * Assim a fatia sob a seta continua sendo exatamente o prizeNumber.
+ * Seta desenhada apontando para BAIXO.
+ * O container gira -45° (eixo nativo da lib → topo). Contra-rotacionamos
+ * a imagem em +45° para ela continuar apontando para o centro, sem parecer
+ * “tortinha” em relação à página.
  */
-const LIB_POINTER_TO_TOP_DEG = -60;
+const POINTER_SRC =
+  "data:image/svg+xml," +
+  encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <path
+    d="M32 58 L8 10 L56 10 Z"
+    fill="url(#g)"
+    stroke="#fbbf24"
+    stroke-width="4"
+    stroke-linejoin="round"
+  />
+</svg>
+`);
+
+/** Canto superior-direito → 12h. Issues #94/#126 da react-custom-roulette. */
+const ORIENT_TO_TOP_DEG = -45;
 
 interface RouletteWheelProps {
   options: string[];
@@ -69,13 +78,13 @@ export function RouletteWheel({
     return (
       <div
         className={cn(
-          "relative flex aspect-square w-full max-w-[420px] flex-col items-center justify-center rounded-full border border-dashed border-violet-500/40 bg-gradient-to-br from-violet-950/40 via-slate-950 to-cyan-950/30 text-center",
+          "roulette-wheel-shell roulette-wheel-shell--empty relative mx-auto flex flex-col items-center justify-center rounded-full border border-dashed border-violet-500/40 bg-gradient-to-br from-violet-950/40 via-slate-950 to-cyan-950/30 text-center",
           className
         )}
       >
-        <div className="pointer-events-none absolute inset-6 rounded-full border border-cyan-400/10" />
-        <Disc3 className="mb-3 h-12 w-12 text-violet-400/70" />
-        <p className="max-w-[220px] px-4 text-sm text-muted-foreground">
+        <div className="pointer-events-none absolute inset-[10%] rounded-full border border-cyan-400/10" />
+        <Disc3 className="mb-3 h-14 w-14 text-violet-400/70" />
+        <p className="max-w-[240px] px-4 text-sm text-muted-foreground">
           {t(
             "ROULETTE_EMPTY_WHEEL_HINT",
             "Adicione opções ao lado para montar a roleta"
@@ -86,41 +95,11 @@ export function RouletteWheel({
   }
 
   return (
-    <div
-      className={cn(
-        "roulette-wheel-shell relative mx-auto w-full max-w-[420px]",
-        className
-      )}
-    >
-      {/* Seta fixa no topo (12h) — não gira com a roleta */}
-      <div className="roulette-pointer-fixed" aria-hidden>
-        <svg
-          viewBox="0 0 48 48"
-          className="h-full w-full"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <linearGradient id="roulette-pointer-grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22d3ee" />
-              <stop offset="100%" stopColor="#a78bfa" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M24 44 L6 8 L42 8 Z"
-            fill="url(#roulette-pointer-grad)"
-            stroke="#fbbf24"
-            strokeWidth="3"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-
-      <div className="roulette-wheel-glow" aria-hidden />
-
+    <div className={cn("roulette-wheel-shell relative mx-auto", className)}>
       <div className="roulette-wheel-frame">
         <div
           className="roulette-wheel-orient"
-          style={{ transform: `rotate(${LIB_POINTER_TO_TOP_DEG}deg)` }}
+          style={{ transform: `rotate(${ORIENT_TO_TOP_DEG}deg)` }}
         >
           <Wheel
             mustStartSpinning={mustSpin}
@@ -137,18 +116,20 @@ export function RouletteWheel({
             radiusLineColor="#0f172a"
             radiusLineWidth={2}
             fontFamily="Helvetica"
-            fontSize={options.length > 12 ? 12 : options.length > 8 ? 14 : 16}
+            fontSize={options.length > 16 ? 13 : options.length > 10 ? 15 : 18}
             fontWeight={700}
             textDistance={58}
             spinDuration={0.55}
             disableInitialAnimation
             pointerProps={{
-              src: HIDDEN_POINTER_SRC,
+              src: POINTER_SRC,
               style: {
-                opacity: 0,
-                width: 0,
-                height: 0,
-                pointerEvents: "none",
+                width: "15%",
+                right: "1%",
+                top: "1%",
+                zIndex: 6,
+                transform: `rotate(${-ORIENT_TO_TOP_DEG}deg)`,
+                transformOrigin: "center center",
               },
             }}
           />
