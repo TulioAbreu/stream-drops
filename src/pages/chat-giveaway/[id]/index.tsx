@@ -11,8 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Wifi, WifiOff, Edit } from "lucide-react";
-import { AlertCircle } from "lucide-react";
+import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Edit, AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
 import { drawWinner } from "@/service/chat-giveaway";
 import { toast } from "sonner";
@@ -20,7 +19,7 @@ import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import type { ChatParticipant } from "../types";
-import { WinnerConfirmationModal } from "./components/winner-confirmation-modal";
+import { WinnerConfirmationInline } from "./components/winner-confirmation-inline";
 import { SubscriptionTierBadge } from "./components/subscription-tier-badge";
 import { ParticipantTag } from "./components/participant-tag";
 
@@ -41,10 +40,8 @@ export function ChatGiveawayDetail() {
     participants: liveParticipants,
     allParticipants,
     messages,
-    isConnected,
     connectionStatus,
     error: chatError,
-    reconnect,
     filterParticipants,
     nameFilter
   } = useChatListener({
@@ -107,7 +104,7 @@ export function ChatGiveawayDetail() {
   const [redrawExcludedIds, setRedrawExcludedIds] = useState<string[]>([]);
   const [isRedrawing, setIsRedrawing] = useState(false);
 
-  // Clear redraw excluded IDs when modal is closed (confirmed or cancelled)
+  // Clear redraw excluded IDs when confirmation is closed (confirmed or cancelled)
   useEffect(() => {
     if (!pendingWinner) {
       setRedrawExcludedIds([]);
@@ -154,7 +151,7 @@ export function ChatGiveawayDetail() {
       });
     }
 
-    // Open confirmation modal instead of adding directly to winners
+    // Show inline confirmation instead of adding directly to winners
     setPendingWinner(winner);
     setIsDrawing(false);
     setIsRedrawing(false);
@@ -217,15 +214,15 @@ export function ChatGiveawayDetail() {
     try {
       await updateChatGiveaway(updatedGiveaway);
       setGiveaway(updatedGiveaway);
-
-
       toast.success(`🎉 ${pendingWinner.displayName} foi confirmado como vencedor!`);
     } catch (error) {
       console.error("Error saving winner and participants:", error);
       toast.error("Erro ao salvar vencedor. Tente novamente.");
+      throw error;
     }
+  };
 
-    // Reset modal state
+  const handleDismissPendingWinner = () => {
     setPendingWinner(null);
   };
 
@@ -326,7 +323,7 @@ export function ChatGiveawayDetail() {
               variant="outline"
               size="lg"
               onClick={handleDraw}
-              disabled={isDrawing || participants.length === 0}
+              disabled={isDrawing || !!pendingWinner || participants.length === 0}
             >
               {isDrawing ? (
                 <>
@@ -343,10 +340,10 @@ export function ChatGiveawayDetail() {
           </div>
         </div>
 
-        {/* Three columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Two columns: participants | winners + chat */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Participants Column */}
-          <Card>
+          <Card className="flex flex-col">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Participantes
@@ -384,7 +381,7 @@ export function ChatGiveawayDetail() {
                 )}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-1 flex-col">
               <div className="space-y-3">
                 <Input
                   placeholder="Filtrar por nome..."
@@ -394,7 +391,7 @@ export function ChatGiveawayDetail() {
                 />
               </div>
               {participants.length === 0 ? (
-                <div className="flex items-center justify-center h-[460px] mt-3">
+                <div className="flex flex-1 items-center justify-center min-h-[620px] mt-3">
                   <Empty>
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
@@ -405,7 +402,7 @@ export function ChatGiveawayDetail() {
                   </Empty>
                 </div>
               ) : (
-                <div className="h-[460px] mt-3 overflow-auto content-start">
+                <div className="mt-3 min-h-[620px] flex-1 overflow-auto content-start">
                   <div className="flex flex-wrap gap-2 p-1">
                     {sortedParticipants.map((participant) => (
                       <ParticipantTag
@@ -419,146 +416,123 @@ export function ChatGiveawayDetail() {
             </CardContent>
           </Card>
 
-          {/* Winners Column */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Vencedores</CardTitle>
-              <CardDescription>
-                {giveaway.winners.length} vencedor(es)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[500px] pr-4">
-                <div className="space-y-3">
-                  {giveaway.winners.length === 0 ? (
-                    <div className="flex items-center justify-center h-full min-h-[400px]">
-                      <Empty>
-                        <EmptyHeader>
-                          <EmptyMedia variant="icon">
-                            <Trophy />
-                          </EmptyMedia>
-                          <EmptyTitle>
-                            Nenhum vencedor ainda
-                          </EmptyTitle>
-                        </EmptyHeader>
-                      </Empty>
-                    </div>
-                  ) : (
-                    sortedWinners.map((winner, index) => {
-                      // Find participant data for this winner to get tier info
-                      const participantData = participants.find(p => p.id === winner.twitchId);
+          {/* Right stack: winners (larger) + chat (smaller) */}
+          <div className="flex flex-col gap-4 min-h-0">
+            <Card className="flex flex-[1.7] flex-col min-h-0">
+              <CardHeader>
+                <CardTitle>Vencedores</CardTitle>
+                <CardDescription>
+                  {giveaway.winners.length} vencedor(es)
+                  {pendingWinner && " · aguardando confirmação"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex min-h-0 flex-1 flex-col">
+                <ScrollArea className="h-[420px] pr-4">
+                  <div className="space-y-3">
+                    {pendingWinner && (
+                      <WinnerConfirmationInline
+                        key={pendingWinner.id}
+                        pendingWinner={pendingWinner}
+                        messages={messages}
+                        onConfirm={handleConfirmWinner}
+                        onDismiss={handleDismissPendingWinner}
+                        onCancel={handleCancelWinner}
+                        onRedraw={handleRedraw}
+                        isRedrawing={isRedrawing}
+                      />
+                    )}
 
-                      return (
-                        <div
-                          key={winner.id}
-                          className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20"
-                        >
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
-                            {index + 1}
-                          </div>
-                          <Avatar>
-                            <AvatarImage src={winner.avatar} />
-                            <AvatarFallback>
-                              {winner.name[0].toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-medium text-sm truncate">
-                                {winner.name}
-                              </p>
-                              <SubscriptionTierBadge tier={participantData?.tier} />
+                    {giveaway.winners.length === 0 && !pendingWinner ? (
+                      <div className="flex items-center justify-center min-h-[320px]">
+                        <Empty>
+                          <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                              <Trophy />
+                            </EmptyMedia>
+                            <EmptyTitle>
+                              Nenhum vencedor ainda
+                            </EmptyTitle>
+                          </EmptyHeader>
+                        </Empty>
+                      </div>
+                    ) : (
+                      sortedWinners
+                        .filter((winner) => winner.id !== pendingWinner?.id)
+                        .map((winner, index) => {
+                        const participantData = participants.find(p => p.id === winner.twitchId);
+                        const rank = pendingWinner ? index + 2 : index + 1;
+
+                        return (
+                          <div
+                            key={winner.id}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20"
+                          >
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
+                              {rank}
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(winner.drawnAt).toLocaleTimeString('pt-BR')}
-                            </p>
+                            <Avatar>
+                              <AvatarImage src={winner.avatar} />
+                              <AvatarFallback>
+                                {winner.name[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-medium text-sm truncate">
+                                  {winner.name}
+                                </p>
+                                <SubscriptionTierBadge tier={participantData?.tier} />
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(winner.drawnAt).toLocaleTimeString('pt-BR')}
+                              </p>
+                            </div>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => onClickRemoveWinner(winner.id)}
+                                  >
+                                    <XIcon className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Remover vencedor
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => onClickRemoveWinner(winner.id)}
-                                >
-                                  <XIcon className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                Remover vencedor
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
 
-          {/* Chat Column */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Chat da Twitch
-                {isConnected ? (
-                  <Wifi className="w-4 h-4 text-muted-foreground" />
+            <Card className="shrink-0 overflow-hidden p-0">
+              <CardContent className="p-0">
+                {userData?.login ? (
+                  <iframe
+                    src={composeTwitchChatEmbedUrl(userData.login)}
+                    className="w-full h-[240px] border-0"
+                    title={`Chat do canal ${userData.login}`}
+                  />
                 ) : (
-                  <WifiOff className="w-4 h-4 text-destructive animate-pulse" />
-                )}
-              </CardTitle>
-              <CardDescription>
-                {userData?.login ? `Canal: ${userData.login}` : "Carregando canal..."}
-                {!isConnected && userData?.login && connectionStatus === "error" && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={reconnect}
-                      className="h-6 px-2 text-xs"
-                    >
-                      Reconectar
-                    </Button>
+                  <div className="flex flex-col items-center justify-center h-[240px] bg-muted p-6">
+                    <AlertCircle className="h-8 w-8 text-destructive mb-3" />
+                    <p className="text-center text-destructive font-medium text-sm">
+                      Não foi possível montar o chat: dados do usuário ausentes.
+                    </p>
                   </div>
                 )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {userData?.login ? (
-                <iframe
-                  src={composeTwitchChatEmbedUrl(userData.login)}
-                  className="w-full h-[500px] border-0 rounded-lg"
-                  title={`Chat do canal ${userData.login}`}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-[500px] bg-muted rounded-lg p-6">
-                  <AlertCircle className="h-8 w-8 text-destructive mb-3" />
-                  <p className="text-center text-destructive font-medium">
-                    Não foi possível montar o chat: dados do usuário ausentes.
-                  </p>
-                  <p className="text-center text-sm text-muted-foreground mt-2">
-                    Verifique se você está autenticado com a conta Twitch correta.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-
-      {/* Winner Confirmation Modal */}
-      <WinnerConfirmationModal
-        pendingWinner={pendingWinner}
-        messages={messages}
-        onConfirm={handleConfirmWinner}
-        onCancel={handleCancelWinner}
-        onRedraw={handleRedraw}
-        isRedrawing={isRedrawing}
-        key={pendingWinner?.id}
-      />
     </Layout>
   );
 }

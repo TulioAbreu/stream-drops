@@ -127,3 +127,68 @@
     background-position: 100% 50%;
   }
 }
+
+@keyframes winner-conic-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.winner-conic-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--radius) + 2px);
+  padding: 3px;
+  isolation: isolate;
+}
+
+.winner-conic-frame::before {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  z-index: 0;
+  background: conic-gradient(
+    from 0deg,
+    #fb923c,
+    #fbbf24,
+    #a78bfa,
+    #22d3ee,
+    #fb923c
+  );
+  animation: winner-conic-spin 5s linear infinite;
+}
+
+.winner-card-shell {
+  transform-origin: top center;
+  transition:
+    opacity 300ms ease-out,
+    transform 300ms ease-out,
+    padding 300ms ease-out,
+    border-color 300ms ease-out,
+    background-color 300ms ease-out;
+}
+
+.winner-card-shell--enter {
+  opacity: 0;
+  transform: scale(0.96) translateY(-6px);
+}
+
+.winner-card-shell.winner-conic-frame.winner-card-shell--enter {
+  opacity: 0;
+}
+
+.winner-card-shell--collapsed {
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in oklab, var(--primary) 20%, transparent);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  padding: 0;
+}
+
+.winner-card-shell--collapsed::before {
+  display: none;
+}
+
+.winner-card-shell--exit {
+  opacity: 0;
+  transform: scale(0.96) translateY(-8px);
+}
