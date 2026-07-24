@@ -94,63 +94,50 @@ export function useChatListener({
         const userIdsToProcess = Array.from(pendingUserIdsRef.current);
 
         try {
-            // Fetch subscription tiers for batch of users
-            const result = await twitchApiClient.fetchSubscriptionsByUserIds(
-                broadcasterId,
-                userIdsToProcess
-            );
+            const [subscriptionsResult, usersResult] = await Promise.all([
+                twitchApiClient.fetchSubscriptionsByUserIds(broadcasterId, userIdsToProcess),
+                twitchApiClient.fetchUsersByIds(userIdsToProcess),
+            ]);
 
-            if (result.isErr()) {
-                console.error("Failed to fetch subscription tiers:", result.error);
+            if (subscriptionsResult.isErr()) {
+                console.error("Failed to fetch subscription tiers:", subscriptionsResult.error);
+            }
+            if (usersResult.isErr()) {
+                console.error("Failed to fetch user profiles:", usersResult.error);
+            }
 
-                // On error, add participants without tier information
-                const newParticipants: ChatParticipant[] = [];
-                userIdsToProcess.forEach(userId => {
-                    const message = pendingMessagesRef.current.get(userId);
-                    if (message && !seenUserIdsRef.current.has(userId)) {
-                        const participant = convertMessageToParticipant(message, {
-                            keyword,
-                            minimumSuscriptionTimeInMonths,
-                            subscribersOnly
-                        });
-                        if (participant) {
-                            newParticipants.push(participant);
-                            seenUserIdsRef.current.add(userId);
-                        }
-                    }
-                });
+            const tierMap = subscriptionsResult.isOk() ? subscriptionsResult.value : null;
+            const userMap = usersResult.isOk() ? usersResult.value : null;
+            const newParticipants: ChatParticipant[] = [];
 
-                if (newParticipants.length > 0) {
-                    setAllParticipants(prev => [...prev, ...newParticipants]);
-                }
-            } else {
-                // Success: enrich participants with tier information
-                const tierMap = result.value;
-                const newParticipants: ChatParticipant[] = [];
+            userIdsToProcess.forEach(userId => {
+                const message = pendingMessagesRef.current.get(userId);
+                if (message && !seenUserIdsRef.current.has(userId)) {
+                    const participant = convertMessageToParticipant(message, {
+                        keyword,
+                        minimumSuscriptionTimeInMonths,
+                        subscribersOnly
+                    });
 
-                userIdsToProcess.forEach(userId => {
-                    const message = pendingMessagesRef.current.get(userId);
-                    if (message && !seenUserIdsRef.current.has(userId)) {
-                        const participant = convertMessageToParticipant(message, {
-                            keyword,
-                            minimumSuscriptionTimeInMonths,
-                            subscribersOnly
-                        });
-
-                        if (participant) {
-                            // Add tier information from API result
+                    if (participant) {
+                        if (tierMap) {
                             const tier = tierMap.get(userId);
                             participant.tier = tier !== undefined ? (tier as 1000 | 2000 | 3000 | null) : null;
-
-                            newParticipants.push(participant);
-                            seenUserIdsRef.current.add(userId);
                         }
-                    }
-                });
 
-                if (newParticipants.length > 0) {
-                    setAllParticipants(prev => [...prev, ...newParticipants]);
+                        const user = userMap?.get(userId);
+                        if (user?.profile_image_url) {
+                            participant.avatar = user.profile_image_url;
+                        }
+
+                        newParticipants.push(participant);
+                        seenUserIdsRef.current.add(userId);
+                    }
                 }
+            });
+
+            if (newParticipants.length > 0) {
+                setAllParticipants(prev => [...prev, ...newParticipants]);
             }
         } catch (error) {
             console.error("Unexpected error processing batch:", error);

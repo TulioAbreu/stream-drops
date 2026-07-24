@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { ok, err, Result } from "neverthrow";
-import type { GetTwitchBroadcasterSubscriptionsParams, GetTwitchBroadcasterSubscriptionsResponse, GetTwitchUsersParams, GetTwitchUsersResponse, SendTwitchChatMessageParams, SendTwitchChatMessageResponse } from "./types";
+import type { GetTwitchBroadcasterSubscriptionsParams, GetTwitchBroadcasterSubscriptionsResponse, GetTwitchUsersParams, GetTwitchUsersResponse, SendTwitchChatMessageParams, SendTwitchChatMessageResponse, TwitchUser } from "./types";
 
 interface TwitchApiClientParams {
     clientId: string;
@@ -76,6 +76,25 @@ export function makeTwitchApiClient(params: TwitchApiClientParams) {
                     },
                 });
                 return ok(response.data);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        },
+        fetchUsersByIds: async (
+            userIds: string[]
+        ): Promise<Result<Map<string, TwitchUser>, AxiosError>> => {
+            try {
+                const params = new URLSearchParams();
+                userIds.forEach(id => params.append('id', id));
+
+                const response = await apiClient.get<GetTwitchUsersResponse>(`/users?${params.toString()}`);
+
+                const userMap = new Map<string, TwitchUser>();
+                response.data.data.forEach(user => {
+                    userMap.set(user.id, user);
+                });
+
+                return ok(userMap);
             } catch (error) {
                 return err(error as AxiosError);
             }
