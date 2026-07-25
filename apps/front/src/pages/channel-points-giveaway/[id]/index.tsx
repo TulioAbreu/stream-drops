@@ -72,7 +72,16 @@ import {
   classifyChannelPointsApiError,
   getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
+import { ParticipantTag } from "@/pages/chat-giveaway/[id]/components/participant-tag";
 import { ChannelPointsAccessBanner } from "../components/channel-points-access-banner";
+
+const winnerDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 export function ChannelPointsGiveawayDetail() {
   const { id } = useParams<{ id: string }>();
@@ -123,11 +132,18 @@ export function ChannelPointsGiveawayDetail() {
     );
   }, [giveaway]);
 
-  const sortedParticipants = useMemo(
+  const participantTicketTags = useMemo(
     () =>
-      [...(giveaway?.participants ?? [])].sort(
-        (a, b) => b.tickets.length - a.tickets.length
-      ),
+      [...(giveaway?.participants ?? [])]
+        .sort((a, b) => b.tickets.length - a.tickets.length)
+        .flatMap((participant) =>
+          participant.tickets.map((ticket) => ({
+            key: ticket.redemptionId,
+            displayName: participant.displayName,
+            subscriber: participant.subscriber,
+            tier: participant.tier,
+          }))
+        ),
     [giveaway?.participants]
   );
 
@@ -580,7 +596,7 @@ export function ChannelPointsGiveawayDetail() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1">
-                {sortedParticipants.length === 0 ? (
+                {participantTicketTags.length === 0 ? (
                   <Empty>
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
@@ -596,41 +612,16 @@ export function ChannelPointsGiveawayDetail() {
                   </Empty>
                 ) : (
                   <ScrollArea className="h-[420px] pr-4">
-                    <div className="flex flex-col gap-2">
-                      {sortedParticipants.map((participant) => (
-                        <div
-                          key={participant.userId}
-                          className="flex items-center justify-between gap-3 rounded-md border p-3"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <Avatar>
-                              <AvatarImage src={participant.avatar} />
-                              <AvatarFallback>
-                                {participant.displayName.slice(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <p className="font-medium truncate">
-                                {participant.displayName}
-                              </p>
-                              <p className="text-sm text-muted-foreground truncate">
-                                @{participant.name}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {participant.tier && (
-                              <Badge variant="outline">
-                                Tier {participant.tier / 1000}
-                              </Badge>
-                            )}
-                            <Badge>
-                              {t("CHANNEL_POINTS_GIVEAWAY_TICKETS_COUNT", {
-                                count: participant.tickets.length,
-                              })}
-                            </Badge>
-                          </div>
-                        </div>
+                    <div className="flex flex-wrap gap-2 p-1 content-start">
+                      {participantTicketTags.map((tag) => (
+                        <ParticipantTag
+                          key={tag.key}
+                          participant={{
+                            displayName: tag.displayName,
+                            subscriber: tag.subscriber,
+                            tier: tag.tier,
+                          }}
+                        />
                       ))}
                     </div>
                   </ScrollArea>
@@ -677,7 +668,9 @@ export function ChannelPointsGiveawayDetail() {
                                 {winner.name}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(winner.drawnAt).toLocaleString()}
+                                {winnerDateFormatter.format(
+                                  new Date(winner.drawnAt)
+                                )}
                               </p>
                             </div>
                           </div>
