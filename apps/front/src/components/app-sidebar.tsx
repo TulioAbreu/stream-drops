@@ -49,6 +49,7 @@ const items: NavbarItem[] = [
     title: "DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY",
     icon: <MessageSquare />,
     url: "/dashboard/chat-giveaway",
+    badge: "Beta",
   },
   {
     title: "DASHBOARD_SIDEBAR_ITEM_ROULETTE",
