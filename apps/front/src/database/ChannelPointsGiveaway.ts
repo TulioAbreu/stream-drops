@@ -38,6 +38,8 @@ export interface ChannelPointsGiveawayFormData {
   rewardId: string | null;
   subscribersOnly: boolean;
   subscriptionRequirement: number;
+  /** Luck weight per sub tier. Each redemption still yields at most one win. */
+  subscriberMultiplier: Record<"1000" | "2000" | "3000", number>;
   refundIneligible: boolean;
   allowMultipleWins: boolean;
   status: ChannelPointsGiveawayStatus;

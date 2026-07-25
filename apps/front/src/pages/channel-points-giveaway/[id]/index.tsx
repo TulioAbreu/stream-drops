@@ -14,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -43,7 +42,6 @@ import {
   Trophy,
   Sparkles,
   ArrowLeftIcon,
-  XIcon,
   Edit,
   Pause,
   Lock,
@@ -62,6 +60,9 @@ import {
 import {
   drawChannelPointsWinner,
   getAvailableTicketCount,
+  getWeightedEntryCount,
+  normalizeChannelPointsMultiplier,
+  resolveChannelPointsMultiplier,
 } from "@/service/channel-points-giveaway";
 import { SubscriberTierLabels } from "@/domain/SubscriberTier";
 import type { SubscriberTier } from "@/domain/SubscriberTier";
@@ -72,16 +73,9 @@ import {
   classifyChannelPointsApiError,
   getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
+import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
 import { ParticipantTag } from "@/pages/chat-giveaway/[id]/components/participant-tag";
 import { ChannelPointsAccessBanner } from "../components/channel-points-access-banner";
-
-const winnerDateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
 
 export function ChannelPointsGiveawayDetail() {
   const { id } = useParams<{ id: string }>();
@@ -132,19 +126,40 @@ export function ChannelPointsGiveawayDetail() {
     );
   }, [giveaway]);
 
+  const subscriberMultiplier = useMemo(
+    () => normalizeChannelPointsMultiplier(giveaway?.subscriberMultiplier),
+    [giveaway?.subscriberMultiplier]
+  );
+
+  const weightedEntries = useMemo(() => {
+    if (!giveaway) return 0;
+    return getWeightedEntryCount({
+      participants: giveaway.participants,
+      winners: giveaway.winners,
+      allowMultipleWins: giveaway.allowMultipleWins,
+      subscriberMultiplier,
+    });
+  }, [giveaway, subscriberMultiplier]);
+
   const participantTicketTags = useMemo(
     () =>
       [...(giveaway?.participants ?? [])]
         .sort((a, b) => b.tickets.length - a.tickets.length)
-        .flatMap((participant) =>
-          participant.tickets.map((ticket) => ({
-            key: ticket.redemptionId,
-            displayName: participant.displayName,
-            subscriber: participant.subscriber,
-            tier: participant.tier,
-          }))
-        ),
-    [giveaway?.participants]
+        .flatMap((participant) => {
+          const weight = resolveChannelPointsMultiplier(
+            participant,
+            subscriberMultiplier
+          );
+          return participant.tickets.flatMap((ticket) =>
+            Array.from({ length: weight }, (_, index) => ({
+              key: `${ticket.redemptionId}-${index}`,
+              displayName: participant.displayName,
+              subscriber: participant.subscriber,
+              tier: participant.tier,
+            }))
+          );
+        }),
+    [giveaway?.participants, subscriberMultiplier]
   );
 
   const sortedWinners = useMemo(
@@ -300,6 +315,7 @@ export function ChannelPointsGiveawayDetail() {
         participants: giveaway.participants,
         winners: giveaway.winners,
         allowMultipleWins: giveaway.allowMultipleWins,
+        subscriberMultiplier: giveaway.subscriberMultiplier,
       });
 
       if (!result) {
@@ -333,14 +349,13 @@ export function ChannelPointsGiveawayDetail() {
           origin: { y: 0.6 },
         });
 
-        const chance =
-          (1 /
-            getAvailableTicketCount(
-              giveaway.participants,
-              giveaway.winners,
-              giveaway.allowMultipleWins
-            )) *
-          100;
+        const poolSize = getWeightedEntryCount({
+          participants: giveaway.participants,
+          winners: giveaway.winners,
+          allowMultipleWins: giveaway.allowMultipleWins,
+          subscriberMultiplier: giveaway.subscriberMultiplier,
+        });
+        const chance = poolSize > 0 ? (result.weight / poolSize) * 100 : 0;
 
         if (userData?.id && twitchApiClient) {
           await twitchApiClient.sendChatMessage({
@@ -472,6 +487,18 @@ export function ChannelPointsGiveawayDetail() {
                   {t("CHANNEL_POINTS_GIVEAWAY_MULTI_WINS_BADGE")}
                 </Badge>
               )}
+              {Object.entries(subscriberMultiplier)
+                .filter(([, multiplier]) => multiplier > 1)
+                .map(([tier, multiplier]) => (
+                  <Badge key={tier} variant="secondary">
+                    {t("CHANNEL_POINTS_GIVEAWAY_MULTIPLIER_BADGE", {
+                      tier:
+                        SubscriberTierLabels[Number(tier) as SubscriberTier] ??
+                        tier,
+                      multiplier,
+                    })}
+                  </Badge>
+                ))}
               {giveaway.refundIneligible && (
                 <Badge variant="outline">
                   {t("CHANNEL_POINTS_GIVEAWAY_REFUND_BADGE")}
@@ -593,6 +620,14 @@ export function ChannelPointsGiveawayDetail() {
                   {t("CHANNEL_POINTS_GIVEAWAY_AVAILABLE_TICKETS", {
                     count: availableTickets,
                   })}
+                  {weightedEntries !== availableTickets && (
+                    <>
+                      {" · "}
+                      {t("CHANNEL_POINTS_GIVEAWAY_WEIGHTED_ENTRIES", {
+                        count: weightedEntries,
+                      })}
+                    </>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1">
@@ -636,58 +671,47 @@ export function ChannelPointsGiveawayDetail() {
                   <Badge variant="secondary">{giveaway.winners.length}</Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1">
-                {sortedWinners.length === 0 ? (
-                  <Empty>
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <Trophy />
-                      </EmptyMedia>
-                      <EmptyTitle>
-                        {t("CHANNEL_POINTS_GIVEAWAY_NO_WINNERS")}
-                      </EmptyTitle>
-                    </EmptyHeader>
-                  </Empty>
-                ) : (
-                  <ScrollArea className="h-[420px] pr-4">
-                    <div className="flex flex-col gap-2">
-                      {sortedWinners.map((winner) => (
-                        <div
-                          key={winner.id}
-                          className="flex items-center justify-between gap-3 rounded-md border p-3"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <Avatar>
-                              <AvatarImage src={winner.avatar} />
-                              <AvatarFallback>
-                                {winner.name.slice(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <p className="font-medium truncate">
-                                {winner.name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {winnerDateFormatter.format(
-                                  new Date(winner.drawnAt)
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          {giveaway.status !== "closed" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => onClickRemoveWinner(winner.id)}
-                            >
-                              <XIcon className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
+              <CardContent className="flex min-h-0 flex-1 flex-col">
+                <ScrollArea className="h-[420px] pr-4">
+                  <div className="space-y-3">
+                    {sortedWinners.length === 0 ? (
+                      <div className="flex items-center justify-center min-h-[320px]">
+                        <Empty>
+                          <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                              <Trophy />
+                            </EmptyMedia>
+                            <EmptyTitle>
+                              {t("CHANNEL_POINTS_GIVEAWAY_NO_WINNERS")}
+                            </EmptyTitle>
+                          </EmptyHeader>
+                        </Empty>
+                      </div>
+                    ) : (
+                      sortedWinners.map((winner, index) => {
+                        const participant = giveaway.participants.find(
+                          (p) => p.userId === winner.userId
+                        );
+
+                        return (
+                          <GiveawayWinnerRow
+                            key={winner.id}
+                            rank={index + 1}
+                            name={winner.name}
+                            avatar={winner.avatar}
+                            drawnAt={winner.drawnAt}
+                            tier={participant?.tier}
+                            onRemove={
+                              giveaway.status !== "closed"
+                                ? () => onClickRemoveWinner(winner.id)
+                                : undefined
+                            }
+                          />
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           </div>

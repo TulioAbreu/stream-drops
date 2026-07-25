@@ -78,6 +78,11 @@ export function ChannelPointsGiveawayCreate() {
         subscriptionRequirement: data.subscriptionRequirement,
         refundIneligible: data.refundIneligible,
         allowMultipleWins: data.allowMultipleWins,
+        subscriberMultiplier: {
+          "1000": Math.max(1, Math.floor(data.subscriberMultiplier["1000"] || 1)),
+          "2000": Math.max(1, Math.floor(data.subscriberMultiplier["2000"] || 1)),
+          "3000": Math.max(1, Math.floor(data.subscriberMultiplier["3000"] || 1)),
+        },
         status: "open",
         participants: [],
         winners: [],

@@ -100,6 +100,11 @@ export function ChannelPointsGiveawayEdit() {
         subscriptionRequirement: data.subscriptionRequirement,
         refundIneligible: data.refundIneligible,
         allowMultipleWins: data.allowMultipleWins,
+        subscriberMultiplier: {
+          "1000": Math.max(1, Math.floor(data.subscriberMultiplier["1000"] || 1)),
+          "2000": Math.max(1, Math.floor(data.subscriberMultiplier["2000"] || 1)),
+          "3000": Math.max(1, Math.floor(data.subscriberMultiplier["3000"] || 1)),
+        },
         updatedAt: new Date().toISOString(),
       };
 
@@ -145,6 +150,11 @@ export function ChannelPointsGiveawayEdit() {
           subscriptionRequirement: giveaway.subscriptionRequirement,
           refundIneligible: giveaway.refundIneligible,
           allowMultipleWins: giveaway.allowMultipleWins,
+          subscriberMultiplier: {
+            "1000": giveaway.subscriberMultiplier?.["1000"] ?? 1,
+            "2000": giveaway.subscriberMultiplier?.["2000"] ?? 1,
+            "3000": giveaway.subscriberMultiplier?.["3000"] ?? 1,
+          },
         }}
         onSubmit={onClickSubmit}
         submitLabel={t("CHANNEL_POINTS_GIVEAWAY_FORM_SAVE")}
