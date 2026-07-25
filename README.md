@@ -1,54 +1,63 @@
-# React + TypeScript + Vite
+# StreamDrops
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Monorepo (Turborepo + Bun) para ferramentas de sorteio Twitch.
 
-Currently, two official plugins are available:
+## Pré-requisitos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- [Bun](https://bun.sh) `>= 1.3`
+- Node.js 20+ (usado indiretamente por Vite/tooling)
 
-## Expanding the ESLint configuration
+## Estrutura
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```text
+apps/front          # SPA Vite + React (@stream-drops/front)
+packages/
+  typescript-config # tsconfig compartilhado
+  eslint-config     # ESLint flat config compartilhado
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Comandos
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Na raiz do repositório:
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```bash
+bun install
+bun run dev      # sobe o front em http://localhost:3000
+bun run build
+bun run lint
+bun run preview
 ```
+
+Filtrar um workspace:
+
+```bash
+bun run --filter @stream-drops/front dev
+```
+
+## Front (`apps/front`)
+
+SPA client-only. Variáveis em `apps/front/.env`:
+
+- `VITE_TWITCH_CLIENT_ID`
+- `VITE_TWITCH_REDIRECT_URL` (ex.: `http://localhost:3000/auth`)
+
+## Deploy (Vercel)
+
+Configure **Root Directory** = `apps/front` (usa `apps/front/vercel.json` com rewrite SPA).
+
+Alternativa pela raiz do monorepo:
+
+- Build: `bunx turbo run build --filter=@stream-drops/front`
+- Output: `apps/front/dist`
+
+## Bun `--compile` / `.exe`
+
+Futuros apps CLI no monorepo podem gerar binário standalone:
+
+```bash
+bun build ./apps/<cli>/src/index.ts --compile --outfile myapp
+# Windows:
+bun build ./cli.ts --compile --target=bun-windows-x64 --outfile myapp.exe
+```
+
+Isso **não** se aplica ao SPA em `apps/front` (build estático via Vite).

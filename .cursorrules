@@ -24,16 +24,19 @@ Não há backend próprio. Persistência local: **IndexedDB** + **localStorage**
 
 | Camada | Tecnologia |
 |--------|------------|
+| Monorepo | Turborepo + Bun workspaces |
+| App SPA | `apps/front` (`@stream-drops/front`) |
+| Tooling compartilhado | `packages/typescript-config`, `packages/eslint-config` |
 | Linguagem | TypeScript ~5.8 (strict) |
 | UI | React 19 |
-| Build | Vite 6 (`@vitejs/plugin-react`), alias `@` → `src/` |
+| Build | Vite 6 (`@vitejs/plugin-react`), alias `@` → `apps/front/src/` |
 | Roteamento | `react-router` v7 |
 | Estilo | Tailwind CSS v4 (`@tailwindcss/vite`), `tw-animate-css` |
 | Componentes | shadcn/ui (estilo **new-york**, Radix, Lucide) |
 | Forms | `react-hook-form` (+ wrappers shadcn `Form`) |
 | Validação | `zod` / `@hookform/resolvers` (instalados; uso ainda limitado) |
 | Server state | `@tanstack/react-query` v5 |
-| Client/session | Zustand + `persist` (`src/storage/login.ts`) |
+| Client/session | Zustand + `persist` (`apps/front/src/storage/login.ts`) |
 | Listas longas | `@tanstack/react-table`, `@tanstack/react-virtual`, `react-virtuoso` |
 | HTTP | Axios |
 | Erros tipados | `neverthrow` (`Result` / `ok` / `err`) |
@@ -43,17 +46,20 @@ Não há backend próprio. Persistência local: **IndexedDB** + **localStorage**
 | Tema | `next-themes` (default **dark**, key `vite-ui-theme`) |
 | IDs | `uuid` v7 |
 | Confetti | `canvas-confetti` |
-| Deploy | Vercel SPA (`vercel.json` rewrite `/(.*) → /`) |
-| Dev server | `vite --port=3000` |
+| Deploy | Vercel SPA (`apps/front/vercel.json` rewrite `/(.*) → /`; Root Directory `apps/front`) |
+| Dev server | `vite --port=3000` (via `bun run dev`) |
+| Package manager | Bun (`bun install`, lockfile `bun.lock`) |
 
 **Não existe:** backend Node, Prisma/ORM, Docker, testes (Vitest/Jest/Playwright), Stripe, analytics.
+
+**Nota:** futuros CLIs podem usar `bun build --compile` para gerar `.exe`; isso não se aplica ao SPA em `apps/front`.
 
 ---
 
 ## 3. Estrutura de pastas
 
 ```
-src/
+apps/front/src/
 ├── App.tsx                 # Rotas + providers (QueryClient, Theme, Toaster)
 ├── main.tsx
 ├── index.css               # Tailwind v4 + tema CSS variables
@@ -67,21 +73,24 @@ src/
 ├── hooks/                  # Hooks compartilhados (ex.: use-twitch-api)
 ├── i18n/                   # i18next + locales/pt-BR.json
 └── lib/                    # Utils (cn, chance, embed Twitch)
+
+packages/
+├── typescript-config/      # @stream-drops/typescript-config
+└── eslint-config/          # @stream-drops/eslint-config
 ```
 
-Padrão: **feature folders em `pages/`** + camadas compartilhadas (`database`, `service`, `usecase`, `domain`).
-
+Padrão: **feature folders em `apps/front/src/pages/`** + camadas compartilhadas (`database`, `service`, `usecase`, `domain`).
 ---
 
 ## 4. Padrões de código (obrigatórios)
 
 ### Arquitetura
-- UI/orquestração → `pages/`
-- Regras reutilizáveis → `usecase/`
-- APIs externas e sorteio → `service/`
-- Persistência → `database/` + `openDb()`
-- Tipos/constantes de negócio → `domain/`
-- Sessão → `storage/`
+- UI/orquestração → `apps/front/src/pages/`
+- Regras reutilizáveis → `apps/front/src/usecase/`
+- APIs externas e sorteio → `apps/front/src/service/`
+- Persistência → `apps/front/src/database/` + `openDb()`
+- Tipos/constantes de negócio → `apps/front/src/domain/`
+- Sessão → `apps/front/src/storage/`
 
 Não inventar backend, REST próprio ou DB remoto.
 
@@ -106,7 +115,7 @@ Não inventar backend, REST próprio ou DB remoto.
 - OAuth validate: `https://id.twitch.tv/oauth2`
 
 ### UI
-- Preferir componentes em `src/components/ui/` (shadcn)
+- Preferir componentes em `apps/front/src/components/ui/` (shadcn)
 - Strings de UI via i18n (`pt-BR.json`); não hardcodar textos de produto em PT/EN sem chave
 - Forms: RHF + `Form`/`FormField` shadcn
 - Layout autenticado: `Layout` + `AppSidebar`
@@ -119,7 +128,7 @@ Não inventar backend, REST próprio ou DB remoto.
 
 ### IndexedDB
 - Nome: `stream-drops-db`
-- Versão atual: **11** (`DATABASE_VERSION` em `src/database/index.ts`)
+- Versão atual: **11** (`DATABASE_VERSION` em `apps/front/src/database/index.ts`)
 - Ao alterar schema (novas stores/indexes): **bump** `DATABASE_VERSION`
 - Migrations atuais só criam stores ausentes; não há migração de campos
 
@@ -127,7 +136,7 @@ Não inventar backend, REST próprio ou DB remoto.
 - Não adicionar backend/servidor
 - Não criar rota guard inventada sem alinhar ao padrão atual (hoje não há protected routes no router)
 - Não confiar em `CHAT_GIVEAWAY_DOCS.md` como spec
-- Não commitar secrets; `VITE_TWITCH_*` vêm de `.env`
+- Não commitar secrets; `VITE_TWITCH_*` vêm de `apps/front/.env`
 - Não implementar Ticket Giveaway sem solicitação
 - Não “corrigir” typos de campos persistidos (`minimumSuscriptionTimeInMonths`) sem plano de migração
 
@@ -144,7 +153,7 @@ Não inventar backend, REST próprio ou DB remoto.
 
 ### Google (Drive/Sheets)
 - Callback em `/auth/drive` (código via postMessage)
-- Client ID / scopes no service `src/service/google-drive/index.ts`
+- Client ID / scopes no service `apps/front/src/service/google-drive/index.ts`
 - Scopes: `drive.file` + `spreadsheets`
 
 ### Logout
@@ -157,7 +166,7 @@ Não inventar backend, REST próprio ou DB remoto.
 
 ## 6. Objetivos por página / rota
 
-Definidas em `src/App.tsx`:
+Definidas em `apps/front/src/App.tsx`:
 
 | Rota | Página | Objetivo |
 |------|--------|----------|
@@ -242,7 +251,7 @@ Fluxo típico na página `:id`:
 
 ## 8. Banco de dados (IndexedDB)
 
-**DB:** `stream-drops-db` · **versão:** `11` · **schema:** `src/database/index.ts`
+**DB:** `stream-drops-db` · **versão:** `11` · **schema:** `apps/front/src/database/index.ts`
 
 ### Object stores
 
@@ -307,7 +316,7 @@ Fluxo típico na página `:id`:
 | Twitch Chat embed | iframe |
 | Google Identity + Drive/Sheets | Export de resultados do sorteio de subs |
 
-Env Vite:
+Env Vite (`apps/front/.env`):
 - `VITE_TWITCH_CLIENT_ID`
 - `VITE_TWITCH_REDIRECT_URL` (ex.: `http://localhost:3000/auth`)
 
@@ -316,25 +325,27 @@ Env Vite:
 ## 10. Checklist rápido para mudanças
 
 1. É SPA client-only? Não introduzir servidor.
-2. Nova feature de página? Colocar em `pages/<feature>/` com components/hooks locais.
-3. Chamada Twitch? Usar clients em `service/` + `neverthrow`.
+2. Nova feature de página? Colocar em `apps/front/src/pages/<feature>/` com components/hooks locais.
+3. Chamada Twitch? Usar clients em `apps/front/src/service/` + `neverthrow`.
 4. Persistência? IndexedDB via factories `useXDb`; bump versão se schema mudar.
-5. Texto de UI? Chave em `src/i18n/locales/pt-BR.json`.
-6. Componente visual? Preferir shadcn existente em `components/ui`.
+5. Texto de UI? Chave em `apps/front/src/i18n/locales/pt-BR.json`.
+6. Componente visual? Preferir shadcn existente em `apps/front/src/components/ui`.
 7. Sorteio? Reutilizar `service/giveaway` ou `service/chat-giveaway`; não duplicar algoritmo.
 8. Auth? Token só via `useLoginStore`; não persistir token em outros lugares.
+9. Monorepo? Scripts na raiz via Turbo (`bun run dev|build|lint`); app em `apps/front`.
 
 ---
 
 ## 11. Arquivos âncora
 
-- Rotas: `src/App.tsx`
-- Schema DB: `src/database/index.ts`
-- Auth store: `src/storage/login.ts`
-- Twitch API: `src/service/twitch/index.ts`
-- Sorteio subs: `src/service/giveaway/index.ts`
-- Sorteio chat: `src/service/chat-giveaway/index.ts`
-- Chat live: `src/pages/chat-giveaway/hooks/use-chat-listener/`
-- Google Sheets: `src/service/google-drive/index.ts`
-- Sidebar/nav: `src/components/app-sidebar.tsx`
-- Package: `package.json`
+- Rotas: `apps/front/src/App.tsx`
+- Schema DB: `apps/front/src/database/index.ts`
+- Auth store: `apps/front/src/storage/login.ts`
+- Twitch API: `apps/front/src/service/twitch/index.ts`
+- Sorteio subs: `apps/front/src/service/giveaway/index.ts`
+- Sorteio chat: `apps/front/src/service/chat-giveaway/index.ts`
+- Chat live: `apps/front/src/pages/chat-giveaway/hooks/use-chat-listener/`
+- Google Sheets: `apps/front/src/service/google-drive/index.ts`
+- Sidebar/nav: `apps/front/src/components/app-sidebar.tsx`
+- Front package: `apps/front/package.json`
+- Root monorepo: `package.json`, `turbo.json`

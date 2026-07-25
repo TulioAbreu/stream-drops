@@ -1,0 +1,11 @@
+{
+  "name": "@stream-drops/typescript-config",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "exports": {
+    "./base.json": "./base.json",
+    "./vite.json": "./vite.json",
+    "./vite-node.json": "./vite-node.json"
+  }
+}

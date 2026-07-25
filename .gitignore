@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Turbo / package managers
+.turbo
+.pnpm-store
+
+# Compiled binaries (Bun --compile)
+*.exe
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
