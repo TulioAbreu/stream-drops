@@ -53,7 +53,10 @@ import { useTranslation } from "@/i18n";
 import { Badge } from "@/components/ui/badge";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { toast } from "sonner";
-import { hasChannelPointsAccess } from "@/lib/channel-points-access";
+import {
+  channelPointsAccessBlockI18nKeys,
+  getChannelPointsAccessBlock,
+} from "@/lib/channel-points-access";
 import { ChannelPointsAccessBanner } from "./components/channel-points-access-banner";
 import {
   Tooltip,
@@ -82,7 +85,11 @@ export function ChannelPointsGiveawayPage() {
     deleteChannelPointsGiveaway,
   } = useChannelPointsGiveawayDb();
   const { twitchApiClient, userData } = useTwitchApi();
-  const canUseChannelPoints = hasChannelPointsAccess(userData?.broadcasterType);
+  const accessBlock = getChannelPointsAccessBlock({
+    broadcasterType: userData?.broadcasterType,
+    scopes: userData?.scopes,
+  });
+  const canUseChannelPoints = accessBlock === null;
 
   const [isLoading, setIsLoading] = useState(false);
   const [giveaways, setGiveaways] = useState<ChannelPointsGiveawayFormData[]>(
@@ -244,17 +251,17 @@ export function ChannelPointsGiveawayPage() {
                 </Button>
               </span>
             </TooltipTrigger>
-            {!canUseChannelPoints && (
+            {!canUseChannelPoints && accessBlock && (
               <TooltipContent>
-                <p>{t("CHANNEL_POINTS_GIVEAWAY_ERROR_NOT_AFFILIATE")}</p>
+                <p>{t(channelPointsAccessBlockI18nKeys(accessBlock).toast)}</p>
               </TooltipContent>
             )}
           </Tooltip>
         </TooltipProvider>
       </div>
 
-      {!canUseChannelPoints && (
-        <ChannelPointsAccessBanner className="mb-6" />
+      {accessBlock && (
+        <ChannelPointsAccessBanner reason={accessBlock} className="mb-6" />
       )}
 
       {isLoading ? (
@@ -269,9 +276,9 @@ export function ChannelPointsGiveawayPage() {
             </EmptyMedia>
             <EmptyTitle>{t("CHANNEL_POINTS_GIVEAWAY_EMPTY_TITLE")}</EmptyTitle>
             <EmptyDescription>
-              {canUseChannelPoints
-                ? t("CHANNEL_POINTS_GIVEAWAY_EMPTY_DESCRIPTION")
-                : t("CHANNEL_POINTS_GIVEAWAY_ACCESS_DENIED_DESCRIPTION")}
+              {accessBlock
+                ? t(channelPointsAccessBlockI18nKeys(accessBlock).description)
+                : t("CHANNEL_POINTS_GIVEAWAY_EMPTY_DESCRIPTION")}
             </EmptyDescription>
           </EmptyHeader>
           {canUseChannelPoints && (

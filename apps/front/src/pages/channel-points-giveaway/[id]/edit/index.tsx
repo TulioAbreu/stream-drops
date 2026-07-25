@@ -11,9 +11,10 @@ import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { useTranslation } from "@/i18n";
 import { toast } from "sonner";
 import {
+  channelPointsAccessBlockI18nKeys,
   channelPointsErrorI18nKey,
   classifyChannelPointsApiError,
-  hasChannelPointsAccess,
+  getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
 import { ChannelPointsAccessBanner } from "../../components/channel-points-access-banner";
 
@@ -24,7 +25,11 @@ export function ChannelPointsGiveawayEdit() {
   const { getChannelPointsGiveaway, updateChannelPointsGiveaway } =
     useChannelPointsGiveawayDb();
   const { twitchApiClient, userData } = useTwitchApi();
-  const canUseChannelPoints = hasChannelPointsAccess(userData?.broadcasterType);
+  const accessBlock = getChannelPointsAccessBlock({
+    broadcasterType: userData?.broadcasterType,
+    scopes: userData?.scopes,
+  });
+  const canUseChannelPoints = accessBlock === null;
   const [giveaway, setGiveaway] = useState<ChannelPointsGiveawayFormData | null>(
     null
   );
@@ -64,8 +69,8 @@ export function ChannelPointsGiveawayEdit() {
       return;
     }
 
-    if (!canUseChannelPoints) {
-      toast.error(t("CHANNEL_POINTS_GIVEAWAY_ERROR_NOT_AFFILIATE"));
+    if (accessBlock) {
+      toast.error(t(channelPointsAccessBlockI18nKeys(accessBlock).toast));
       return;
     }
 
@@ -128,8 +133,8 @@ export function ChannelPointsGiveawayEdit() {
       <h1 className="text-2xl font-bold mb-6">
         {t("CHANNEL_POINTS_GIVEAWAY_EDIT_TITLE")}
       </h1>
-      {!canUseChannelPoints && (
-        <ChannelPointsAccessBanner className="mb-6" />
+      {!canUseChannelPoints && accessBlock && (
+        <ChannelPointsAccessBanner reason={accessBlock} className="mb-6" />
       )}
       <ChannelPointsGiveawayFormComponent
         defaultValues={{

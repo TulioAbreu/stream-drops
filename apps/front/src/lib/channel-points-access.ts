@@ -1,11 +1,37 @@
 import type { AxiosError } from "axios";
+import { CHANNEL_POINTS_MANAGE_SCOPE } from "@/lib/twitch-oauth";
 
 export type TwitchBroadcasterType = "" | "affiliate" | "partner";
+
+export type ChannelPointsAccessBlockReason =
+  | "not_affiliate"
+  | "missing_scope";
 
 export function hasChannelPointsAccess(
   broadcasterType: string | null | undefined
 ): boolean {
   return broadcasterType === "affiliate" || broadcasterType === "partner";
+}
+
+export function hasChannelPointsManageScope(
+  scopes: string[] | null | undefined
+): boolean {
+  return (scopes ?? []).includes(CHANNEL_POINTS_MANAGE_SCOPE);
+}
+
+export function getChannelPointsAccessBlock(params: {
+  broadcasterType?: string | null;
+  scopes?: string[] | null;
+}): ChannelPointsAccessBlockReason | null {
+  if (!hasChannelPointsManageScope(params.scopes)) {
+    return "missing_scope";
+  }
+
+  if (!hasChannelPointsAccess(params.broadcasterType)) {
+    return "not_affiliate";
+  }
+
+  return null;
 }
 
 type TwitchErrorBody = {
@@ -24,7 +50,11 @@ export type ChannelPointsApiErrorKind =
 export function classifyChannelPointsApiError(
   error: AxiosError<TwitchErrorBody> | unknown
 ): ChannelPointsApiErrorKind {
-  if (!error || typeof error !== "object" || !("isAxiosError" in error || "response" in error)) {
+  if (
+    !error ||
+    typeof error !== "object" ||
+    !("isAxiosError" in error || "response" in error)
+  ) {
     return "generic";
   }
 
@@ -40,13 +70,20 @@ export function classifyChannelPointsApiError(
     return "not_affiliate";
   }
 
-  if (status === 401 || message.includes("scope") || message.includes("authorization")) {
+  if (
+    status === 401 ||
+    message.includes("scope") ||
+    message.includes("missing required scope") ||
+    message.includes("authorization")
+  ) {
     return "missing_scope";
   }
 
   if (
     message.includes("title") &&
-    (message.includes("already") || message.includes("unique") || message.includes("exist"))
+    (message.includes("already") ||
+      message.includes("unique") ||
+      message.includes("exist"))
   ) {
     return "title_taken";
   }
@@ -73,7 +110,7 @@ export function channelPointsErrorI18nKey(
     case "not_affiliate":
       return "CHANNEL_POINTS_GIVEAWAY_ERROR_NOT_AFFILIATE";
     case "missing_scope":
-      return "CHANNEL_POINTS_GIVEAWAY_ERROR_NOT_AUTHENTICATED";
+      return "CHANNEL_POINTS_GIVEAWAY_ERROR_MISSING_SCOPE";
     case "title_taken":
       return "CHANNEL_POINTS_GIVEAWAY_ERROR_TITLE_TAKEN";
     case "max_rewards":
@@ -81,4 +118,22 @@ export function channelPointsErrorI18nKey(
     default:
       return "CHANNEL_POINTS_GIVEAWAY_CREATE_REWARD_ERROR";
   }
+}
+
+export function channelPointsAccessBlockI18nKeys(
+  reason: ChannelPointsAccessBlockReason
+): { title: string; description: string; toast: string } {
+  if (reason === "missing_scope") {
+    return {
+      title: "CHANNEL_POINTS_GIVEAWAY_MISSING_SCOPE_TITLE",
+      description: "CHANNEL_POINTS_GIVEAWAY_MISSING_SCOPE_DESCRIPTION",
+      toast: "CHANNEL_POINTS_GIVEAWAY_ERROR_MISSING_SCOPE",
+    };
+  }
+
+  return {
+    title: "CHANNEL_POINTS_GIVEAWAY_ACCESS_DENIED_TITLE",
+    description: "CHANNEL_POINTS_GIVEAWAY_ACCESS_DENIED_DESCRIPTION",
+    toast: "CHANNEL_POINTS_GIVEAWAY_ERROR_NOT_AFFILIATE",
+  };
 }

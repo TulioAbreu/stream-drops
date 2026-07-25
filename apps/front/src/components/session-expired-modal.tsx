@@ -10,12 +10,7 @@ import { useTranslation } from "@/i18n";
 import { useLoginStore } from "@/storage/login";
 import { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
-
-const AUTHORIZATION_URL = new URL("/oauth2/authorize", "https://id.twitch.tv");
-AUTHORIZATION_URL.searchParams.set("client_id", import.meta.env.VITE_TWITCH_CLIENT_ID);
-AUTHORIZATION_URL.searchParams.set("redirect_uri", import.meta.env.VITE_TWITCH_REDIRECT_URL);
-AUTHORIZATION_URL.searchParams.set("response_type", "token");
-AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions user:read:chat user:write:chat channel:manage:redemptions");
+import { openTwitchLoginPopup } from "@/lib/twitch-oauth";
 
 export function SessionExpiredModal() {
     const { t } = useTranslation();
@@ -24,11 +19,7 @@ export function SessionExpiredModal() {
 
     const handleLoginTwitch = () => {
         setIsLoadingTwitch(true);
-        window.open(
-            AUTHORIZATION_URL,
-            "twitch-login",
-            "width=500,height=600"
-        );
+        openTwitchLoginPopup();
     };
 
     useEffect(() => {

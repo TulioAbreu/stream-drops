@@ -12,6 +12,7 @@ interface TwitchUser {
     profileImageUrl: string;
     expiresIn: number;
     broadcasterType: string;
+    scopes: string[];
 }
 
 export type TwitchApiClient = ReturnType<typeof makeTwitchApiClient>;
@@ -29,7 +30,7 @@ async function fetchTwitchUserData(twitchAccessToken: string): Promise<TwitchUse
         throw new Error("Token inválido ou expirado");
     }
 
-    const { client_id, user_id, expires_in } = result.value;
+    const { client_id, user_id, expires_in, scope } = result.value;
 
     // Verifica se o token pertence ao cliente correto
     if (client_id !== import.meta.env.VITE_TWITCH_CLIENT_ID) {
@@ -56,6 +57,7 @@ async function fetchTwitchUserData(twitchAccessToken: string): Promise<TwitchUse
         profileImageUrl: user.profile_image_url,
         expiresIn: expires_in,
         broadcasterType: user.broadcaster_type,
+        scopes: scope ?? [],
     };
 }
 
