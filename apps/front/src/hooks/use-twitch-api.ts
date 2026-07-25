@@ -30,16 +30,25 @@ async function fetchTwitchUserData(twitchAccessToken: string): Promise<TwitchUse
         throw new Error("Token inválido ou expirado");
     }
 
-    const { client_id, user_id, expires_in, scope } = result.value;
+    const { client_id, user_id, expires_in, scope, scopes } = result.value as {
+        client_id: string;
+        user_id: string;
+        expires_in: number;
+        scope?: string[];
+        scopes?: string[];
+    };
+
+    const expectedClientId = String(import.meta.env.VITE_TWITCH_CLIENT_ID ?? "")
+        .replace(/^["']|["']$/g, "");
 
     // Verifica se o token pertence ao cliente correto
-    if (client_id !== import.meta.env.VITE_TWITCH_CLIENT_ID) {
+    if (client_id !== expectedClientId) {
         throw new Error("O token não pertence ao cliente configurado");
     }
 
     // Inicializa o cliente da API da Twitch
     const apiClient = makeTwitchApiClient({
-        clientId: import.meta.env.VITE_TWITCH_CLIENT_ID,
+        clientId: expectedClientId,
         accessToken: twitchAccessToken,
     });
 
@@ -57,7 +66,8 @@ async function fetchTwitchUserData(twitchAccessToken: string): Promise<TwitchUse
         profileImageUrl: user.profile_image_url,
         expiresIn: expires_in,
         broadcasterType: user.broadcaster_type,
-        scopes: scope ?? [],
+        // Twitch real usa `scopes`; alguns mocks usam `scope`
+        scopes: scopes ?? scope ?? [],
     };
 }
 
@@ -91,13 +101,22 @@ export function useTwitchApi() {
     });
 
     useEffect(() => {
-        if (isError && error instanceof Error) {
-            if (error.message.includes("Token inválido") || 
-                error.message.includes("não pertence ao cliente")) {
-                setSessionExpired(true);
-            }
+        if (isSuccess) {
+            setSessionExpired(false);
         }
-    }, [isError, error, setSessionExpired]);
+    }, [isSuccess, setSessionExpired]);
+
+    useEffect(() => {
+        if (!isError || !(error instanceof Error)) return;
+        // Evita marcar expirado enquanto o token está sendo trocado (null → stub)
+        if (!twitchAccessToken) return;
+        if (
+            error.message.includes("Token inválido") ||
+            error.message.includes("não pertence ao cliente")
+        ) {
+            setSessionExpired(true);
+        }
+    }, [isError, error, setSessionExpired, twitchAccessToken]);
 
     // Função para criar cliente da API (memo baseado no token)
     const getTwitchApiClient = (): TwitchApiClient | null => {
@@ -106,7 +125,8 @@ export function useTwitchApi() {
         }
         
         return makeTwitchApiClient({
-            clientId: import.meta.env.VITE_TWITCH_CLIENT_ID,
+            clientId: String(import.meta.env.VITE_TWITCH_CLIENT_ID ?? "")
+                .replace(/^["']|["']$/g, ""),
             accessToken: twitchAccessToken,
         });
     };

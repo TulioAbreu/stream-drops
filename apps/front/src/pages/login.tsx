@@ -9,17 +9,27 @@ import { AvatarImage } from "@radix-ui/react-avatar";
 import { CheckIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { openTwitchLoginPopup } from "@/lib/twitch-oauth";
+import { openTwitchLoginPopup, isTwitchStubMode, STUB_ACCESS_TOKEN } from "@/lib/twitch-oauth";
 
 export function LoginPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { setTwitchAccessToken, twitchAccessToken } = useLoginStore();
+    const { setTwitchAccessToken, twitchAccessToken, setSessionExpired } = useLoginStore();
     const { userData } = useTwitchApi();
     const [isLoadingTwitch, setIsLoadingTwitch] = useState<boolean>(false);
+    const stubMode = isTwitchStubMode();
 
-    const handleLoginTwitch = () => {
+    const handleLoginTwitch = async () => {
         setIsLoadingTwitch(true);
+        if (stubMode) {
+            setSessionExpired(false);
+            // Garante refetch mesmo com o mesmo token stub
+            setTwitchAccessToken(null);
+            setTimeout(() => {
+                setTwitchAccessToken(STUB_ACCESS_TOKEN);
+            }, 0);
+            return;
+        }
         openTwitchLoginPopup();
     };
 
@@ -58,7 +68,9 @@ export function LoginPage() {
                         {t("LOGIN_TITLE")}
                     </CardTitle>
                     <CardDescription>
-                        {t("LOGIN_DESCRIPTION")}
+                        {stubMode
+                            ? t("LOGIN_DESCRIPTION_STUB")
+                            : t("LOGIN_DESCRIPTION")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
@@ -84,7 +96,9 @@ export function LoginPage() {
                             </div>
                         ) : (
                             <Button variant="default" className="w-full" onClick={handleLoginTwitch}>
-                                {t("LOGIN_BUTTON_TWITCH")}
+                                {stubMode
+                                    ? t("LOGIN_BUTTON_TWITCH_STUB")
+                                    : t("LOGIN_BUTTON_TWITCH")}
                             </Button>
                         )
                     )}

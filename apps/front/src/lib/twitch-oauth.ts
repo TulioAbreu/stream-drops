@@ -7,6 +7,25 @@ export const TWITCH_OAUTH_SCOPES = [
   CHANNEL_POINTS_MANAGE_SCOPE,
 ].join(" ");
 
+export const STUB_ACCESS_TOKEN = "stub-access-token";
+export const TWITCH_STUB_ORIGIN = "http://localhost:4010";
+
+export function isTwitchStubMode(): boolean {
+  return import.meta.env.VITE_TWITCH_STUB === "true";
+}
+
+export function getTwitchHelixBaseUrl(): string {
+  return isTwitchStubMode()
+    ? `${TWITCH_STUB_ORIGIN}/helix`
+    : "https://api.twitch.tv/helix";
+}
+
+export function getTwitchIdBaseUrl(): string {
+  return isTwitchStubMode()
+    ? `${TWITCH_STUB_ORIGIN}/oauth2`
+    : "https://id.twitch.tv/oauth2";
+}
+
 export type TwitchAuthorizeOptions = {
   /**
    * Força a tela de consentimento da Twitch.

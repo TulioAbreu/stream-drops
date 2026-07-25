@@ -17,6 +17,7 @@ import type {
     UpdateTwitchRedemptionsStatusParams,
     UpdateTwitchRedemptionsStatusResponse,
 } from "./types";
+import { getTwitchHelixBaseUrl } from "@/lib/twitch-oauth";
 
 interface TwitchApiClientParams {
     clientId: string;
@@ -27,7 +28,7 @@ export function makeTwitchApiClient(params: TwitchApiClientParams) {
     const { clientId, accessToken } = params;
 
     const apiClient = axios.create({
-        baseURL: "https://api.twitch.tv/helix",
+        baseURL: getTwitchHelixBaseUrl(),
         headers: {
             "Client-ID": clientId,
             "Authorization": `Bearer ${accessToken}`,

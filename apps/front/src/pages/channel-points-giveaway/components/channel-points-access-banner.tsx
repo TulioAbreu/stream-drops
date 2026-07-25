@@ -6,8 +6,13 @@ import {
   channelPointsAccessBlockI18nKeys,
   type ChannelPointsAccessBlockReason,
 } from "@/lib/channel-points-access";
-import { openTwitchLoginPopup } from "@/lib/twitch-oauth";
+import {
+  isTwitchStubMode,
+  openTwitchLoginPopup,
+  STUB_ACCESS_TOKEN,
+} from "@/lib/twitch-oauth";
 import { useLoginStore } from "@/storage/login";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ChannelPointsAccessBannerProps {
   reason: ChannelPointsAccessBlockReason;
@@ -19,14 +24,17 @@ export function ChannelPointsAccessBanner({
   className,
 }: ChannelPointsAccessBannerProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const setTwitchAccessToken = useLoginStore(
     (state) => state.setTwitchAccessToken
   );
+  const setSessionExpired = useLoginStore((state) => state.setSessionExpired);
   const [isReauthing, setIsReauthing] = useState(false);
+  const stubMode = isTwitchStubMode();
   const keys = channelPointsAccessBlockI18nKeys(reason);
 
   useEffect(() => {
-    if (reason !== "missing_scope") return;
+    if (reason !== "missing_scope" || stubMode) return;
 
     function handleMessage(event: MessageEvent) {
       if (event.origin !== window.location.origin) return;
@@ -38,10 +46,18 @@ export function ChannelPointsAccessBanner({
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [reason, setTwitchAccessToken]);
+  }, [reason, stubMode, setTwitchAccessToken]);
 
-  const handleReconnect = () => {
+  const handleReconnect = async () => {
     setIsReauthing(true);
+    if (stubMode) {
+      setTwitchAccessToken(null);
+      await queryClient.resetQueries({ queryKey: ["twitchUser"] });
+      setSessionExpired(false);
+      setTwitchAccessToken(STUB_ACCESS_TOKEN);
+      setIsReauthing(false);
+      return;
+    }
     // force_verify: sem isso a Twitch reaproveita o grant antigo e fecha o popup
     // sem pedir os scopes novos (ex.: channel:manage:redemptions).
     openTwitchLoginPopup({ forceVerify: true });
@@ -56,7 +72,11 @@ export function ChannelPointsAccessBanner({
       <div className="flex flex-col gap-3 flex-1">
         <div className="flex flex-col gap-1">
           <p className="font-medium text-destructive">{t(keys.title)}</p>
-          <p className="text-muted-foreground">{t(keys.description)}</p>
+          <p className="text-muted-foreground">
+            {stubMode && reason === "missing_scope"
+              ? t("CHANNEL_POINTS_GIVEAWAY_MISSING_SCOPE_DESCRIPTION_STUB")
+              : t(keys.description)}
+          </p>
         </div>
         {reason === "missing_scope" && (
           <div>
@@ -68,7 +88,9 @@ export function ChannelPointsAccessBanner({
             >
               {isReauthing
                 ? t("CHANNEL_POINTS_GIVEAWAY_RECONNECTING")
-                : t("CHANNEL_POINTS_GIVEAWAY_RECONNECT_BUTTON")}
+                : stubMode
+                  ? t("LOGIN_BUTTON_TWITCH_STUB")
+                  : t("CHANNEL_POINTS_GIVEAWAY_RECONNECT_BUTTON")}
             </Button>
           </div>
         )}
