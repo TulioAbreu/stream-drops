@@ -18,6 +18,10 @@ import { ChatGiveawayEdit } from "./pages/chat-giveaway/[id]/edit"
 import { RoulettePage } from "./pages/roulette"
 import { RouletteNewPage } from "./pages/roulette/new"
 import { RouletteDetailPage } from "./pages/roulette/[id]"
+import { ChannelPointsGiveawayPage } from "./pages/channel-points-giveaway"
+import { ChannelPointsGiveawayCreate } from "./pages/channel-points-giveaway/create"
+import { ChannelPointsGiveawayDetail } from "./pages/channel-points-giveaway/[id]"
+import { ChannelPointsGiveawayEdit } from "./pages/channel-points-giveaway/[id]/edit"
 
 import { SessionExpiredModal } from "./components/session-expired-modal"
 
@@ -57,6 +61,10 @@ export function App() {
             <Route path="/dashboard/roulette" element={<RoulettePage />} />
             <Route path="/dashboard/roulette/new" element={<RouletteNewPage />} />
             <Route path="/dashboard/roulette/:id" element={<RouletteDetailPage />} />
+            <Route path="/dashboard/channel-points-giveaway" element={<ChannelPointsGiveawayPage />} />
+            <Route path="/dashboard/channel-points-giveaway/create" element={<ChannelPointsGiveawayCreate />} />
+            <Route path="/dashboard/channel-points-giveaway/:id/edit" element={<ChannelPointsGiveawayEdit />} />
+            <Route path="/dashboard/channel-points-giveaway/:id" element={<ChannelPointsGiveawayDetail />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>

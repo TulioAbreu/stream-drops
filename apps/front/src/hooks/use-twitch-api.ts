@@ -11,6 +11,7 @@ interface TwitchUser {
     displayName: string;
     profileImageUrl: string;
     expiresIn: number;
+    broadcasterType: string;
 }
 
 export type TwitchApiClient = ReturnType<typeof makeTwitchApiClient>;
@@ -54,6 +55,7 @@ async function fetchTwitchUserData(twitchAccessToken: string): Promise<TwitchUse
         displayName: user.display_name,
         profileImageUrl: user.profile_image_url,
         expiresIn: expires_in,
+        broadcasterType: user.broadcaster_type,
     };
 }
 

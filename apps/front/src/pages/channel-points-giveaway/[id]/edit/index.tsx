@@ -1,0 +1,151 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router";
+import {
+  useChannelPointsGiveawayDb,
+  type ChannelPointsGiveawayFormData,
+} from "@/database/ChannelPointsGiveaway";
+import { Layout } from "@/components/layout";
+import { ChannelPointsGiveawayFormComponent } from "../../components/channel-points-giveaway-form";
+import { type ChannelPointsGiveawayForm } from "../../types";
+import { useTwitchApi } from "@/hooks/use-twitch-api";
+import { useTranslation } from "@/i18n";
+import { toast } from "sonner";
+import {
+  channelPointsErrorI18nKey,
+  classifyChannelPointsApiError,
+  hasChannelPointsAccess,
+} from "@/lib/channel-points-access";
+import { ChannelPointsAccessBanner } from "../../components/channel-points-access-banner";
+
+export function ChannelPointsGiveawayEdit() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { getChannelPointsGiveaway, updateChannelPointsGiveaway } =
+    useChannelPointsGiveawayDb();
+  const { twitchApiClient, userData } = useTwitchApi();
+  const canUseChannelPoints = hasChannelPointsAccess(userData?.broadcasterType);
+  const [giveaway, setGiveaway] = useState<ChannelPointsGiveawayFormData | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchGiveaway = async () => {
+      try {
+        const data = await getChannelPointsGiveaway(id);
+        if (!data) {
+          navigate("/dashboard/channel-points-giveaway");
+          return;
+        }
+
+        if (data.status !== "open" || data.winners.length > 0) {
+          toast.error(t("CHANNEL_POINTS_GIVEAWAY_EDIT_BLOCKED"));
+          navigate(`/dashboard/channel-points-giveaway/${id}`);
+          return;
+        }
+
+        setGiveaway(data);
+      } catch (error) {
+        console.error("Error fetching giveaway:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGiveaway();
+  }, [id, getChannelPointsGiveaway, navigate, t]);
+
+  const onClickSubmit = async (data: ChannelPointsGiveawayForm) => {
+    if (!giveaway || !twitchApiClient || !userData?.id || !giveaway.rewardId) {
+      return;
+    }
+
+    if (!canUseChannelPoints) {
+      toast.error(t("CHANNEL_POINTS_GIVEAWAY_ERROR_NOT_AFFILIATE"));
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      const updateResult = await twitchApiClient.updateCustomReward({
+        broadcaster_id: userData.id,
+        id: giveaway.rewardId,
+        title: data.title.slice(0, 45),
+        prompt: data.description.slice(0, 200),
+        cost: data.cost,
+      });
+
+      if (updateResult.isErr()) {
+        const kind = classifyChannelPointsApiError(updateResult.error);
+        toast.error(t(channelPointsErrorI18nKey(kind)));
+        return;
+      }
+
+      const updatedGiveaway: ChannelPointsGiveawayFormData = {
+        ...giveaway,
+        title: data.title.slice(0, 45),
+        description: data.description,
+        cost: data.cost,
+        subscribersOnly: data.subscribersOnly,
+        subscriptionRequirement: data.subscriptionRequirement,
+        refundIneligible: data.refundIneligible,
+        allowMultipleWins: data.allowMultipleWins,
+        updatedAt: new Date().toISOString(),
+      };
+
+      await updateChannelPointsGiveaway(updatedGiveaway);
+      toast.success(t("CHANNEL_POINTS_GIVEAWAY_EDIT_SUCCESS"));
+      navigate(`/dashboard/channel-points-giveaway/${giveaway.id}`);
+    } catch (error) {
+      console.error("Error updating giveaway:", error);
+      toast.error(t("CHANNEL_POINTS_GIVEAWAY_EDIT_ERROR"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!giveaway) {
+    return null;
+  }
+
+  return (
+    <Layout>
+      <h1 className="text-2xl font-bold mb-6">
+        {t("CHANNEL_POINTS_GIVEAWAY_EDIT_TITLE")}
+      </h1>
+      {!canUseChannelPoints && (
+        <ChannelPointsAccessBanner className="mb-6" />
+      )}
+      <ChannelPointsGiveawayFormComponent
+        defaultValues={{
+          title: giveaway.title,
+          description: giveaway.description,
+          cost: giveaway.cost,
+          subscribersOnly: giveaway.subscribersOnly,
+          subscriptionRequirement: giveaway.subscriptionRequirement,
+          refundIneligible: giveaway.refundIneligible,
+          allowMultipleWins: giveaway.allowMultipleWins,
+        }}
+        onSubmit={onClickSubmit}
+        submitLabel={t("CHANNEL_POINTS_GIVEAWAY_FORM_SAVE")}
+        isLoading={isSaving}
+        disabled={!canUseChannelPoints}
+      />
+    </Layout>
+  );
+}
