@@ -49,7 +49,6 @@ export function ChannelPointsGiveawayFormComponent({
       cost: 100,
       subscribersOnly: false,
       subscriptionRequirement: SubscriberTier.TIER_1,
-      subscriberMultiplier: { ...DEFAULT_CHANNEL_POINTS_MULTIPLIER },
       refundIneligible: true,
       allowMultipleWins: false,
       ...defaultValues,
