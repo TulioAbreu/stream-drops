@@ -1,10 +1,11 @@
 import axios, { AxiosError } from "axios";
 import { err, ok, type Result } from "neverthrow";
 import type { TwitchIdValidateTokenResponse } from "./types";
+import { getTwitchIdBaseUrl } from "@/lib/twitch-oauth";
 
 export function makeTwitchIdApiClient() {
     const apiClient = axios.create({
-        baseURL: "https://id.twitch.tv/oauth2",
+        baseURL: getTwitchIdBaseUrl(),
         headers: {
             "Content-Type": "application/json",
         },

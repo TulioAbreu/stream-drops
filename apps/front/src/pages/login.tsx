@@ -9,27 +9,28 @@ import { AvatarImage } from "@radix-ui/react-avatar";
 import { CheckIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-
-const AUTHORIZATION_URL = new URL("/oauth2/authorize", "https://id.twitch.tv");
-AUTHORIZATION_URL.searchParams.set("client_id", import.meta.env.VITE_TWITCH_CLIENT_ID);
-AUTHORIZATION_URL.searchParams.set("redirect_uri", import.meta.env.VITE_TWITCH_REDIRECT_URL);
-AUTHORIZATION_URL.searchParams.set("response_type", "token");
-AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions user:read:chat user:write:chat");
+import { openTwitchLoginPopup, isTwitchStubMode, STUB_ACCESS_TOKEN } from "@/lib/twitch-oauth";
 
 export function LoginPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { setTwitchAccessToken, twitchAccessToken } = useLoginStore();
+    const { setTwitchAccessToken, twitchAccessToken, setSessionExpired } = useLoginStore();
     const { userData } = useTwitchApi();
     const [isLoadingTwitch, setIsLoadingTwitch] = useState<boolean>(false);
+    const stubMode = isTwitchStubMode();
 
-    const handleLoginTwitch = () => {
+    const handleLoginTwitch = async () => {
         setIsLoadingTwitch(true);
-        window.open(
-            AUTHORIZATION_URL,
-            "twitch-login",
-            "width=500,height=600"
-        );
+        if (stubMode) {
+            setSessionExpired(false);
+            // Garante refetch mesmo com o mesmo token stub
+            setTwitchAccessToken(null);
+            setTimeout(() => {
+                setTwitchAccessToken(STUB_ACCESS_TOKEN);
+            }, 0);
+            return;
+        }
+        openTwitchLoginPopup();
     };
 
     useEffect(() => {
@@ -67,7 +68,9 @@ export function LoginPage() {
                         {t("LOGIN_TITLE")}
                     </CardTitle>
                     <CardDescription>
-                        {t("LOGIN_DESCRIPTION")}
+                        {stubMode
+                            ? t("LOGIN_DESCRIPTION_STUB")
+                            : t("LOGIN_DESCRIPTION")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
@@ -93,7 +96,9 @@ export function LoginPage() {
                             </div>
                         ) : (
                             <Button variant="default" className="w-full" onClick={handleLoginTwitch}>
-                                {t("LOGIN_BUTTON_TWITCH")}
+                                {stubMode
+                                    ? t("LOGIN_BUTTON_TWITCH_STUB")
+                                    : t("LOGIN_BUTTON_TWITCH")}
                             </Button>
                         )
                     )}

@@ -5,13 +5,12 @@ import { useEffect, useState, useMemo } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Trophy, Sparkles, ArrowLeftIcon, XIcon, Edit, AlertCircle } from "lucide-react";
+import { Trophy, Sparkles, ArrowLeftIcon, Edit, AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
 import { drawWinner } from "@/service/chat-giveaway";
 import { toast } from "sonner";
@@ -20,7 +19,7 @@ import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import type { ChatParticipant } from "../types";
 import { WinnerConfirmationInline } from "./components/winner-confirmation-inline";
-import { SubscriptionTierBadge } from "./components/subscription-tier-badge";
+import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
 import { ParticipantTag } from "./components/participant-tag";
 
 export function ChatGiveawayDetail() {
@@ -459,53 +458,23 @@ export function ChatGiveawayDetail() {
                       sortedWinners
                         .filter((winner) => winner.id !== pendingWinner?.id)
                         .map((winner, index) => {
-                        const participantData = participants.find(p => p.id === winner.twitchId);
-                        const rank = pendingWinner ? index + 2 : index + 1;
+                          const participantData = participants.find(
+                            (p) => p.id === winner.twitchId
+                          );
+                          const rank = pendingWinner ? index + 2 : index + 1;
 
-                        return (
-                          <div
-                            key={winner.id}
-                            className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20"
-                          >
-                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
-                              {rank}
-                            </div>
-                            <Avatar>
-                              <AvatarImage src={winner.avatar} />
-                              <AvatarFallback>
-                                {winner.name[0].toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="font-medium text-sm truncate">
-                                  {winner.name}
-                                </p>
-                                <SubscriptionTierBadge tier={participantData?.tier} />
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(winner.drawnAt).toLocaleTimeString('pt-BR')}
-                              </p>
-                            </div>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => onClickRemoveWinner(winner.id)}
-                                  >
-                                    <XIcon className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  Remover vencedor
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        );
-                      })
+                          return (
+                            <GiveawayWinnerRow
+                              key={winner.id}
+                              rank={rank}
+                              name={winner.name}
+                              avatar={winner.avatar}
+                              drawnAt={winner.drawnAt}
+                              tier={participantData?.tier}
+                              onRemove={() => onClickRemoveWinner(winner.id)}
+                            />
+                          );
+                        })
                     )}
                   </div>
                 </ScrollArea>

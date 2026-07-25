@@ -4,6 +4,7 @@ import {
   LogOutIcon,
   MessageSquare,
   Disc3,
+  Coins,
 } from "lucide-react";
 import {
   Sidebar,
@@ -54,6 +55,11 @@ const items: NavbarItem[] = [
     icon: <Disc3 />,
     url: "/dashboard/roulette",
     badge: "Beta",
+  },
+  {
+    title: "DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY",
+    icon: <Coins />,
+    url: "/dashboard/channel-points-giveaway",
   },
   // {
   //     title: "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY",

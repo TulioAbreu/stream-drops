@@ -10,25 +10,32 @@ import { useTranslation } from "@/i18n";
 import { useLoginStore } from "@/storage/login";
 import { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
-
-const AUTHORIZATION_URL = new URL("/oauth2/authorize", "https://id.twitch.tv");
-AUTHORIZATION_URL.searchParams.set("client_id", import.meta.env.VITE_TWITCH_CLIENT_ID);
-AUTHORIZATION_URL.searchParams.set("redirect_uri", import.meta.env.VITE_TWITCH_REDIRECT_URL);
-AUTHORIZATION_URL.searchParams.set("response_type", "token");
-AUTHORIZATION_URL.searchParams.set("scope", "channel:read:subscriptions user:read:chat user:write:chat");
+import {
+    isTwitchStubMode,
+    openTwitchLoginPopup,
+    STUB_ACCESS_TOKEN,
+} from "@/lib/twitch-oauth";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function SessionExpiredModal() {
     const { t } = useTranslation();
+    const queryClient = useQueryClient();
     const { sessionExpired, setSessionExpired, setTwitchAccessToken } = useLoginStore();
     const [isLoadingTwitch, setIsLoadingTwitch] = useState(false);
+    const stubMode = isTwitchStubMode();
 
-    const handleLoginTwitch = () => {
+    const handleLoginTwitch = async () => {
         setIsLoadingTwitch(true);
-        window.open(
-            AUTHORIZATION_URL,
-            "twitch-login",
-            "width=500,height=600"
-        );
+        if (stubMode) {
+            // Força novo fetch mesmo se o token stub já estava no store
+            setTwitchAccessToken(null);
+            await queryClient.resetQueries({ queryKey: ["twitchUser"] });
+            setSessionExpired(false);
+            setTwitchAccessToken(STUB_ACCESS_TOKEN);
+            setIsLoadingTwitch(false);
+            return;
+        }
+        openTwitchLoginPopup();
     };
 
     useEffect(() => {
@@ -44,38 +51,21 @@ export function SessionExpiredModal() {
         return () => window.removeEventListener("message", handleMessage);
     }, [setTwitchAccessToken, setSessionExpired]);
 
-    // Prevent closing by clicking outside or escape key
-    // We can use onOpenChange prevent default if open is true?
-    // Or just not provide onOpenChange so it's controlled.
-    // Dialog component from shadcn usually allows closing via X or outside click.
-    // We want to force re-login. So we should probably disable closing.
-    // But maybe user wants to logout? I should provide a logout button too.
-
     const handleLogout = () => {
-        localStorage.clear();
-        indexedDB.databases().then((dbs) => {
-            dbs.forEach((db) => {
-                indexedDB.deleteDatabase(db.name!);
-            });
-        });
+        setSessionExpired(false);
+        setTwitchAccessToken(null);
         window.location.href = "/";
     };
 
-
     return (
-        <Dialog open={sessionExpired} onOpenChange={(open) => {
-            if (!open) {
-                // Prevent closing if we are just clicking outside
-                // But maybe allow closing if they want to give up? 
-                // If they close, the app is still in a broken state (token invalid).
-                // So we should force decision.
-            }
-        }}>
+        <Dialog open={sessionExpired} onOpenChange={() => {}}>
             <DialogContent className="sm:max-w-[425px]" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()} hideCloseButton={true}>
                 <DialogHeader>
                     <DialogTitle>{t("SESSION_EXPIRED_TITLE")}</DialogTitle>
                     <DialogDescription>
-                        {t("SESSION_EXPIRED_DESCRIPTION")}
+                        {stubMode
+                            ? t("SESSION_EXPIRED_DESCRIPTION_STUB")
+                            : t("SESSION_EXPIRED_DESCRIPTION")}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-4 py-4">
@@ -89,7 +79,9 @@ export function SessionExpiredModal() {
                         </div>
                     ) : (
                         <Button onClick={handleLoginTwitch} className="w-full">
-                            {t("LOGIN_BUTTON_TWITCH")}
+                            {stubMode
+                                ? t("LOGIN_BUTTON_TWITCH_STUB")
+                                : t("LOGIN_BUTTON_TWITCH")}
                         </Button>
                     )}
 

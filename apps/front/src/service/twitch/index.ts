@@ -1,6 +1,23 @@
 import axios, { AxiosError } from "axios";
 import { ok, err, Result } from "neverthrow";
-import type { GetTwitchBroadcasterSubscriptionsParams, GetTwitchBroadcasterSubscriptionsResponse, GetTwitchUsersParams, GetTwitchUsersResponse, SendTwitchChatMessageParams, SendTwitchChatMessageResponse, TwitchUser } from "./types";
+import type {
+    CreateTwitchCustomRewardParams,
+    DeleteTwitchCustomRewardParams,
+    GetTwitchBroadcasterSubscriptionsParams,
+    GetTwitchBroadcasterSubscriptionsResponse,
+    GetTwitchCustomRewardRedemptionsParams,
+    GetTwitchCustomRewardRedemptionsResponse,
+    GetTwitchUsersParams,
+    GetTwitchUsersResponse,
+    SendTwitchChatMessageParams,
+    SendTwitchChatMessageResponse,
+    TwitchCustomRewardResponse,
+    TwitchUser,
+    UpdateTwitchCustomRewardParams,
+    UpdateTwitchRedemptionsStatusParams,
+    UpdateTwitchRedemptionsStatusResponse,
+} from "./types";
+import { getTwitchHelixBaseUrl } from "@/lib/twitch-oauth";
 
 interface TwitchApiClientParams {
     clientId: string;
@@ -11,7 +28,7 @@ export function makeTwitchApiClient(params: TwitchApiClientParams) {
     const { clientId, accessToken } = params;
 
     const apiClient = axios.create({
-        baseURL: "https://api.twitch.tv/helix",
+        baseURL: getTwitchHelixBaseUrl(),
         headers: {
             "Client-ID": clientId,
             "Authorization": `Bearer ${accessToken}`,
@@ -111,6 +128,92 @@ export function makeTwitchApiClient(params: TwitchApiClientParams) {
             } catch (error) {
                 return err(error as AxiosError);
             }
-        }
+        },
+        createCustomReward: async (
+            params: CreateTwitchCustomRewardParams
+        ): Promise<Result<TwitchCustomRewardResponse, AxiosError>> => {
+            try {
+                const { broadcaster_id, ...body } = params;
+                const response = await apiClient.post<TwitchCustomRewardResponse>(
+                    "/channel_points/custom_rewards",
+                    body,
+                    { params: { broadcaster_id } }
+                );
+                return ok(response.data);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        },
+        updateCustomReward: async (
+            params: UpdateTwitchCustomRewardParams
+        ): Promise<Result<TwitchCustomRewardResponse, AxiosError>> => {
+            try {
+                const { broadcaster_id, id, ...body } = params;
+                const response = await apiClient.patch<TwitchCustomRewardResponse>(
+                    "/channel_points/custom_rewards",
+                    body,
+                    { params: { broadcaster_id, id } }
+                );
+                return ok(response.data);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        },
+        getCustomRewardRedemptions: async (
+            params: GetTwitchCustomRewardRedemptionsParams
+        ): Promise<Result<GetTwitchCustomRewardRedemptionsResponse, AxiosError>> => {
+            try {
+                const response = await apiClient.get<GetTwitchCustomRewardRedemptionsResponse>(
+                    "/channel_points/custom_rewards/redemptions",
+                    {
+                        params: {
+                            broadcaster_id: params.broadcaster_id,
+                            reward_id: params.reward_id,
+                            status: params.status,
+                            id: params.id,
+                            sort: params.sort,
+                            after: params.after,
+                            first: params.first ?? 50,
+                        },
+                    }
+                );
+                return ok(response.data);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        },
+        updateRedemptionsStatus: async (
+            params: UpdateTwitchRedemptionsStatusParams
+        ): Promise<Result<UpdateTwitchRedemptionsStatusResponse, AxiosError>> => {
+            try {
+                const searchParams = new URLSearchParams();
+                searchParams.append("broadcaster_id", params.broadcaster_id);
+                searchParams.append("reward_id", params.reward_id);
+                params.ids.forEach((id) => searchParams.append("id", id));
+
+                const response = await apiClient.patch<UpdateTwitchRedemptionsStatusResponse>(
+                    `/channel_points/custom_rewards/redemptions?${searchParams.toString()}`,
+                    { status: params.status }
+                );
+                return ok(response.data);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        },
+        deleteCustomReward: async (
+            params: DeleteTwitchCustomRewardParams
+        ): Promise<Result<void, AxiosError>> => {
+            try {
+                await apiClient.delete("/channel_points/custom_rewards", {
+                    params: {
+                        broadcaster_id: params.broadcaster_id,
+                        id: params.id,
+                    },
+                });
+                return ok(undefined);
+            } catch (error) {
+                return err(error as AxiosError);
+            }
+        },
     };
 }
