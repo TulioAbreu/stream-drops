@@ -265,17 +265,7 @@ export async function collectChannelPointsRedemptions(
     phase: "settling",
   });
 
-  const fulfillEligible = await updateRedemptionsInBatches(
-    twitchApiClient,
-    broadcasterId,
-    rewardId,
-    eligibleIds,
-    "FULFILLED"
-  );
-  if (fulfillEligible.isErr()) {
-    return err(fulfillEligible.error);
-  }
-
+  // Eligible redemptions stay UNFULFILLED until Encerrar (CANCELED or FULFILLED).
   const ineligibleStatus = refundIneligible ? "CANCELED" : "FULFILLED";
   const settleIneligible = await updateRedemptionsInBatches(
     twitchApiClient,

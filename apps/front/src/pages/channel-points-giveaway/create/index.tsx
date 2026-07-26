@@ -51,6 +51,11 @@ export function ChannelPointsGiveawayCreate() {
         is_enabled: true,
         is_user_input_required: false,
         should_redemptions_skip_request_queue: false,
+        is_max_per_stream_enabled:
+          data.maxPerStream != null && data.maxPerStream >= 1,
+        ...(data.maxPerStream != null && data.maxPerStream >= 1
+          ? { max_per_stream: Math.floor(data.maxPerStream) }
+          : {}),
       });
 
       if (rewardResult.isErr()) {
@@ -67,6 +72,10 @@ export function ChannelPointsGiveawayCreate() {
 
       const id = v7();
       const now = new Date().toISOString();
+      const maxPerStream =
+        data.maxPerStream != null && data.maxPerStream >= 1
+          ? Math.floor(data.maxPerStream)
+          : null;
 
       await addChannelPointsGiveaway({
         id,
@@ -74,6 +83,7 @@ export function ChannelPointsGiveawayCreate() {
         description: data.description,
         cost: data.cost,
         rewardId: reward.id,
+        maxPerStream,
         subscribersOnly: data.subscribersOnly,
         subscriptionRequirement: data.subscriptionRequirement,
         refundIneligible: data.refundIneligible,
