@@ -170,8 +170,14 @@ export class TwitchStubStore {
     prompt?: string;
     is_enabled?: boolean;
     is_user_input_required?: boolean;
+    is_max_per_stream_enabled?: boolean;
+    max_per_stream?: number;
   }): StubReward {
     const broadcaster = this.getBroadcaster();
+    const maxPerStreamEnabled =
+      input.is_max_per_stream_enabled === true &&
+      typeof input.max_per_stream === "number" &&
+      input.max_per_stream >= 1;
     const reward: StubReward = {
       broadcaster_id: broadcaster.id,
       broadcaster_login: broadcaster.login,
@@ -189,7 +195,10 @@ export class TwitchStubStore {
       background_color: "#9146FF",
       is_enabled: input.is_enabled ?? true,
       is_user_input_required: input.is_user_input_required ?? false,
-      max_per_stream_setting: { is_enabled: false, max_per_stream: 0 },
+      max_per_stream_setting: {
+        is_enabled: maxPerStreamEnabled,
+        max_per_stream: maxPerStreamEnabled ? input.max_per_stream! : 0,
+      },
       max_per_user_per_stream_setting: {
         is_enabled: false,
         max_per_user_per_stream: 0,
@@ -200,7 +209,7 @@ export class TwitchStubStore {
       },
       is_paused: false,
       is_in_stock: true,
-      redemptions_redeemed_current_stream: null,
+      redemptions_redeemed_current_stream: maxPerStreamEnabled ? 0 : null,
       cooldown_expires_at: null,
     };
 
@@ -217,11 +226,43 @@ export class TwitchStubStore {
       prompt: string;
       is_paused: boolean;
       is_enabled: boolean;
+      is_max_per_stream_enabled: boolean;
+      max_per_stream: number;
     }>
   ): StubReward | null {
     const reward = this.rewards.get(id);
     if (!reward) return null;
-    Object.assign(reward, patch);
+
+    if (patch.title !== undefined) reward.title = patch.title;
+    if (patch.cost !== undefined) reward.cost = patch.cost;
+    if (patch.prompt !== undefined) reward.prompt = patch.prompt;
+    if (patch.is_paused !== undefined) reward.is_paused = patch.is_paused;
+    if (patch.is_enabled !== undefined) reward.is_enabled = patch.is_enabled;
+
+    if (patch.is_max_per_stream_enabled !== undefined) {
+      const enabled =
+        patch.is_max_per_stream_enabled === true &&
+        (patch.max_per_stream ?? reward.max_per_stream_setting.max_per_stream) >=
+          1;
+      reward.max_per_stream_setting = {
+        is_enabled: enabled,
+        max_per_stream: enabled
+          ? Math.floor(
+              patch.max_per_stream ??
+                reward.max_per_stream_setting.max_per_stream
+            )
+          : 0,
+      };
+      reward.redemptions_redeemed_current_stream = enabled
+        ? (reward.redemptions_redeemed_current_stream ?? 0)
+        : null;
+    } else if (patch.max_per_stream !== undefined) {
+      reward.max_per_stream_setting = {
+        ...reward.max_per_stream_setting,
+        max_per_stream: Math.floor(patch.max_per_stream),
+      };
+    }
+
     return reward;
   }
 

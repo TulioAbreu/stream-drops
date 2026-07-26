@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import {
   useChannelPointsGiveawayDb,
   type ChannelPointsGiveawayFormData,
+  type ChannelPointsParticipant,
   type ChannelPointsWinner,
 } from "@/database/ChannelPointsGiveaway";
 import { useEffect, useMemo, useState } from "react";
@@ -49,7 +50,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
-import { formatChancePercentage } from "@/lib/utils";
+import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
 import { useTranslation } from "@/i18n";
 import { v7 } from "uuid";
 import { useExclusionListDb } from "@/database/ExclusionListItem";
@@ -57,6 +58,7 @@ import {
   collectChannelPointsRedemptions,
   type CollectionProgress,
 } from "@/usecase/collect-channel-points-redemptions";
+import { settleChannelPointsOnClose } from "@/usecase/settle-channel-points-on-close";
 import {
   drawChannelPointsWinner,
   getAvailableTicketCount,
@@ -66,7 +68,6 @@ import {
 } from "@/service/channel-points-giveaway";
 import { SubscriberTierLabels } from "@/domain/SubscriberTier";
 import type { SubscriberTier } from "@/domain/SubscriberTier";
-import confetti from "canvas-confetti";
 import {
   channelPointsAccessBlockI18nKeys,
   channelPointsErrorI18nKey,
@@ -74,8 +75,16 @@ import {
   getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
 import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
+import { WinnerConfirmationInline } from "@/components/giveaway/winner-confirmation-inline";
 import { ParticipantTag } from "@/pages/chat-giveaway/[id]/components/participant-tag";
 import { ChannelPointsAccessBanner } from "../components/channel-points-access-banner";
+import { useChatMessages } from "../hooks/use-chat-messages";
+
+interface PendingChannelPointsWinner {
+  participant: ChannelPointsParticipant;
+  redemptionId: string;
+  weight: number;
+}
 
 export function ChannelPointsGiveawayDetail() {
   const { id } = useParams<{ id: string }>();
@@ -101,6 +110,20 @@ export function ChannelPointsGiveawayDetail() {
   const [collectionProgress, setCollectionProgress] =
     useState<CollectionProgress | null>(null);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [pendingWinner, setPendingWinner] =
+    useState<PendingChannelPointsWinner | null>(null);
+  const [redrawExcludedRedemptionIds, setRedrawExcludedRedemptionIds] =
+    useState<string[]>([]);
+  const [isRedrawing, setIsRedrawing] = useState(false);
+
+  const chatEnabled =
+    !!userData?.login &&
+    (giveaway?.status === "ready" || giveaway?.status === "closed");
+
+  const { messages } = useChatMessages({
+    channel: userData?.login || "",
+    enabled: chatEnabled,
+  });
 
   useEffect(() => {
     if (!id) return;
@@ -111,20 +134,30 @@ export function ChannelPointsGiveawayDetail() {
         navigate("/dashboard/channel-points-giveaway");
         return;
       }
-      setGiveaway(data);
+      setGiveaway({
+        ...data,
+        maxPerStream: data.maxPerStream ?? null,
+      });
     };
 
     loadGiveaway();
   }, [id, getChannelPointsGiveaway, navigate]);
+
+  useEffect(() => {
+    if (!pendingWinner) {
+      setRedrawExcludedRedemptionIds([]);
+    }
+  }, [pendingWinner]);
 
   const availableTickets = useMemo(() => {
     if (!giveaway) return 0;
     return getAvailableTicketCount(
       giveaway.participants,
       giveaway.winners,
-      giveaway.allowMultipleWins
+      giveaway.allowMultipleWins,
+      redrawExcludedRedemptionIds
     );
-  }, [giveaway]);
+  }, [giveaway, redrawExcludedRedemptionIds]);
 
   const subscriberMultiplier = useMemo(
     () => normalizeChannelPointsMultiplier(giveaway?.subscriberMultiplier),
@@ -138,8 +171,9 @@ export function ChannelPointsGiveawayDetail() {
       winners: giveaway.winners,
       allowMultipleWins: giveaway.allowMultipleWins,
       subscriberMultiplier,
+      excludeRedemptionIds: redrawExcludedRedemptionIds,
     });
-  }, [giveaway, subscriberMultiplier]);
+  }, [giveaway, subscriberMultiplier, redrawExcludedRedemptionIds]);
 
   const participantTicketTags = useMemo(
     () =>
@@ -300,6 +334,53 @@ export function ChannelPointsGiveawayDetail() {
     }
   };
 
+  const executeDraw = async (excludeRedemptionIds: string[]) => {
+    if (!giveaway) return;
+
+    const result = drawChannelPointsWinner({
+      participants: giveaway.participants,
+      winners: giveaway.winners,
+      allowMultipleWins: giveaway.allowMultipleWins,
+      subscriberMultiplier: giveaway.subscriberMultiplier,
+      excludeRedemptionIds,
+    });
+
+    if (!result) {
+      toast.error(t("CHANNEL_POINTS_GIVEAWAY_NO_TICKETS"));
+      setIsDrawing(false);
+      setIsRedrawing(false);
+      return;
+    }
+
+    const poolSize = getWeightedEntryCount({
+      participants: giveaway.participants,
+      winners: giveaway.winners,
+      allowMultipleWins: giveaway.allowMultipleWins,
+      subscriberMultiplier: giveaway.subscriberMultiplier,
+      excludeRedemptionIds,
+    });
+    const chance = poolSize > 0 ? (result.weight / poolSize) * 100 : 0;
+
+    if (userData?.id && twitchApiClient) {
+      await twitchApiClient.sendChatMessage({
+        broadcaster_id: userData.id,
+        sender_id: userData.id,
+        message: t("CHANNEL_POINTS_GIVEAWAY_CHAT_WINNER", {
+          name: result.participant.displayName,
+          chance: formatChancePercentage(chance),
+        }),
+      });
+    }
+
+    setPendingWinner({
+      participant: result.participant,
+      redemptionId: result.redemptionId,
+      weight: result.weight,
+    });
+    setIsDrawing(false);
+    setIsRedrawing(false);
+  };
+
   const handleDraw = async () => {
     if (!giveaway) return;
 
@@ -311,75 +392,63 @@ export function ChannelPointsGiveawayDetail() {
     setIsDrawing(true);
 
     setTimeout(async () => {
-      const result = drawChannelPointsWinner({
-        participants: giveaway.participants,
-        winners: giveaway.winners,
-        allowMultipleWins: giveaway.allowMultipleWins,
-        subscriberMultiplier: giveaway.subscriberMultiplier,
-      });
-
-      if (!result) {
-        toast.error(t("CHANNEL_POINTS_GIVEAWAY_NO_TICKETS"));
-        setIsDrawing(false);
-        return;
-      }
-
-      const newWinner: ChannelPointsWinner = {
-        id: v7(),
-        userId: result.participant.userId,
-        name: result.participant.displayName,
-        avatar: result.participant.avatar,
-        redemptionId: result.redemptionId,
-        drawnAt: new Date().toISOString(),
-      };
-
-      const updatedGiveaway: ChannelPointsGiveawayFormData = {
-        ...giveaway,
-        winners: [...giveaway.winners, newWinner],
-        updatedAt: new Date().toISOString(),
-      };
-
-      try {
-        await updateChannelPointsGiveaway(updatedGiveaway);
-        setGiveaway(updatedGiveaway);
-
-        confetti({
-          particleCount: 120,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-
-        const poolSize = getWeightedEntryCount({
-          participants: giveaway.participants,
-          winners: giveaway.winners,
-          allowMultipleWins: giveaway.allowMultipleWins,
-          subscriberMultiplier: giveaway.subscriberMultiplier,
-        });
-        const chance = poolSize > 0 ? (result.weight / poolSize) * 100 : 0;
-
-        if (userData?.id && twitchApiClient) {
-          await twitchApiClient.sendChatMessage({
-            broadcaster_id: userData.id,
-            sender_id: userData.id,
-            message: t("CHANNEL_POINTS_GIVEAWAY_CHAT_WINNER", {
-              name: result.participant.displayName,
-              chance: formatChancePercentage(chance),
-            }),
-          });
-        }
-
-        toast.success(
-          t("CHANNEL_POINTS_GIVEAWAY_DRAW_SUCCESS", {
-            name: result.participant.displayName,
-          })
-        );
-      } catch (error) {
-        console.error(error);
-        toast.error(t("CHANNEL_POINTS_GIVEAWAY_DRAW_ERROR"));
-      } finally {
-        setIsDrawing(false);
-      }
+      await executeDraw([]);
     }, 500);
+  };
+
+  const handleRedraw = async () => {
+    if (!giveaway || !pendingWinner) return;
+
+    setIsRedrawing(true);
+
+    const sessionExcludes = giveaway.allowMultipleWins
+      ? [pendingWinner.redemptionId]
+      : pendingWinner.participant.tickets.map((ticket) => ticket.redemptionId);
+
+    const newExcluded = [
+      ...redrawExcludedRedemptionIds,
+      ...sessionExcludes.filter(
+        (redemptionId) => !redrawExcludedRedemptionIds.includes(redemptionId)
+      ),
+    ];
+    setRedrawExcludedRedemptionIds(newExcluded);
+
+    setTimeout(async () => {
+      await executeDraw(newExcluded);
+    }, 500);
+  };
+
+  const handleConfirmWinner = async () => {
+    if (!giveaway || !pendingWinner) return;
+
+    const newWinner: ChannelPointsWinner = {
+      id: v7(),
+      userId: pendingWinner.participant.userId,
+      name: pendingWinner.participant.displayName,
+      avatar: pendingWinner.participant.avatar,
+      redemptionId: pendingWinner.redemptionId,
+      drawnAt: new Date().toISOString(),
+    };
+
+    const updatedGiveaway: ChannelPointsGiveawayFormData = {
+      ...giveaway,
+      winners: [...giveaway.winners, newWinner],
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await updateChannelPointsGiveaway(updatedGiveaway);
+      setGiveaway(updatedGiveaway);
+      toast.success(
+        t("CHANNEL_POINTS_GIVEAWAY_DRAW_SUCCESS", {
+          name: pendingWinner.participant.displayName,
+        })
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error(t("CHANNEL_POINTS_GIVEAWAY_DRAW_ERROR"));
+      throw error;
+    }
   };
 
   const onClickRemoveWinner = async (winnerId: string) => {
@@ -407,6 +476,25 @@ export function ChannelPointsGiveawayDetail() {
     setIsClosing(true);
     try {
       if (giveaway.rewardId) {
+        const settleResult = await settleChannelPointsOnClose({
+          twitchApiClient,
+          broadcasterId: userData.id,
+          rewardId: giveaway.rewardId,
+          participants: giveaway.participants,
+          hasWinners: giveaway.winners.length > 0,
+        });
+
+        if (settleResult.isErr()) {
+          console.error(settleResult.error);
+          const kind = classifyChannelPointsApiError(settleResult.error);
+          toast.error(
+            kind === "generic"
+              ? t("CHANNEL_POINTS_GIVEAWAY_CLOSE_SETTLE_ERROR")
+              : t(channelPointsErrorI18nKey(kind))
+          );
+          return;
+        }
+
         const deleteResult = await twitchApiClient.deleteCustomReward({
           broadcaster_id: userData.id,
           id: giveaway.rewardId,
@@ -431,6 +519,7 @@ export function ChannelPointsGiveawayDetail() {
 
       await updateChannelPointsGiveaway(closedGiveaway);
       setGiveaway(closedGiveaway);
+      setPendingWinner(null);
       setCloseDialogOpen(false);
       toast.success(t("CHANNEL_POINTS_GIVEAWAY_CLOSE_SUCCESS"));
     } catch (error) {
@@ -467,11 +556,23 @@ export function ChannelPointsGiveawayDetail() {
             )}
             <div className="flex gap-2 mt-3 flex-wrap">
               <Badge variant="outline">
-                {t("CHANNEL_POINTS_GIVEAWAY_STATUS_" + giveaway.status.toUpperCase())}
+                {t(
+                  "CHANNEL_POINTS_GIVEAWAY_STATUS_" +
+                    giveaway.status.toUpperCase()
+                )}
               </Badge>
               <Badge variant="secondary">
-                {t("CHANNEL_POINTS_GIVEAWAY_COST_BADGE", { cost: giveaway.cost })}
+                {t("CHANNEL_POINTS_GIVEAWAY_COST_BADGE", {
+                  cost: giveaway.cost,
+                })}
               </Badge>
+              {giveaway.maxPerStream != null && giveaway.maxPerStream >= 1 && (
+                <Badge variant="outline">
+                  {t("CHANNEL_POINTS_GIVEAWAY_MAX_PER_STREAM_BADGE", {
+                    count: giveaway.maxPerStream,
+                  })}
+                </Badge>
+              )}
               {giveaway.subscribersOnly && (
                 <Badge variant="secondary">
                   {t("CHANNEL_POINTS_GIVEAWAY_SUBS_ONLY_BADGE", {
@@ -556,7 +657,11 @@ export function ChannelPointsGiveawayDetail() {
                 variant="outline"
                 size="lg"
                 onClick={handleDraw}
-                disabled={isDrawing || availableTickets === 0}
+                disabled={
+                  isDrawing ||
+                  !!pendingWinner ||
+                  availableTickets === 0
+                }
               >
                 {isDrawing ? (
                   <>
@@ -577,7 +682,7 @@ export function ChannelPointsGiveawayDetail() {
                 variant="destructive"
                 size="lg"
                 onClick={() => setCloseDialogOpen(true)}
-                disabled={!canUseChannelPoints}
+                disabled={!canUseChannelPoints || !!pendingWinner}
               >
                 <Lock className="w-4 h-4 mr-2" />
                 {t("CHANNEL_POINTS_GIVEAWAY_CLOSE")}
@@ -664,56 +769,99 @@ export function ChannelPointsGiveawayDetail() {
               </CardContent>
             </Card>
 
-            <Card className="flex flex-col">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {t("CHANNEL_POINTS_GIVEAWAY_WINNERS")}
-                  <Badge variant="secondary">{giveaway.winners.length}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex min-h-0 flex-1 flex-col">
-                <ScrollArea className="h-[420px] pr-4">
-                  <div className="space-y-3">
-                    {sortedWinners.length === 0 ? (
-                      <div className="flex items-center justify-center min-h-[320px]">
-                        <Empty>
-                          <EmptyHeader>
-                            <EmptyMedia variant="icon">
-                              <Trophy />
-                            </EmptyMedia>
-                            <EmptyTitle>
-                              {t("CHANNEL_POINTS_GIVEAWAY_NO_WINNERS")}
-                            </EmptyTitle>
-                          </EmptyHeader>
-                        </Empty>
-                      </div>
-                    ) : (
-                      sortedWinners.map((winner, index) => {
-                        const participant = giveaway.participants.find(
-                          (p) => p.userId === winner.userId
-                        );
-
-                        return (
-                          <GiveawayWinnerRow
-                            key={winner.id}
-                            rank={index + 1}
-                            name={winner.name}
-                            avatar={winner.avatar}
-                            drawnAt={winner.drawnAt}
-                            tier={participant?.tier}
-                            onRemove={
-                              giveaway.status !== "closed"
-                                ? () => onClickRemoveWinner(winner.id)
-                                : undefined
-                            }
-                          />
-                        );
-                      })
+            <div className="flex flex-col gap-4">
+              <Card className="flex flex-col">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {t("CHANNEL_POINTS_GIVEAWAY_WINNERS")}
+                    <Badge variant="secondary">{giveaway.winners.length}</Badge>
+                    {pendingWinner && (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        · {t("CHANNEL_POINTS_GIVEAWAY_AWAITING_CONFIRMATION")}
+                      </span>
                     )}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex min-h-0 flex-1 flex-col">
+                  <ScrollArea className="h-[280px] pr-4">
+                    <div className="space-y-3">
+                      {pendingWinner && (
+                        <WinnerConfirmationInline
+                          key={pendingWinner.redemptionId}
+                          pendingWinner={{
+                            id: pendingWinner.participant.userId,
+                            displayName: pendingWinner.participant.displayName,
+                            avatar: pendingWinner.participant.avatar,
+                            subscriber: pendingWinner.participant.subscriber,
+                            tier: pendingWinner.participant.tier,
+                          }}
+                          messages={messages}
+                          rank={1}
+                          onConfirm={handleConfirmWinner}
+                          onDismiss={() => setPendingWinner(null)}
+                          onCancel={() => setPendingWinner(null)}
+                          onRedraw={handleRedraw}
+                          isRedrawing={isRedrawing}
+                        />
+                      )}
+
+                      {sortedWinners.length === 0 && !pendingWinner ? (
+                        <div className="flex items-center justify-center min-h-[200px]">
+                          <Empty>
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon">
+                                <Trophy />
+                              </EmptyMedia>
+                              <EmptyTitle>
+                                {t("CHANNEL_POINTS_GIVEAWAY_NO_WINNERS")}
+                              </EmptyTitle>
+                            </EmptyHeader>
+                          </Empty>
+                        </div>
+                      ) : (
+                        sortedWinners.map((winner, index) => {
+                          const participant = giveaway.participants.find(
+                            (p) => p.userId === winner.userId
+                          );
+                          const rank = pendingWinner ? index + 2 : index + 1;
+
+                          return (
+                            <GiveawayWinnerRow
+                              key={winner.id}
+                              rank={rank}
+                              name={winner.name}
+                              avatar={winner.avatar}
+                              drawnAt={winner.drawnAt}
+                              tier={participant?.tier}
+                              onRemove={
+                                giveaway.status !== "closed"
+                                  ? () => onClickRemoveWinner(winner.id)
+                                  : undefined
+                              }
+                            />
+                          );
+                        })
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {userData?.login && (
+                <Card className="flex flex-col overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <CardTitle>{t("CHANNEL_POINTS_GIVEAWAY_CHAT")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <iframe
+                      title="Twitch Chat"
+                      src={composeTwitchChatEmbedUrl(userData.login)}
+                      className="h-[320px] w-full border-0"
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -764,8 +912,15 @@ export function ChannelPointsGiveawayDetail() {
             <DialogTitle>
               {t("CHANNEL_POINTS_GIVEAWAY_CLOSE_DIALOG_TITLE")}
             </DialogTitle>
-            <DialogDescription>
-              {t("CHANNEL_POINTS_GIVEAWAY_CLOSE_DIALOG_DESCRIPTION")}
+            <DialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>{t("CHANNEL_POINTS_GIVEAWAY_CLOSE_DIALOG_DESCRIPTION")}</p>
+                <p>
+                  {giveaway.winners.length > 0
+                    ? t("CHANNEL_POINTS_GIVEAWAY_CLOSE_DIALOG_FULFILL")
+                    : t("CHANNEL_POINTS_GIVEAWAY_CLOSE_DIALOG_REFUND")}
+                </p>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -780,6 +935,7 @@ export function ChannelPointsGiveawayDetail() {
               variant="destructive"
               onClick={handleClose}
               disabled={isClosing}
+              loading={isClosing}
             >
               {t("CHANNEL_POINTS_GIVEAWAY_CLOSE")}
             </Button>

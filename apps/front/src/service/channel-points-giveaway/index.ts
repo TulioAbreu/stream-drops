@@ -57,6 +57,8 @@ export interface DrawChannelPointsWinnerParams {
   winners: ChannelPointsWinner[];
   allowMultipleWins: boolean;
   subscriberMultiplier?: Partial<ChannelPointsSubscriberMultiplier> | null;
+  /** Session excludes (e.g. pending/reroll redemption IDs). */
+  excludeRedemptionIds?: string[];
 }
 
 export interface DrawChannelPointsWinnerResult {
@@ -88,6 +90,7 @@ function buildWeightedTicketPool({
   winners,
   allowMultipleWins,
   subscriberMultiplier,
+  excludeRedemptionIds,
 }: DrawChannelPointsWinnerParams): Array<{
   participant: ChannelPointsParticipant;
   redemptionId: string;
@@ -98,6 +101,7 @@ function buildWeightedTicketPool({
     redemptionId: string;
     weight: number;
   }> = [];
+  const excluded = new Set(excludeRedemptionIds ?? []);
 
   for (const participant of participants) {
     const consumed = getConsumedRedemptionIds(
@@ -117,6 +121,9 @@ function buildWeightedTicketPool({
 
     for (const ticket of participant.tickets) {
       if (consumed.has(ticket.redemptionId)) {
+        continue;
+      }
+      if (excluded.has(ticket.redemptionId)) {
         continue;
       }
 
@@ -157,9 +164,11 @@ export function drawChannelPointsWinner(
 export function getAvailableTicketCount(
   participants: ChannelPointsParticipant[],
   winners: ChannelPointsWinner[],
-  allowMultipleWins: boolean
+  allowMultipleWins: boolean,
+  excludeRedemptionIds: string[] = []
 ): number {
   let count = 0;
+  const excluded = new Set(excludeRedemptionIds);
 
   for (const participant of participants) {
     const consumed = getConsumedRedemptionIds(
@@ -173,7 +182,7 @@ export function getAvailableTicketCount(
     }
 
     count += participant.tickets.filter(
-      (t) => !consumed.has(t.redemptionId)
+      (t) => !consumed.has(t.redemptionId) && !excluded.has(t.redemptionId)
     ).length;
   }
 
