@@ -36,6 +36,8 @@ export interface ChannelPointsGiveawayFormData {
   description: string;
   cost: number;
   rewardId: string | null;
+  /** Mirrors Twitch custom reward `is_enabled`. Absent on legacy rows → treat as true. */
+  rewardEnabled?: boolean;
   /** null = Twitch max_per_stream disabled */
   maxPerStream: number | null;
   subscribersOnly: boolean;

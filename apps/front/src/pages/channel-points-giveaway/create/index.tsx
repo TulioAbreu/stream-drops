@@ -83,6 +83,7 @@ export function ChannelPointsGiveawayCreate() {
         description: data.description,
         cost: data.cost,
         rewardId: reward.id,
+        rewardEnabled: true,
         maxPerStream,
         subscribersOnly: data.subscribersOnly,
         subscriptionRequirement: data.subscriptionRequirement,
