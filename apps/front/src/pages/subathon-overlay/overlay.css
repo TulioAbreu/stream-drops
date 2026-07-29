@@ -1,0 +1,80 @@
+.subathon-overlay-route,
+.subathon-overlay-route body,
+.subathon-overlay-route #root {
+  margin: 0;
+  background: transparent !important;
+  overflow: hidden;
+}
+
+.subathon-overlay-root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: 1rem;
+  color: var(--subathon-text, #ffffff);
+  background: var(--subathon-bg, transparent);
+  backdrop-filter: blur(var(--subathon-blur, 0px));
+  font-family: var(--subathon-font, monospace);
+}
+
+.subathon-overlay-timer {
+  font-size: clamp(3rem, 12vw, 8rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+}
+
+.subathon-overlay-status {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.subathon-status-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.subathon-status-dot-disconnected {
+  background: #ef4444;
+  animation: subathon-pulse 1s infinite;
+}
+
+.subathon-status-dot-syncing {
+  background: #eab308;
+  animation: subathon-spin 1s linear infinite;
+}
+
+.subathon-status-dot-connected {
+  background: #22c55e;
+}
+
+.subathon-overlay-waiting {
+  font-size: 1.25rem;
+  opacity: 0.85;
+}
+
+@keyframes subathon-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes subathon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

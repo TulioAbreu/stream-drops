@@ -9,6 +9,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@stream-drops/subathon-protocol": path.resolve(
+        __dirname,
+        "../../packages/subathon-protocol/src/index.ts",
+      ),
     },
   },
 })

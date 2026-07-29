@@ -22,6 +22,11 @@ import { ChannelPointsGiveawayPage } from "./pages/channel-points-giveaway"
 import { ChannelPointsGiveawayCreate } from "./pages/channel-points-giveaway/create"
 import { ChannelPointsGiveawayDetail } from "./pages/channel-points-giveaway/[id]"
 import { ChannelPointsGiveawayEdit } from "./pages/channel-points-giveaway/[id]/edit"
+import { SubathonLayout } from "./pages/subathon/layout"
+import { SubathonListPage } from "./pages/subathon"
+import { SubathonCreatePage } from "./pages/subathon/create"
+import { SubathonDetailPage } from "./pages/subathon/[id]"
+import { SubathonOverlayPage } from "./pages/subathon-overlay/page"
 
 import { SessionExpiredModal } from "./components/session-expired-modal"
 
@@ -48,6 +53,7 @@ export function App() {
             <Route path="/" element={<LoginPage />} />
             <Route path="/auth" element={<LoginRedirectPage />} />
             <Route path="/auth/drive" element={<LoginRedirectDrivePage />} />
+            <Route path="/subathon-overlay" element={<SubathonOverlayPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/dashboard/settings" element={<SettingsPage />} />
             <Route path="/dashboard/follower-giveaway" element={<FollowerGiveaway />} />
@@ -65,6 +71,11 @@ export function App() {
             <Route path="/dashboard/channel-points-giveaway/create" element={<ChannelPointsGiveawayCreate />} />
             <Route path="/dashboard/channel-points-giveaway/:id/edit" element={<ChannelPointsGiveawayEdit />} />
             <Route path="/dashboard/channel-points-giveaway/:id" element={<ChannelPointsGiveawayDetail />} />
+            <Route path="/dashboard/subathon" element={<SubathonLayout />}>
+              <Route index element={<SubathonListPage />} />
+              <Route path="create" element={<SubathonCreatePage />} />
+              <Route path=":id" element={<SubathonDetailPage />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
