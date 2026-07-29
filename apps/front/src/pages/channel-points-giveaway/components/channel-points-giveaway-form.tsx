@@ -47,6 +47,7 @@ export function ChannelPointsGiveawayFormComponent({
       title: "",
       description: "",
       cost: 100,
+      maxPerStream: null,
       subscribersOnly: false,
       subscriptionRequirement: SubscriberTier.TIER_1,
       refundIneligible: true,
@@ -61,6 +62,7 @@ export function ChannelPointsGiveawayFormComponent({
 
   const subscribersOnly = form.watch("subscribersOnly");
   const subscriptionRequirement = form.watch("subscriptionRequirement");
+  const maxPerStreamEnabled = form.watch("maxPerStream") != null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -107,6 +109,37 @@ export function ChannelPointsGiveawayFormComponent({
           })}
         />
       </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="maxPerStreamEnabled"
+          checked={maxPerStreamEnabled}
+          onCheckedChange={(checked) =>
+            form.setValue("maxPerStream", checked ? 1 : null)
+          }
+        />
+        <Label htmlFor="maxPerStreamEnabled" className="cursor-pointer">
+          {t("CHANNEL_POINTS_GIVEAWAY_FORM_MAX_PER_STREAM")}
+        </Label>
+      </div>
+      <p className="text-sm text-muted-foreground -mt-2">
+        {t("CHANNEL_POINTS_GIVEAWAY_FORM_MAX_PER_STREAM_HINT")}
+      </p>
+
+      {maxPerStreamEnabled && (
+        <div className={FIELD_CONTAINER}>
+          <Label>{t("CHANNEL_POINTS_GIVEAWAY_FORM_MAX_PER_STREAM_VALUE")}</Label>
+          <Input
+            type="number"
+            min={1}
+            {...form.register("maxPerStream", {
+              valueAsNumber: true,
+              min: 1,
+              required: maxPerStreamEnabled,
+            })}
+          />
+        </div>
+      )}
 
       <div className="flex items-center space-x-2">
         <Checkbox

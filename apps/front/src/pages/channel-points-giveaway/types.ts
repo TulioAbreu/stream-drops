@@ -2,6 +2,8 @@ export interface ChannelPointsGiveawayForm {
   title: string;
   description: string;
   cost: number;
+  /** null = no Twitch max_per_stream limit */
+  maxPerStream: number | null;
   subscribersOnly: boolean;
   subscriptionRequirement: number;
   subscriberMultiplier: {

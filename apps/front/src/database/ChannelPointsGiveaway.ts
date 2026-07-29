@@ -38,6 +38,8 @@ export interface ChannelPointsGiveawayFormData {
   rewardId: string | null;
   /** Mirrors Twitch custom reward `is_enabled`. Absent on legacy rows → treat as true. */
   rewardEnabled?: boolean;
+  /** null = Twitch max_per_stream disabled */
+  maxPerStream: number | null;
   subscribersOnly: boolean;
   subscriptionRequirement: number;
   /** Luck weight per sub tier. Each redemption still yields at most one win. */

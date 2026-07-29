@@ -31,6 +31,8 @@ export class ChannelPointsController {
       is_enabled?: boolean;
       is_user_input_required?: boolean;
       should_redemptions_skip_request_queue?: boolean;
+      is_max_per_stream_enabled?: boolean;
+      max_per_stream?: number;
     }
   ) {
     const reward = this.store.createReward(body);
@@ -48,6 +50,8 @@ export class ChannelPointsController {
       prompt: string;
       is_paused: boolean;
       is_enabled: boolean;
+      is_max_per_stream_enabled: boolean;
+      max_per_stream: number;
     }>
   ) {
     const reward = this.store.updateReward(id, body);

@@ -18,14 +18,5 @@ export interface ChatParticipant {
     joinedAt: number; // timestamp in milliseconds
 }
 
-export interface ChatMessage {
-    id: string;
-    userId: string;
-    userName: string;
-    displayName: string;
-    avatar: string;
-    message: string;
-    timestamp: string;
-    subscriber: boolean;
-    subscriptionMonths: number | undefined;
-}
+export type { GiveawayChatMessage as ChatMessage } from "@/components/giveaway/types";
+

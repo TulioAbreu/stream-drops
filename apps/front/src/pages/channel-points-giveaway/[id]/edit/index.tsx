@@ -77,12 +77,19 @@ export function ChannelPointsGiveawayEdit() {
     try {
       setIsSaving(true);
 
+      const maxPerStream =
+        data.maxPerStream != null && data.maxPerStream >= 1
+          ? Math.floor(data.maxPerStream)
+          : null;
+
       const updateResult = await twitchApiClient.updateCustomReward({
         broadcaster_id: userData.id,
         id: giveaway.rewardId,
         title: data.title.slice(0, 45),
         prompt: data.description.slice(0, 200),
         cost: data.cost,
+        is_max_per_stream_enabled: maxPerStream != null,
+        ...(maxPerStream != null ? { max_per_stream: maxPerStream } : {}),
       });
 
       if (updateResult.isErr()) {
@@ -96,6 +103,7 @@ export function ChannelPointsGiveawayEdit() {
         title: data.title.slice(0, 45),
         description: data.description,
         cost: data.cost,
+        maxPerStream,
         subscribersOnly: data.subscribersOnly,
         subscriptionRequirement: data.subscriptionRequirement,
         refundIneligible: data.refundIneligible,
@@ -146,6 +154,7 @@ export function ChannelPointsGiveawayEdit() {
           title: giveaway.title,
           description: giveaway.description,
           cost: giveaway.cost,
+          maxPerStream: giveaway.maxPerStream ?? null,
           subscribersOnly: giveaway.subscribersOnly,
           subscriptionRequirement: giveaway.subscriptionRequirement,
           refundIneligible: giveaway.refundIneligible,
