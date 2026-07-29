@@ -36,6 +36,8 @@ export interface ChannelPointsGiveawayFormData {
   description: string;
   cost: number;
   rewardId: string | null;
+  /** Mirrors Twitch custom reward `is_enabled`. Absent on legacy rows → treat as true. */
+  rewardEnabled?: boolean;
   subscribersOnly: boolean;
   subscriptionRequirement: number;
   /** Luck weight per sub tier. Each redemption still yields at most one win. */

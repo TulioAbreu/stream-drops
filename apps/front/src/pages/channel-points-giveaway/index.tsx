@@ -39,7 +39,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -51,10 +50,13 @@ import { useNavigate } from "react-router";
 import { ArrowRight, Coins, MoreHorizontal, Plus, TrashIcon } from "lucide-react";
 import { useTranslation } from "@/i18n";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { toast } from "sonner";
 import {
   channelPointsAccessBlockI18nKeys,
+  channelPointsErrorI18nKey,
+  classifyChannelPointsApiError,
   getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
 import { ChannelPointsAccessBanner } from "./components/channel-points-access-banner";
@@ -82,6 +84,7 @@ export function ChannelPointsGiveawayPage() {
   const navigate = useNavigate();
   const {
     getChannelPointsGiveaways,
+    updateChannelPointsGiveaway,
     deleteChannelPointsGiveaway,
   } = useChannelPointsGiveawayDb();
   const { twitchApiClient, userData } = useTwitchApi();
@@ -97,6 +100,7 @@ export function ChannelPointsGiveawayPage() {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
 
   const totalPages = Math.ceil(giveaways.length / ITEMS_PER_PAGE);
   const currentGiveaways = giveaways.slice(
@@ -197,6 +201,86 @@ export function ChannelPointsGiveawayPage() {
     }
 
     return items;
+  };
+
+  const isRewardEnabled = (giveaway: ChannelPointsGiveawayFormData) =>
+    giveaway.rewardEnabled !== false;
+
+  const onToggleRewardEnabled = async (
+    giveaway: ChannelPointsGiveawayFormData,
+    nextEnabled: boolean
+  ) => {
+    if (
+      !twitchApiClient ||
+      !userData?.id ||
+      !giveaway.rewardId ||
+      giveaway.status === "closed" ||
+      togglingIds.has(giveaway.id)
+    ) {
+      return;
+    }
+
+    const previousEnabled = isRewardEnabled(giveaway);
+
+    setTogglingIds((prev) => new Set(prev).add(giveaway.id));
+    setGiveaways((prev) =>
+      prev.map((g) =>
+        g.id === giveaway.id ? { ...g, rewardEnabled: nextEnabled } : g
+      )
+    );
+
+    const result = await twitchApiClient.updateCustomReward({
+      broadcaster_id: userData.id,
+      id: giveaway.rewardId,
+      is_enabled: nextEnabled,
+    });
+
+    if (result.isErr()) {
+      setGiveaways((prev) =>
+        prev.map((g) =>
+          g.id === giveaway.id
+            ? { ...g, rewardEnabled: previousEnabled }
+            : g
+        )
+      );
+      const kind = classifyChannelPointsApiError(result.error);
+      toast.error(
+        kind === "generic"
+          ? t("CHANNEL_POINTS_GIVEAWAY_TOGGLE_ERROR")
+          : t(channelPointsErrorI18nKey(kind))
+      );
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(giveaway.id);
+        return next;
+      });
+      return;
+    }
+
+    try {
+      await updateChannelPointsGiveaway({
+        ...giveaway,
+        rewardEnabled: nextEnabled,
+        updatedAt: new Date().toISOString(),
+      });
+      toast.success(t("CHANNEL_POINTS_GIVEAWAY_TOGGLE_SUCCESS"));
+    } catch (error) {
+      console.error(error);
+      setGiveaways((prev) =>
+        prev.map((g) =>
+          g.id === giveaway.id
+            ? { ...g, rewardEnabled: previousEnabled }
+            : g
+        )
+      );
+      toast.error(t("CHANNEL_POINTS_GIVEAWAY_TOGGLE_ERROR"));
+    } finally {
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(giveaway.id);
+        return next;
+      });
+    }
   };
 
   const onClickDelete = (giveaway: ChannelPointsGiveawayFormData) => {
@@ -328,63 +412,118 @@ export function ChannelPointsGiveawayPage() {
                   <TableCell>{giveaway.cost}</TableCell>
                   <TableCell>{giveaway.winners.length}</TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() =>
-                            navigate(
-                              `/dashboard/channel-points-giveaway/${giveaway.id}`
-                            )
-                          }
-                        >
-                          <ArrowRight className="w-4 h-4 mr-2" />
-                          {t("CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_OPEN")}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <DropdownMenuItem
-                              onSelect={(e) => e.preventDefault()}
-                              className="text-destructive"
-                            >
-                              <TrashIcon className="w-4 h-4 mr-2" />
-                              {t("CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_DELETE")}
-                            </DropdownMenuItem>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>
-                                {t("CHANNEL_POINTS_GIVEAWAY_DELETE_DIALOG_TITLE")}
-                              </DialogTitle>
-                              <DialogDescription>
-                                {t(
-                                  "CHANNEL_POINTS_GIVEAWAY_DELETE_DIALOG_DESCRIPTION"
+                    <div className="flex flex-row items-center justify-end gap-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex">
+                              <Switch
+                                checked={isRewardEnabled(giveaway)}
+                                disabled={
+                                  !canUseChannelPoints ||
+                                  !giveaway.rewardId ||
+                                  giveaway.status === "closed" ||
+                                  togglingIds.has(giveaway.id)
+                                }
+                                onCheckedChange={(checked) =>
+                                  onToggleRewardEnabled(giveaway, checked)
+                                }
+                                aria-label={
+                                  isRewardEnabled(giveaway)
+                                    ? t(
+                                        "CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_TOGGLE_DISABLE"
+                                      )
+                                    : t(
+                                        "CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_TOGGLE_ENABLE"
+                                      )
+                                }
+                              />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {isRewardEnabled(giveaway)
+                              ? t(
+                                  "CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_TOGGLE_DISABLE"
+                                )
+                              : t(
+                                  "CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_TOGGLE_ENABLE"
                                 )}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <DialogClose asChild>
-                                <Button variant="outline">
-                                  {t("CANCEL")}
-                                </Button>
-                              </DialogClose>
-                              <Button
-                                variant="destructive"
-                                disabled={isDeleting}
-                                onClick={() => onClickDelete(giveaway)}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                navigate(
+                                  `/dashboard/channel-points-giveaway/${giveaway.id}`
+                                )
+                              }
+                            >
+                              <ArrowRight className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {t("CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_OPEN")}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <Dialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DialogTrigger asChild>
+                              <DropdownMenuItem
+                                onSelect={(e) => e.preventDefault()}
+                                className="text-destructive focus:text-destructive"
                               >
-                                {t("CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_DELETE")}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                                <TrashIcon className="w-4 h-4 mr-2" />
+                                {t(
+                                  "CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_DELETE"
+                                )}
+                              </DropdownMenuItem>
+                            </DialogTrigger>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>
+                              {t(
+                                "CHANNEL_POINTS_GIVEAWAY_DELETE_DIALOG_TITLE"
+                              )}
+                            </DialogTitle>
+                            <DialogDescription>
+                              {t(
+                                "CHANNEL_POINTS_GIVEAWAY_DELETE_DIALOG_DESCRIPTION"
+                              )}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button variant="outline">{t("CANCEL")}</Button>
+                            </DialogClose>
+                            <Button
+                              variant="destructive"
+                              disabled={isDeleting}
+                              onClick={() => onClickDelete(giveaway)}
+                            >
+                              {t(
+                                "CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_DELETE"
+                              )}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
