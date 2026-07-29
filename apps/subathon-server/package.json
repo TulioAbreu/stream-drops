@@ -1,0 +1,40 @@
+{
+  "name": "@stream-drops/subathon-server",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "prebuild": "bun run --filter @stream-drops/subathon-protocol build",
+    "start": "node dist/main.js",
+    "build:compile": "nest build && bun build --compile ./dist/main.js --outfile subathon-server",
+    "lint": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.3",
+    "@nestjs/core": "^11.1.3",
+    "@nestjs/platform-express": "^11.1.3",
+    "@nestjs/platform-ws": "^11.1.3",
+    "@nestjs/schedule": "^6.0.0",
+    "@nestjs/serve-static": "^5.0.3",
+    "@nestjs/websockets": "^11.1.3",
+    "@stream-drops/subathon-protocol": "workspace:*",
+    "@twurple/api": "^7.4.0",
+    "@twurple/auth": "^7.4.0",
+    "@twurple/eventsub-ws": "^7.4.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "tmi.js": "^1.8.5",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.7",
+    "@nestjs/schematics": "^11.0.5",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.9",
+    "@types/tmi.js": "^1.8.6",
+    "@types/ws": "^8.18.1",
+    "typescript": "~5.8.3"
+  }
+}

@@ -4,6 +4,7 @@ export const TWITCH_OAUTH_SCOPES = [
   "channel:read:subscriptions",
   "user:read:chat",
   "user:write:chat",
+  "bits:read",
   CHANNEL_POINTS_MANAGE_SCOPE,
 ].join(" ");
 

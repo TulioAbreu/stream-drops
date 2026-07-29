@@ -18,6 +18,11 @@ dist-ssr
 
 # Compiled binaries (Bun --compile)
 *.exe
+apps/subathon-server/subathon-server
+apps/subathon-server/subathon.sqlite
+apps/subathon-server/subathon.sqlite-*
+packages/subathon-protocol/dist
+*.tsbuildinfo
 
 # Editor directories and files
 .vscode/*

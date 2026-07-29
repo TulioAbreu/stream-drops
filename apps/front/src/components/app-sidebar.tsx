@@ -5,6 +5,7 @@ import {
   MessageSquare,
   Disc3,
   Coins,
+  Timer,
 } from "lucide-react";
 import {
   Sidebar,
@@ -61,6 +62,12 @@ const items: NavbarItem[] = [
     title: "DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY",
     icon: <Coins />,
     url: "/dashboard/channel-points-giveaway",
+  },
+  {
+    title: "DASHBOARD_SIDEBAR_ITEM_SUBATHON",
+    icon: <Timer />,
+    url: "/dashboard/subathon",
+    badge: "Beta",
   },
   // {
   //     title: "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY",

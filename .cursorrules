@@ -11,8 +11,15 @@ Este arquivo é a fonte de verdade do repositório para IAs. Prefira o **código
 1. **Sorteio de Subscribers** (rota `follower-giveaway`, UI: “Sorteio de Subscribers”)
 2. **Chat Giveaway** (entrada por keyword no chat IRC)
 3. **Lista de exclusão** (usuários banidos de sorteios)
+4. **Subathon / Donates** (rota `subathon`, UI: timer de subathon com overlay OBS)
 
-Não há backend próprio. Persistência local: **IndexedDB** + **localStorage**. Integrações externas: Twitch Helix/IRC/OAuth e Google Drive/Sheets.
+Persistência local: **IndexedDB** + **localStorage** (SPA). Integrações externas: Twitch Helix/IRC/OAuth e Google Drive/Sheets.
+
+**Exceção — processo local do usuário (não é backend hospedado):**
+- `apps/subathon-server` — NestJS + SQLite + WebSocket, bind `127.0.0.1`, portas `8080..8090`
+- `apps/subathon-overlay` — SPA OBS servida pelo server em `/overlay`
+- `packages/subathon-protocol` — tipos/mensagens WS compartilhados
+- Precedente similar: `apps/twitch-stub` (NestJS só para dev)
 
 **Usuário do app:** apenas o broadcaster autenticado. Viewers/subs não têm conta.
 
@@ -26,6 +33,9 @@ Não há backend próprio. Persistência local: **IndexedDB** + **localStorage**
 |--------|------------|
 | Monorepo | Turborepo + Bun workspaces |
 | App SPA | `apps/front` (`@stream-drops/front`) |
+| Server local Subathon | `apps/subathon-server` (NestJS, SQLite, WS) |
+| Overlay OBS Subathon | `apps/subathon-overlay` (Vite, servido pelo server) |
+| Protocolo Subathon | `packages/subathon-protocol` |
 | Tooling compartilhado | `packages/typescript-config`, `packages/eslint-config` |
 | Linguagem | TypeScript ~5.8 (strict) |
 | UI | React 19 |
@@ -50,9 +60,9 @@ Não há backend próprio. Persistência local: **IndexedDB** + **localStorage**
 | Dev server | `vite --port=3000` (via `bun run dev`) |
 | Package manager | Bun (`bun install`, lockfile `bun.lock`) |
 
-**Não existe:** backend Node, Prisma/ORM, Docker, testes (Vitest/Jest/Playwright), Stripe, analytics.
+**Não existe:** backend hospedado de produto, Prisma/ORM, Docker, testes (Vitest/Jest/Playwright), Stripe, analytics.
 
-**Nota:** futuros CLIs podem usar `bun build --compile` para gerar `.exe`; isso não se aplica ao SPA em `apps/front`.
+**Nota:** `apps/subathon-server` é binário local (`bun build --compile`); `apps/twitch-stub` é mock Nest em dev.
 
 ---
 
@@ -75,8 +85,12 @@ apps/front/src/
 └── lib/                    # Utils (cn, chance, embed Twitch)
 
 packages/
+├── subathon-protocol/      # @stream-drops/subathon-protocol
 ├── typescript-config/      # @stream-drops/typescript-config
 └── eslint-config/          # @stream-drops/eslint-config
+
+apps/subathon-server/       # NestJS local (SQLite, WS, EventSub)
+apps/subathon-overlay/      # Overlay OBS (Vite)
 ```
 
 Padrão: **feature folders em `apps/front/src/pages/`** + camadas compartilhadas (`database`, `service`, `usecase`, `domain`).
@@ -92,7 +106,7 @@ Padrão: **feature folders em `apps/front/src/pages/`** + camadas compartilhadas
 - Tipos/constantes de negócio → `apps/front/src/domain/`
 - Sessão → `apps/front/src/storage/`
 
-Não inventar backend, REST próprio ou DB remoto.
+Não inventar backend **hospedado** ou DB remoto. Exceção: `apps/subathon-server` (processo local do streamer).
 
 ### Naming
 - Arquivos: **kebab-case** (`use-chat-listener/index.ts`, `login-redirect.tsx`)
@@ -133,7 +147,7 @@ Não inventar backend, REST próprio ou DB remoto.
 - Migrations atuais só criam stores ausentes; não há migração de campos
 
 ### O que NÃO fazer
-- Não adicionar backend/servidor
+- Não adicionar backend **hospedado** (exceto `apps/subathon-server` local já previsto)
 - Não criar rota guard inventada sem alinhar ao padrão atual (hoje não há protected routes no router)
 - Não confiar em `CHAT_GIVEAWAY_DOCS.md` como spec
 - Não commitar secrets; `VITE_TWITCH_*` vêm de `apps/front/.env`
@@ -183,8 +197,10 @@ Definidas em `apps/front/src/App.tsx`:
 | `/dashboard/chat-giveaway/create` | `.../create` | Criar chat giveaway (keyword, filtros, multiplicador) |
 | `/dashboard/chat-giveaway/:id` | `.../[id]` | Live: IRC, participantes, sorteio, confirmação, anúncio no chat |
 | `/dashboard/chat-giveaway/:id/edit` | `.../[id]/edit` | Editar; **bloqueado se já existem winners** |
-
-Sidebar ativa: Follower Giveaway, Chat Giveaway, Settings.
+| `/dashboard/subathon` | `pages/subathon` | Lista de sessões (nome, criada, última corrida, status) |
+| `/dashboard/subathon/create` | `.../create` | Criar sessão (nome + minutos); ativa e redireciona |
+| `/dashboard/subathon/:id` | `.../[id]` | Ao entrar ativa a sessão; timer, créditos, EventSub, estilo, auditoria |
+| `/subathon-overlay` | `pages/subathon-overlay` | Overlay OBS (público); discovery do server local |
 
 ---
 
