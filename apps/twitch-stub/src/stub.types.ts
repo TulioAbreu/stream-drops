@@ -9,7 +9,7 @@ export function getStubConfig() {
   return {
     port: Number(process.env.STUB_PORT ?? 4010),
     clientId:
-      process.env.STUB_TWITCH_CLIENT_ID ?? "tsq568avq9n0p3k2co8rqf6ds6gn6x",
+      process.env.STUB_TWITCH_CLIENT_ID ?? "your_twitch_client_id",
     broadcasterId: process.env.STUB_BROADCASTER_ID ?? "stub-broadcaster-1",
     broadcasterLogin: process.env.STUB_BROADCASTER_LOGIN ?? "stub_partner",
     broadcasterDisplayName:

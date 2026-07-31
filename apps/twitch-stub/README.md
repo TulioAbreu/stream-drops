@@ -28,10 +28,10 @@ Em `apps/front/.env`:
 
 ```
 VITE_TWITCH_STUB=true
-VITE_TWITCH_CLIENT_ID=tsq568avq9n0p3k2co8rqf6ds6gn6x
+VITE_TWITCH_CLIENT_ID=your_twitch_client_id
 ```
 
-O `VITE_TWITCH_CLIENT_ID` precisa bater com `STUB_TWITCH_CLIENT_ID` do stub (default igual).
+O `VITE_TWITCH_CLIENT_ID` precisa bater com `STUB_TWITCH_CLIENT_ID` do stub (veja `apps/twitch-stub/.env.example`).
 
 Com stub ativo:
 

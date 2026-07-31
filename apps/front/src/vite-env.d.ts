@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_TWITCH_REDIRECT_URL: string;
   readonly VITE_TWITCH_STUB?: string;
   readonly VITE_PUBLIC_APP_URL?: string;
+  readonly VITE_GOOGLE_CLIENT_ID?: string;
 }
 
 interface ImportMeta {

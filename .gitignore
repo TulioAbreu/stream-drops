@@ -141,6 +141,12 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
-apps/front/.env
 
+# Turbo
 .turbo
+
+# StreamDrops — local Subathon server artifacts
+*.exe
+apps/subathon-server/subathon-server
+apps/subathon-server/subathon.sqlite
+apps/subathon-server/subathon.sqlite-*

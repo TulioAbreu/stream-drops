@@ -18,8 +18,19 @@ declare const google: any;
 
 function getDriveAccessToken(): Promise<string> {
     return new Promise((resolve, reject) => {
+        const clientId = String(
+            import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "",
+        ).replace(/^["']|["']$/g, "");
+        if (!clientId) {
+            reject(
+                new Error(
+                    "VITE_GOOGLE_CLIENT_ID ausente. Configure em apps/front/.env",
+                ),
+            );
+            return;
+        }
         const driveClient = google.accounts.oauth2.initTokenClient({
-            client_id: '790178845295-d80705l73fje56tomu29lnmlspl85lnt.apps.googleusercontent.com',
+            client_id: clientId,
             scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets',
             callback: (tokenResponse: any) => {
                 const accessToken = tokenResponse.access_token;
