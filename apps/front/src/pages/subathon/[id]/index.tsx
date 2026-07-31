@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/i18n";
 import type {
   ConversionRule,
@@ -26,6 +27,7 @@ import { OverlayStyleSettings } from "../components/overlay-style-settings";
 import { OverlayUrlActions } from "../components/overlay-url-actions";
 import { TwitchIntegrationCard } from "../components/twitch-integration-card";
 import { useSubathon } from "../hooks/use-subathon";
+import { useTwitchApi } from "@/hooks/use-twitch-api";
 import {
   areConversionRulesEqual,
   areOverlayStylesEqual,
@@ -35,10 +37,13 @@ import {
   normalizeOverlayStyle,
 } from "../utils";
 
+type SubathonDetailTab = "operation" | "settings" | "history";
+
 export function SubathonDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { userData } = useTwitchApi();
   const {
     connected,
     sessions,
@@ -71,6 +76,7 @@ export function SubathonDetailPage() {
 
   const [nameDraft, setNameDraft] = useState("");
   const [editingName, setEditingName] = useState(false);
+  const [activeTab, setActiveTab] = useState<SubathonDetailTab>("operation");
   const [rules, setRules] = useState<ConversionRule[]>(DEFAULT_CONVERSION_RULES);
   const [styleDraft, setStyleDraft] = useState<OverlayStyle>(
     normalizeOverlayStyle(undefined),
@@ -437,60 +443,85 @@ export function SubathonDetailPage() {
         </div>
       </div>
 
-      <OperationCenter
-        timerLabel={timerLabel}
-        isActiveHere={isActiveHere}
-        connected={connected}
-        timerStatus={snapshot?.status}
-        currentRemainingMs={currentRemainingMs}
-        conversionRules={session?.conversionRules ?? rules}
-        onPlay={play}
-        onPause={pause}
-        onReset={() => {
-          if (session) {
-            reset(session.initialMs);
-          }
-        }}
-        onAddMinutes={addMinutes}
-        onSetRemaining={(remainingMs) => setRemaining(remainingMs)}
-        onAddCredit={(unit: ConversionUnit, amount: number) => {
-          addCredit(unit, amount);
-        }}
-      />
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as SubathonDetailTab)}
+        className="gap-6"
+      >
+        <TabsList>
+          <TabsTrigger value="operation">
+            {t("SUBATHON_ZONE_OPERATION")}
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            {t("SUBATHON_ZONE_CONFIG")}
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            {t("SUBATHON_ZONE_HISTORY")}
+          </TabsTrigger>
+        </TabsList>
 
-      <TwitchIntegrationCard
-        enabled={eventsubEnabled}
-        connected={eventsubConnected}
-        serverConnected={connected}
-        onToggle={toggleEventsub}
-      />
+        <TabsContent value="operation" className="flex flex-col gap-6">
+          <OperationCenter
+            timerLabel={timerLabel}
+            isActiveHere={isActiveHere}
+            connected={connected}
+            timerStatus={snapshot?.status}
+            currentRemainingMs={currentRemainingMs}
+            conversionRules={session?.conversionRules ?? rules}
+            onPlay={play}
+            onPause={pause}
+            onReset={() => {
+              if (session) {
+                reset(session.initialMs);
+              }
+            }}
+            onAddMinutes={addMinutes}
+            onSetRemaining={(remainingMs) => setRemaining(remainingMs)}
+            onAddCredit={(unit: ConversionUnit, amount: number) => {
+              addCredit(unit, amount);
+            }}
+          />
+        </TabsContent>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ConversionSettings
-          rules={rules}
-          dirty={rulesDirty}
-          saving={savingRules}
-          disabled={!session || !connected}
-          onChange={setRules}
-          onSave={handleSaveRules}
-        />
-        <OverlayStyleSettings
-          styleDraft={styleDraft}
-          timerPreviewMs={currentRemainingMs}
-          dirty={styleDirty}
-          saving={savingStyle}
-          disabled={!session || !connected}
-          onChange={setStyleDraft}
-          onSave={handleSaveStyle}
-        />
-      </div>
+        <TabsContent value="settings" className="flex flex-col gap-6">
+          <TwitchIntegrationCard
+            enabled={eventsubEnabled}
+            connected={eventsubConnected}
+            serverConnected={connected}
+            scopes={userData?.scopes}
+            onToggle={toggleEventsub}
+          />
 
-      <HistoryTable
-        entries={entries.filter((entry) => entry.sessionId === id)}
-        undoingEntryId={undoingEntryId}
-        connected={connected}
-        onUndo={handleUndo}
-      />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ConversionSettings
+              rules={rules}
+              dirty={rulesDirty}
+              saving={savingRules}
+              disabled={!session || !connected}
+              onChange={setRules}
+              onSave={handleSaveRules}
+            />
+            <OverlayStyleSettings
+              styleDraft={styleDraft}
+              timerPreviewMs={currentRemainingMs}
+              dirty={styleDirty}
+              saving={savingStyle}
+              disabled={!session || !connected}
+              onChange={setStyleDraft}
+              onSave={handleSaveStyle}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="history" className="flex flex-col gap-6">
+          <HistoryTable
+            entries={entries.filter((entry) => entry.sessionId === id)}
+            undoingEntryId={undoingEntryId}
+            connected={connected}
+            onUndo={handleUndo}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

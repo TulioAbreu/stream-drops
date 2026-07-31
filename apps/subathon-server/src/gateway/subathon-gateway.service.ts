@@ -126,44 +126,71 @@ export class SubathonGatewayService implements OnModuleInit {
 
       case "configureTwitch": {
         const clientId =
-          process.env.TWITCH_CLIENT_ID ??
-          process.env.VITE_TWITCH_CLIENT_ID ??
+          message.clientId ||
+          process.env.TWITCH_CLIENT_ID ||
+          process.env.VITE_TWITCH_CLIENT_ID ||
           "";
-        void this.eventSub
-          .configure(
-            message.accessToken,
-            message.broadcasterUserId,
-            message.enabled,
-            clientId,
-          )
-          .then(() => {
-            this.broadcast({
-              type: "connection.status",
-              connected: true,
-              eventsub: this.eventSub.isConnected(),
-            });
-          })
-          .catch((error) => {
-            this.broadcast({
-              type: "connection.status",
-              connected: true,
-              eventsub: false,
-            });
-            this.send(client, {
-              type: "error",
-              code: "EVENTSUB_FAILED",
-              message:
-                error instanceof Error
-                  ? error.message
-                  : "Failed to connect EventSub",
-            });
+
+        if (message.enabled && !clientId) {
+          this.broadcast({
+            type: "connection.status",
+            connected: true,
+            eventsub: false,
           });
-        if (message.chatEnabled) {
-          void this.chatListener.configure(
-            message.accessToken,
-            message.channelLogin,
-            message.enabled,
-          );
+          this.send(client, {
+            type: "error",
+            code: "CLIENT_ID_MISSING",
+            message: "Twitch Client ID is missing for EventSub",
+          });
+        } else {
+          void this.eventSub
+            .configure(
+              message.accessToken,
+              message.broadcasterUserId,
+              message.enabled,
+              clientId,
+            )
+            .then(() => {
+              this.broadcast({
+                type: "connection.status",
+                connected: true,
+                eventsub: this.eventSub.isConnected(),
+              });
+            })
+            .catch((error) => {
+              this.broadcast({
+                type: "connection.status",
+                connected: true,
+                eventsub: false,
+              });
+              this.send(client, {
+                type: "error",
+                code: "EVENTSUB_FAILED",
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to connect EventSub",
+              });
+            });
+        }
+
+        if (message.chatEnabled && message.enabled) {
+          void this.chatListener
+            .configure(
+              message.accessToken,
+              message.channelLogin,
+              true,
+            )
+            .catch((error) => {
+              this.send(client, {
+                type: "error",
+                code: "CHAT_LOGIN_FAILED",
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to connect chat IRC backup",
+              });
+            });
         } else {
           void this.chatListener.disconnect();
         }

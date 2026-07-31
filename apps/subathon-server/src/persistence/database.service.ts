@@ -4,18 +4,18 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from "@nestjs/common";
-import { DatabaseSync } from "node:sqlite";
+import { Database } from "bun:sqlite";
 import { MIGRATION_SQL, SCHEMA_ALTERS } from "./migrations";
 import { resolveDatabasePath } from "../utils/db-path.util";
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(DatabaseService.name);
-  private db!: DatabaseSync;
+  private db!: Database;
   readonly dbPath = resolveDatabasePath();
 
   onModuleInit() {
-    this.db = new DatabaseSync(this.dbPath);
+    this.db = new Database(this.dbPath);
     this.db.exec("PRAGMA journal_mode = WAL");
     this.db.exec(MIGRATION_SQL);
 
@@ -49,7 +49,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     this.db?.close();
   }
 
-  get connection(): DatabaseSync {
+  get connection(): Database {
     return this.db;
   }
 

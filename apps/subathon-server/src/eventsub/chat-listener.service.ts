@@ -57,13 +57,29 @@ export class ChatListenerService implements OnModuleDestroy {
       );
     });
 
-    await this.client.connect();
-    this.logger.log(`Chat IRC connected on #${channelLogin}`);
+    try {
+      await this.client.connect();
+      this.logger.log(`Chat IRC connected on #${channelLogin}`);
+    } catch (error) {
+      this.client = null;
+      const message =
+        error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Chat IRC login failed: ${message}`);
+      throw new Error(
+        message.includes("Login unsuccessful")
+          ? "Chat IRC login unsuccessful (missing chat:read/chat:edit scopes?)"
+          : message,
+      );
+    }
   }
 
   async disconnect() {
     if (this.client) {
-      await this.client.disconnect();
+      try {
+        await this.client.disconnect();
+      } catch {
+        // Ignore disconnect errors during teardown.
+      }
       this.client = null;
     }
   }

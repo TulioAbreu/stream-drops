@@ -72,6 +72,7 @@ export type ClientMessage =
       accessToken: string;
       broadcasterUserId: string;
       channelLogin: string;
+      clientId: string;
       enabled: boolean;
       chatEnabled?: boolean;
     }

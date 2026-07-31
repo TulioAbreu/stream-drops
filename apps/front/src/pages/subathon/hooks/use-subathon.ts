@@ -25,7 +25,15 @@ import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { useLoginStore } from "@/storage/login";
 import { subathonClient } from "@/service/subathon/client";
 import { useTranslation } from "@/i18n";
+import { hasSubathonTwitchScopes } from "@/lib/twitch-oauth";
 import { EVENTSUB_ENABLED_STORAGE_KEY } from "../utils";
+
+function twitchClientIdFromEnv(): string {
+  return String(import.meta.env.VITE_TWITCH_CLIENT_ID ?? "").replace(
+    /^["']|["']$/g,
+    "",
+  );
+}
 
 export type SubathonContextValue = ReturnType<typeof useSubathonState>;
 
@@ -88,12 +96,16 @@ function useSubathonState() {
       sendCommand({ type: "listSessions" });
 
       if (token && userData?.id && userData.login) {
+        const canEnable =
+          !eventsubEnabledRef.current ||
+          hasSubathonTwitchScopes(userData.scopes);
         sendCommand({
           type: "configureTwitch",
           accessToken: token,
           broadcasterUserId: userData.id,
           channelLogin: userData.login,
-          enabled: eventsubEnabledRef.current,
+          clientId: twitchClientIdFromEnv(),
+          enabled: canEnable && eventsubEnabledRef.current,
           chatEnabled: true,
         });
       }
@@ -102,13 +114,21 @@ function useSubathonState() {
     } finally {
       setConnecting(false);
     }
-  }, [sendCommand, token, userData?.id, userData?.login]);
+  }, [sendCommand, token, userData?.id, userData?.login, userData?.scopes]);
 
   useEffect(() => {
     const unsubscribe = subathonClient.subscribe((message) => {
       if (message.type === "error") {
         setErrorNonce((current) => current + 1);
-        toast.error(message.message || t("SUBATHON_ERROR_GENERIC"));
+        const toastKey =
+          message.code === "CLIENT_ID_MISSING"
+            ? "SUBATHON_ERROR_CLIENT_ID_MISSING"
+            : message.code === "CHAT_LOGIN_FAILED"
+              ? "SUBATHON_ERROR_CHAT_LOGIN_FAILED"
+              : null;
+        toast.error(
+          toastKey ? t(toastKey) : message.message || t("SUBATHON_ERROR_GENERIC"),
+        );
         return;
       }
 
@@ -357,6 +377,10 @@ function useSubathonState() {
 
   const toggleEventsub = useCallback(
     (enabled: boolean) => {
+      if (enabled && !hasSubathonTwitchScopes(userData?.scopes)) {
+        return;
+      }
+
       setEventsubEnabled(enabled);
       try {
         localStorage.setItem(
@@ -373,12 +397,13 @@ function useSubathonState() {
           accessToken: token,
           broadcasterUserId: userData.id,
           channelLogin: userData.login,
+          clientId: twitchClientIdFromEnv(),
           enabled,
           chatEnabled: true,
         });
       }
     },
-    [sendCommand, token, userData?.id, userData?.login],
+    [sendCommand, token, userData?.id, userData?.login, userData?.scopes],
   );
 
   const clearLastCreatedSessionId = useCallback(() => {
