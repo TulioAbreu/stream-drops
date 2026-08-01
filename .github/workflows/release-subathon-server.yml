@@ -65,10 +65,14 @@ jobs:
             OUTFILE="$OUT_DIR/subathon-server"
 
             echo "Compiling $PLATFORM ($BUN_TARGET) → $OUTFILE"
+            # Nest optional peers (unused transports / socket.io) must be
+            # external or bun fails to resolve them while bundling.
             bun build --compile \
               --target="$BUN_TARGET" \
               ./dist/main.js \
-              --outfile="$OUTFILE"
+              --outfile="$OUTFILE" \
+              -e @nestjs/microservices \
+              -e @nestjs/platform-socket.io
 
             if [[ ! -f "$OUT_DIR/subathon-server" && ! -f "$OUT_DIR/subathon-server.exe" ]]; then
               echo "::error::Binary missing for $PLATFORM"
