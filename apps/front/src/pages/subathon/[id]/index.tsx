@@ -1,6 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -10,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { useTranslation } from "@/i18n";
 import type {
   ConversionRule,
@@ -27,7 +35,6 @@ import { OverlayStyleSettings } from "../components/overlay-style-settings";
 import { OverlayUrlActions } from "../components/overlay-url-actions";
 import { TwitchIntegrationCard } from "../components/twitch-integration-card";
 import { useSubathon } from "../hooks/use-subathon";
-import { useTwitchApi } from "@/hooks/use-twitch-api";
 import {
   areConversionRulesEqual,
   areOverlayStylesEqual,
@@ -37,7 +44,7 @@ import {
   normalizeOverlayStyle,
 } from "../utils";
 
-type SubathonDetailTab = "operation" | "settings" | "history";
+type SubathonDetailTab = "operation" | "history" | "settings";
 
 export function SubathonDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -410,38 +417,32 @@ export function SubathonDetailPage() {
             {formatSessionDate(session?.lastRunAt)}
           </p>
         </div>
-        <div className="flex flex-wrap items-start gap-2">
-          <OverlayUrlActions />
-          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <OverlayUrlActions />
+      </div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("SUBATHON_DELETE_TITLE")}</DialogTitle>
+            <DialogDescription>
+              {t("SUBATHON_DELETE_DESCRIPTION", {
+                name: session?.name ?? "",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
             <Button
               variant="outline"
-              disabled={!session}
-              onClick={() => setDeleteDialogOpen(true)}
+              onClick={() => setDeleteDialogOpen(false)}
             >
-              <TrashIcon className="size-4" />
+              {t("SUBATHON_CANCEL")}
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
               {t("SUBATHON_DELETE")}
             </Button>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t("SUBATHON_DELETE_TITLE")}</DialogTitle>
-                <DialogDescription>
-                  {t("SUBATHON_DELETE_DESCRIPTION", {
-                    name: session?.name ?? "",
-                  })}
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                  {t("SUBATHON_CANCEL")}
-                </Button>
-                <Button variant="destructive" onClick={handleDelete}>
-                  {t("SUBATHON_DELETE")}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Tabs
         value={activeTab}
@@ -452,11 +453,11 @@ export function SubathonDetailPage() {
           <TabsTrigger value="operation">
             {t("SUBATHON_ZONE_OPERATION")}
           </TabsTrigger>
-          <TabsTrigger value="settings">
-            {t("SUBATHON_ZONE_CONFIG")}
-          </TabsTrigger>
           <TabsTrigger value="history">
             {t("SUBATHON_ZONE_HISTORY")}
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            {t("SUBATHON_ZONE_CONFIG")}
           </TabsTrigger>
         </TabsList>
 
@@ -480,6 +481,15 @@ export function SubathonDetailPage() {
             onAddCredit={(unit: ConversionUnit, amount: number) => {
               addCredit(unit, amount);
             }}
+          />
+        </TabsContent>
+
+        <TabsContent value="history" className="flex flex-col gap-6">
+          <HistoryTable
+            entries={entries.filter((entry) => entry.sessionId === id)}
+            undoingEntryId={undoingEntryId}
+            connected={connected}
+            onUndo={handleUndo}
           />
         </TabsContent>
 
@@ -511,15 +521,25 @@ export function SubathonDetailPage() {
               onSave={handleSaveStyle}
             />
           </div>
-        </TabsContent>
 
-        <TabsContent value="history" className="flex flex-col gap-6">
-          <HistoryTable
-            entries={entries.filter((entry) => entry.sessionId === id)}
-            undoingEntryId={undoingEntryId}
-            connected={connected}
-            onUndo={handleUndo}
-          />
+          <Card className="border-destructive/40">
+            <CardHeader>
+              <CardTitle>{t("SUBATHON_DELETE_ZONE_TITLE")}</CardTitle>
+              <CardDescription>
+                {t("SUBATHON_DELETE_ZONE_DESCRIPTION")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="destructive"
+                disabled={!session}
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <TrashIcon className="size-4" />
+                {t("SUBATHON_DELETE")}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

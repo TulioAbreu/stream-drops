@@ -150,3 +150,4 @@ vite.config.ts.timestamp-*
 apps/subathon-server/subathon-server
 apps/subathon-server/subathon.sqlite
 apps/subathon-server/subathon.sqlite-*
+apps/subathon-server/release/

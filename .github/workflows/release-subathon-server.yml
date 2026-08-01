@@ -1,0 +1,120 @@
+name: Release Subathon Server
+
+on:
+  push:
+    tags:
+      - "subathon-server/v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build binaries and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build NestJS (protocol + server)
+        run: bun run --filter @stream-drops/subathon-server build
+
+      - name: Resolve version from tag
+        id: meta
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#subathon-server/v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.+)?$ ]]; then
+            echo "::error::Tag must be subathon-server/vX.Y.Z (got: $TAG)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Install zip
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Cross-compile binaries
+        working-directory: apps/subathon-server
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.meta.outputs.version }}"
+          mkdir -p release
+
+          declare -A TARGETS=(
+            ["windows-x64"]="bun-windows-x64"
+            ["darwin-arm64"]="bun-darwin-arm64"
+            ["darwin-x64"]="bun-darwin-x64"
+            ["linux-x64"]="bun-linux-x64"
+          )
+
+          for PLATFORM in "${!TARGETS[@]}"; do
+            BUN_TARGET="${TARGETS[$PLATFORM]}"
+            OUT_DIR="release/subathon-server-${VERSION}-${PLATFORM}"
+            mkdir -p "$OUT_DIR"
+
+            # Bun acrescenta .exe sozinho no target Windows
+            OUTFILE="$OUT_DIR/subathon-server"
+
+            echo "Compiling $PLATFORM ($BUN_TARGET) → $OUTFILE"
+            bun build --compile \
+              --target="$BUN_TARGET" \
+              ./dist/main.js \
+              --outfile="$OUTFILE"
+
+            if [[ ! -f "$OUT_DIR/subathon-server" && ! -f "$OUT_DIR/subathon-server.exe" ]]; then
+              echo "::error::Binary missing for $PLATFORM"
+              ls -la "$OUT_DIR"
+              exit 1
+            fi
+
+            cp -r public "$OUT_DIR/public"
+            cp .env.example "$OUT_DIR/.env.example"
+
+            (
+              cd release
+              zip -r "subathon-server-${VERSION}-${PLATFORM}.zip" \
+                "subathon-server-${VERSION}-${PLATFORM}"
+            )
+          done
+
+          ls -lh release/*.zip
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Subathon Server v${{ steps.meta.outputs.version }}
+          generate_release_notes: true
+          body: |
+            Binários locais do **Subathon Server** (`@stream-drops/subathon-server`).
+
+            ## Downloads
+
+            | Plataforma | Arquivo |
+            |---|---|
+            | Windows x64 | `subathon-server-${{ steps.meta.outputs.version }}-windows-x64.zip` |
+            | macOS Apple Silicon | `subathon-server-${{ steps.meta.outputs.version }}-darwin-arm64.zip` |
+            | macOS Intel | `subathon-server-${{ steps.meta.outputs.version }}-darwin-x64.zip` |
+            | Linux x64 | `subathon-server-${{ steps.meta.outputs.version }}-linux-x64.zip` |
+
+            ## Uso rápido
+
+            1. Extraia o zip
+            2. Copie `.env.example` → `.env` e defina `TWITCH_CLIENT_ID`
+            3. Execute `subathon-server` (ou `subathon-server.exe` no Windows)
+            4. Mantenha a pasta `public/` ao lado do executável (overlay OBS)
+
+            Bind: `127.0.0.1`, portas `8080..8090`.
+          files: |
+            apps/subathon-server/release/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
