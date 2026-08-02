@@ -29,6 +29,12 @@ export interface OverlayStyle {
   customCss?: string;
 }
 
+export interface DonationBotConfig {
+  enabled: boolean;
+  botUsername: string;
+  templates: string[];
+}
+
 export interface TimerSnapshot {
   sessionId: string | null;
   status: TimerStatus;
@@ -46,6 +52,7 @@ export interface SubathonSession {
   initialMs: number;
   conversionRules: ConversionRule[];
   style: OverlayStyle;
+  donationBot: DonationBotConfig;
   snapshot: Omit<TimerSnapshot, "sessionId" | "serverNow">;
 }
 
@@ -89,6 +96,11 @@ export type ClientMessage =
   | { type: "deleteSession"; sessionId: string }
   | { type: "updateConversion"; sessionId: string; rules: ConversionRule[] }
   | { type: "updateStyle"; sessionId: string; style: OverlayStyle }
+  | {
+      type: "updateDonationBot";
+      sessionId: string;
+      config: DonationBotConfig;
+    }
   | { type: "timer.play" }
   | { type: "timer.pause" }
   | { type: "timer.reset"; initialMs: number }
