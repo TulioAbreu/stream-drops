@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   last_run_at TEXT,
-  initial_ms INTEGER NOT NULL DEFAULT 0
+  initial_ms INTEGER NOT NULL DEFAULT 0,
+  donation_bot_json TEXT NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE IF NOT EXISTS ledger_entries (
@@ -45,8 +46,9 @@ CREATE TABLE IF NOT EXISTS active_pointer (
 );
 `;
 
-/** Incremental alters for DBs created before protocol v2. */
+/** Incremental alters for DBs created before protocol v2/v3. */
 export const SCHEMA_ALTERS = [
   "ALTER TABLE sessions ADD COLUMN last_run_at TEXT",
   "ALTER TABLE sessions ADD COLUMN initial_ms INTEGER NOT NULL DEFAULT 0",
+  "ALTER TABLE sessions ADD COLUMN donation_bot_json TEXT NOT NULL DEFAULT '{}'",
 ] as const;

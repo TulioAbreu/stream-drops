@@ -4,6 +4,7 @@ import {
   interpolateLocalAnchor,
   type ConversionRule,
   type ConversionUnit,
+  type DonationBotConfig,
   type LedgerEntry,
   type LocalTimerAnchor,
   type OverlayStyle,
@@ -316,6 +317,12 @@ function useSubathonState() {
     [sendCommand],
   );
 
+  const updateDonationBot = useCallback(
+    (sessionId: string, config: DonationBotConfig) =>
+      sendCommand({ type: "updateDonationBot", sessionId, config }),
+    [sendCommand],
+  );
+
   const play = useCallback(
     () => sendCommand({ type: "timer.play" }),
     [sendCommand],
@@ -436,6 +443,7 @@ function useSubathonState() {
     deleteSession,
     updateConversion,
     updateStyle,
+    updateDonationBot,
     play,
     pause,
     reset,

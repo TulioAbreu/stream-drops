@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import {
   computeRemainingMs,
+  DEFAULT_DONATION_BOT_CONFIG,
+  normalizeDonationBotConfig,
   type ConversionRule,
+  type DonationBotConfig,
   type OverlayStyle,
   type SubathonSession,
   type TimerSnapshot,
@@ -21,6 +24,7 @@ interface SessionRow {
   updated_at: string;
   last_run_at: string | null;
   initial_ms: number;
+  donation_bot_json?: string;
 }
 
 const DEFAULT_STYLE: OverlayStyle = {
@@ -69,6 +73,7 @@ export class TimerService {
     rules: ConversionRule[],
   ): SubathonSession {
     const now = new Date().toISOString();
+    const donationBotJson = JSON.stringify(DEFAULT_DONATION_BOT_CONFIG);
     const session: SessionRow = {
       id,
       name,
@@ -81,6 +86,7 @@ export class TimerService {
       updated_at: now,
       last_run_at: null,
       initial_ms: initialMs,
+      donation_bot_json: donationBotJson,
     };
 
     this.database.connection
@@ -88,8 +94,8 @@ export class TimerService {
         `INSERT INTO sessions (
           id, name, conversion_rules_json, style_json, status,
           remaining_ms, status_changed_at, created_at, updated_at,
-          last_run_at, initial_ms
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          last_run_at, initial_ms, donation_bot_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         session.id,
@@ -103,6 +109,7 @@ export class TimerService {
         session.updated_at,
         session.last_run_at,
         session.initial_ms,
+        donationBotJson,
       );
 
     return this.rowToSession(session);
@@ -162,6 +169,26 @@ export class TimerService {
     this.database.connection
       .prepare("UPDATE sessions SET style_json = ?, updated_at = ? WHERE id = ?")
       .run(JSON.stringify(style), now, sessionId);
+
+    const session = this.getSession(sessionId);
+    if (!session) {
+      throw new Error("Session not found");
+    }
+
+    return session;
+  }
+
+  updateDonationBot(
+    sessionId: string,
+    config: DonationBotConfig,
+  ): SubathonSession {
+    const normalized = normalizeDonationBotConfig(config);
+    const now = new Date().toISOString();
+    this.database.connection
+      .prepare(
+        "UPDATE sessions SET donation_bot_json = ?, updated_at = ? WHERE id = ?",
+      )
+      .run(JSON.stringify(normalized), now, sessionId);
 
     const session = this.getSession(sessionId);
     if (!session) {
@@ -378,6 +405,11 @@ export class TimerService {
       initialMs: row.initial_ms ?? row.remaining_ms,
       conversionRules: JSON.parse(row.conversion_rules_json) as ConversionRule[],
       style: JSON.parse(row.style_json) as OverlayStyle,
+      donationBot: normalizeDonationBotConfig(
+        row.donation_bot_json
+          ? (JSON.parse(row.donation_bot_json) as unknown)
+          : DEFAULT_DONATION_BOT_CONFIG,
+      ),
       snapshot: {
         status,
         remainingMs: status === "ended" ? 0 : remainingMs,

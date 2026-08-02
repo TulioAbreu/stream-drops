@@ -1,5 +1,8 @@
 import { Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
-import type { LedgerEntry } from "@stream-drops/subathon-protocol";
+import {
+  matchDonationMessage,
+  type LedgerEntry,
+} from "@stream-drops/subathon-protocol";
 import tmi, { type Client as TmiClient } from "tmi.js";
 import { BroadcastService } from "../gateway/broadcast.service";
 import { LedgerService } from "../ledger/ledger.service";
@@ -57,6 +60,15 @@ export class ChatListenerService implements OnModuleDestroy {
       );
     });
 
+    this.client.on("message", (...args: unknown[]) => {
+      const userstate = (args[1] ?? {}) as Record<string, string>;
+      const message = String(args[2] ?? "");
+      const username = String(
+        userstate.username ?? userstate.login ?? "",
+      ).toLowerCase();
+      void this.handleDonationMessage(username, message, userstate);
+    });
+
     try {
       await this.client.connect();
       this.logger.log(`Chat IRC connected on #${channelLogin}`);
@@ -97,6 +109,74 @@ export class ChatListenerService implements OnModuleDestroy {
     const session = this.timer.getSession(entry.sessionId);
     if (session) {
       this.broadcast.broadcast({ type: "session.updated", session });
+    }
+  }
+
+  private async handleDonationMessage(
+    username: string,
+    message: string,
+    userstate: Record<string, string>,
+  ) {
+    if (!username || !message.trim()) {
+      return;
+    }
+
+    const sessionId = this.timer.getActiveSessionId();
+    if (!sessionId) {
+      return;
+    }
+
+    const session = this.timer.getSession(sessionId);
+    if (!session) {
+      return;
+    }
+
+    const config = session.donationBot;
+    if (!config.enabled || !config.botUsername.trim()) {
+      return;
+    }
+
+    if (username !== config.botUsername.trim().toLowerCase()) {
+      return;
+    }
+
+    const matched = matchDonationMessage(config.templates, message);
+    if (!matched) {
+      return;
+    }
+
+    try {
+      const deltaMs = this.timer.msForUnit(
+        sessionId,
+        "brl",
+        matched.amount,
+      );
+      if (deltaMs <= 0) {
+        return;
+      }
+
+      const msgId =
+        userstate.id ??
+        userstate["msg-id"] ??
+        `${username}-${Date.now()}`;
+      const eventId = `chat-donate-${msgId}`;
+
+      const entry = this.ledger.addCredit({
+        sessionId,
+        deltaMs,
+        source: "chat",
+        actor: matched.user,
+        amount: matched.amount,
+        unit: "brl",
+        conversionSnapshot: session.conversionRules,
+        externalEventId: eventId,
+      });
+      this.publishCredit(entry);
+    } catch (error) {
+      if (error instanceof Error && error.message === "DUPLICATE_EVENT") {
+        return;
+      }
+      this.logger.warn(`Chat donation handler failed: ${String(error)}`);
     }
   }
 

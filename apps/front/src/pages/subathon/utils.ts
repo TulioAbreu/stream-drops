@@ -1,9 +1,11 @@
 import type {
   ConversionRule,
   ConversionUnit,
+  DonationBotConfig,
   LedgerEntry,
   OverlayStyle,
 } from "@stream-drops/subathon-protocol";
+import { DEFAULT_DONATION_BOT_CONFIG } from "@stream-drops/subathon-protocol";
 
 export const DEFAULT_CONVERSION_RULES: ConversionRule[] = [
   { unit: "brl", msPerUnit: 60_000, label: "R$" },
@@ -12,6 +14,7 @@ export const DEFAULT_CONVERSION_RULES: ConversionRule[] = [
   { unit: "sub_gift", msPerUnit: 300_000, label: "sub gift" },
 ];
 
+export { DEFAULT_DONATION_BOT_CONFIG };
 export const EVENTSUB_ENABLED_STORAGE_KEY = "stream-drops-subathon-eventsub";
 
 export interface HmsSegments {
@@ -185,6 +188,42 @@ export function areOverlayStylesEqual(
     normalizedLeft.backdropBlur === normalizedRight.backdropBlur &&
     normalizedLeft.customCss === normalizedRight.customCss
   );
+}
+
+export function areDonationBotConfigsEqual(
+  left: DonationBotConfig,
+  right: DonationBotConfig,
+): boolean {
+  if (
+    left.enabled !== right.enabled ||
+    left.botUsername.trim().toLowerCase() !==
+      right.botUsername.trim().toLowerCase() ||
+    left.templates.length !== right.templates.length
+  ) {
+    return false;
+  }
+
+  return left.templates.every(
+    (template, index) => template === right.templates[index],
+  );
+}
+
+export function normalizeDonationBotDraft(
+  config: DonationBotConfig | undefined,
+): DonationBotConfig {
+  if (!config) {
+    return { ...DEFAULT_DONATION_BOT_CONFIG };
+  }
+
+  return {
+    enabled: Boolean(config.enabled),
+    botUsername: config.botUsername ?? "",
+    templates: Array.isArray(config.templates) ? [...config.templates] : [],
+  };
+}
+
+export function getBrlMsPerUnit(rules: ConversionRule[]): number {
+  return rules.find((rule) => rule.unit === "brl")?.msPerUnit ?? 0;
 }
 
 export function getConversionUnitLabel(unit: ConversionUnit): string {

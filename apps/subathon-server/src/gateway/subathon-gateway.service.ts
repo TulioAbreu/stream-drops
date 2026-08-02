@@ -285,6 +285,15 @@ export class SubathonGatewayService implements OnModuleInit {
         return;
       }
 
+      case "updateDonationBot": {
+        const session = this.timer.updateDonationBot(
+          message.sessionId,
+          message.config,
+        );
+        this.broadcastSession(session);
+        return;
+      }
+
       case "timer.play": {
         const sessionId = this.requireActiveSession();
         const session = this.timer.play(sessionId);
