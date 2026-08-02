@@ -82,9 +82,19 @@ function escapeRegex(literal: string): string {
   return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Escape literals, but treat whitespace runs as flexible `\s+`. */
+function escapeRegexAllowingWhitespace(literal: string): string {
+  return literal
+    .split(/(\s+)/)
+    .map((part) => (/^\s+$/.test(part) ? "\\s+" : escapeRegex(part)))
+    .join("");
+}
+
 /**
  * Match a single template against a chat message.
  * Placeholders: `{user}` (non-greedy), `{amount}` (digits / . / ,).
+ * Whitespace in the template matches any whitespace in the message
+ * (spaces, newlines, etc.).
  */
 export function matchDonationTemplate(
   template: string,
@@ -102,7 +112,7 @@ export function matchDonationTemplate(
   let match: RegExpExecArray | null;
 
   while ((match = tokenPattern.exec(trimmedTemplate)) !== null) {
-    pattern += escapeRegex(
+    pattern += escapeRegexAllowingWhitespace(
       trimmedTemplate.slice(lastIndex, match.index),
     );
     const token = match[1] as "user" | "amount";
@@ -115,7 +125,9 @@ export function matchDonationTemplate(
     lastIndex = match.index + match[0].length;
   }
 
-  pattern += escapeRegex(trimmedTemplate.slice(lastIndex));
+  pattern += escapeRegexAllowingWhitespace(
+    trimmedTemplate.slice(lastIndex),
+  );
   pattern += "$";
 
   let regex: RegExp;
