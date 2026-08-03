@@ -11,7 +11,22 @@ export type LedgerEntryType =
 
 export type LedgerSource = "manual" | "eventsub" | "chat" | "system";
 
-export type ConversionUnit = "brl" | "bits" | "sub" | "sub_gift";
+export type TwitchSubTier = "1000" | "2000" | "3000";
+
+export type ConversionUnit =
+  | "brl"
+  | "bits"
+  | "sub_1000"
+  | "sub_2000"
+  | "sub_3000"
+  | "sub_gift_1000"
+  | "sub_gift_2000"
+  | "sub_gift_3000";
+
+/** Units persisted before protocol v3 (flat sub / gift). */
+export type LegacyConversionUnit = "sub" | "sub_gift";
+
+export type LedgerConversionUnit = ConversionUnit | LegacyConversionUnit;
 
 export interface ConversionRule {
   unit: ConversionUnit;
@@ -64,7 +79,7 @@ export interface LedgerEntry {
   source: LedgerSource;
   actor: string;
   amount: number | null;
-  unit: ConversionUnit | null;
+  unit: LedgerConversionUnit | null;
   conversionSnapshot: ConversionRule[] | null;
   externalEventId: string | null;
   createdAt: string;

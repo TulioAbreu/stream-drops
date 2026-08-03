@@ -12,6 +12,12 @@ import { useTranslation } from "@/i18n";
 import type {
   ConversionRule,
   ConversionUnit,
+  TwitchSubTier,
+} from "@stream-drops/subathon-protocol";
+import {
+  TWITCH_SUB_TIERS,
+  giftUnitForTier,
+  subUnitForTier,
 } from "@stream-drops/subathon-protocol";
 import {
   CircleDollarSign,
@@ -22,8 +28,10 @@ import {
 import { useMemo, useState } from "react";
 import { formatHumanDuration } from "../utils";
 
-const UNIT_CONFIG: Record<
-  ConversionUnit,
+type CreditFamily = "brl" | "bits" | "sub" | "sub_gift";
+
+const FAMILY_CONFIG: Record<
+  CreditFamily,
   {
     icon: typeof CircleDollarSign;
     labelKey: string;
@@ -57,6 +65,54 @@ const UNIT_CONFIG: Record<
   },
 };
 
+const TIER_LABEL_KEYS: Record<TwitchSubTier, string> = {
+  "1000": "SUBATHON_TIER_1",
+  "2000": "SUBATHON_TIER_2",
+  "3000": "SUBATHON_TIER_3",
+};
+
+const FAMILIES: CreditFamily[] = ["brl", "bits", "sub", "sub_gift"];
+
+function resolveUnit(
+  family: CreditFamily,
+  tier: TwitchSubTier,
+): ConversionUnit {
+  if (family === "brl" || family === "bits") {
+    return family;
+  }
+
+  return family === "sub" ? subUnitForTier(tier) : giftUnitForTier(tier);
+}
+
+function unitLabelKey(
+  family: CreditFamily,
+  tier: TwitchSubTier,
+): string {
+  if (family === "brl" || family === "bits") {
+    return FAMILY_CONFIG[family].labelKey;
+  }
+
+  if (family === "sub") {
+    switch (tier) {
+      case "2000":
+        return "SUBATHON_UNIT_SUB_T2";
+      case "3000":
+        return "SUBATHON_UNIT_SUB_T3";
+      default:
+        return "SUBATHON_UNIT_SUB_T1";
+    }
+  }
+
+  switch (tier) {
+    case "2000":
+      return "SUBATHON_UNIT_SUB_GIFT_T2";
+    case "3000":
+      return "SUBATHON_UNIT_SUB_GIFT_T3";
+    default:
+      return "SUBATHON_UNIT_SUB_GIFT_T1";
+  }
+}
+
 interface ManualCreditFormProps {
   rules: ConversionRule[];
   disabled: boolean;
@@ -69,14 +125,14 @@ export function ManualCreditForm({
   onAdd,
 }: ManualCreditFormProps) {
   const { t } = useTranslation();
-  const availableUnits = rules.map((rule) => rule.unit);
-  const defaultUnit = availableUnits[0] ?? "sub";
-  const [manualUnit, setManualUnit] = useState<ConversionUnit>(defaultUnit);
-  const [manualAmount, setManualAmount] = useState(
-    defaultUnit === "sub" ? "1" : "",
-  );
+  const [family, setFamily] = useState<CreditFamily>("sub");
+  const [tier, setTier] = useState<TwitchSubTier>("1000");
+  const [manualAmount, setManualAmount] = useState("1");
 
+  const needsTier = family === "sub" || family === "sub_gift";
+  const manualUnit = resolveUnit(family, tier);
   const activeRule = rules.find((rule) => rule.unit === manualUnit);
+  const integerOnly = FAMILY_CONFIG[family].integerOnly;
 
   const previewMs = useMemo(() => {
     const amount = Number(manualAmount);
@@ -93,16 +149,16 @@ export function ManualCreditForm({
       return false;
     }
 
-    if (UNIT_CONFIG[manualUnit].integerOnly && !Number.isInteger(amount)) {
+    if (integerOnly && !Number.isInteger(amount)) {
       return false;
     }
 
     return true;
-  }, [manualAmount, manualUnit]);
+  }, [integerOnly, manualAmount]);
 
-  const handleUnitChange = (unit: ConversionUnit) => {
-    setManualUnit(unit);
-    setManualAmount(unit === "sub" ? "1" : "");
+  const handleFamilyChange = (next: CreditFamily) => {
+    setFamily(next);
+    setManualAmount(next === "sub" || next === "sub_gift" ? "1" : "");
   };
 
   const handleAdd = () => {
@@ -112,7 +168,7 @@ export function ManualCreditForm({
     }
 
     onAdd(manualUnit, amount);
-    setManualAmount(manualUnit === "sub" ? "1" : "");
+    setManualAmount(family === "sub" || family === "sub_gift" ? "1" : "");
   };
 
   return (
@@ -120,24 +176,24 @@ export function ManualCreditForm({
       <p className="font-medium">{t("SUBATHON_MANUAL_TITLE")}</p>
 
       <RadioGroup
-        value={manualUnit}
+        value={family}
         onValueChange={(value: string) =>
-          handleUnitChange(value as ConversionUnit)
+          handleFamilyChange(value as CreditFamily)
         }
         aria-label={t("SUBATHON_MANUAL_UNIT")}
         className="grid grid-cols-2 gap-2 lg:grid-cols-4"
       >
-        {availableUnits.map((unit) => {
-          const config = UNIT_CONFIG[unit];
+        {FAMILIES.map((item) => {
+          const config = FAMILY_CONFIG[item];
           const Icon = config.icon;
-          const selected = manualUnit === unit;
+          const selected = family === item;
 
           return (
-            <TooltipProvider key={unit}>
+            <TooltipProvider key={item}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <label
-                    htmlFor={`manual-unit-${unit}`}
+                    htmlFor={`manual-family-${item}`}
                     className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
                       selected
                         ? "border-primary bg-primary/10"
@@ -145,8 +201,8 @@ export function ManualCreditForm({
                     }`}
                   >
                     <RadioGroupItem
-                      value={unit}
-                      id={`manual-unit-${unit}`}
+                      value={item}
+                      id={`manual-family-${item}`}
                       className="sr-only"
                     />
                     <Icon className="size-4 shrink-0" aria-hidden="true" />
@@ -160,13 +216,49 @@ export function ManualCreditForm({
         })}
       </RadioGroup>
 
+      {needsTier ? (
+        <div className="grid gap-2">
+          <Label>{t("SUBATHON_MANUAL_TIER")}</Label>
+          <RadioGroup
+            value={tier}
+            onValueChange={(value: string) =>
+              setTier(value as TwitchSubTier)
+            }
+            aria-label={t("SUBATHON_MANUAL_TIER")}
+            className="grid grid-cols-3 gap-2"
+          >
+            {TWITCH_SUB_TIERS.map((item) => {
+              const selected = tier === item;
+              return (
+                <label
+                  key={item}
+                  htmlFor={`manual-tier-${item}`}
+                  className={`flex cursor-pointer items-center justify-center rounded-md border px-3 py-2 text-sm transition-colors ${
+                    selected
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                >
+                  <RadioGroupItem
+                    value={item}
+                    id={`manual-tier-${item}`}
+                    className="sr-only"
+                  />
+                  <span>{t(TIER_LABEL_KEYS[item])}</span>
+                </label>
+              );
+            })}
+          </RadioGroup>
+        </div>
+      ) : null}
+
       <div className="grid gap-2">
         <Label htmlFor="manual-amount">{t("SUBATHON_MANUAL_AMOUNT")}</Label>
         <Input
           id="manual-amount"
           type="number"
           min={0}
-          step={UNIT_CONFIG[manualUnit].integerOnly ? 1 : 0.01}
+          step={integerOnly ? 1 : 0.01}
           value={manualAmount}
           disabled={disabled}
           onChange={(event) => setManualAmount(event.target.value)}
@@ -177,7 +269,7 @@ export function ManualCreditForm({
         <p className="text-sm text-muted-foreground">
           {t("SUBATHON_MANUAL_PREVIEW_DETAILED", {
             amount: manualAmount,
-            unitLabel: t(UNIT_CONFIG[manualUnit].labelKey),
+            unitLabel: t(unitLabelKey(family, tier)),
             duration: formatHumanDuration(previewMs),
           })}
         </p>

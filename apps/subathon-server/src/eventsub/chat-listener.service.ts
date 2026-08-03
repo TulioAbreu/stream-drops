@@ -1,12 +1,42 @@
 import { Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
 import {
   matchDonationMessage,
+  parseTwitchSubTier,
+  subUnitForTier,
+  type ConversionUnit,
   type LedgerEntry,
 } from "@stream-drops/subathon-protocol";
 import tmi, { type Client as TmiClient } from "tmi.js";
 import { BroadcastService } from "../gateway/broadcast.service";
 import { LedgerService } from "../ledger/ledger.service";
 import { TimerService } from "../timer/timer.service";
+
+function isGiftRecipientUserstate(
+  userstate: Record<string, string>,
+): boolean {
+  const msgId = userstate["msg-id"] ?? "";
+  if (
+    msgId === "subgift" ||
+    msgId === "anonsubgift" ||
+    msgId === "submysterygift" ||
+    msgId === "giftpaidupgrade" ||
+    msgId === "anongiftpaidupgrade"
+  ) {
+    return true;
+  }
+
+  const wasGifted = userstate["msg-param-was-gifted"];
+  if (wasGifted === "true" || wasGifted === "1") {
+    return true;
+  }
+
+  // Gift recipient notifications often include the gifter login.
+  if (userstate["msg-param-sender-login"] || userstate["msg-param-sender-name"]) {
+    return true;
+  }
+
+  return false;
+}
 
 @Injectable()
 export class ChatListenerService implements OnModuleDestroy {
@@ -41,8 +71,19 @@ export class ChatListenerService implements OnModuleDestroy {
     this.client.on("subscription", (...args: unknown[]) => {
       const username = String(args[1] ?? "unknown");
       const userstate = (args[4] ?? {}) as Record<string, string>;
+
+      if (isGiftRecipientUserstate(userstate)) {
+        return;
+      }
+
+      const tier = parseTwitchSubTier(userstate["msg-param-sub-plan"]);
       const eventId = `chat-sub-${userstate["msg-id"] ?? username}-${Date.now()}`;
-      void this.handleSub(eventId, username, 1, "sub");
+      void this.handleSub(
+        eventId,
+        username,
+        1,
+        subUnitForTier(tier),
+      );
     });
 
     this.client.on("cheer", (...args: unknown[]) => {
@@ -184,7 +225,7 @@ export class ChatListenerService implements OnModuleDestroy {
     eventId: string,
     actor: string,
     amount: number,
-    unit: "sub" | "sub_gift",
+    unit: ConversionUnit,
   ) {
     const sessionId = this.timer.getActiveSessionId();
     if (!sessionId) {
