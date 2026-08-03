@@ -22,6 +22,7 @@ import { useTranslation } from "@/i18n";
 import type {
   ConversionRule,
   ConversionUnit,
+  DonationBotConfig,
   OverlayStyle,
 } from "@stream-drops/subathon-protocol";
 import { normalizeConversionRules } from "@stream-drops/subathon-protocol";
@@ -30,6 +31,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { ConversionSettings } from "../components/conversion-settings";
+import { DonationBotSettings } from "../components/donation-bot-settings";
 import { HistoryTable } from "../components/history-table";
 import { OperationCenter } from "../components/operation-center";
 import { OverlayStyleSettings } from "../components/overlay-style-settings";
@@ -38,10 +40,14 @@ import { TwitchIntegrationCard } from "../components/twitch-integration-card";
 import { useSubathon } from "../hooks/use-subathon";
 import {
   areConversionRulesEqual,
+  areDonationBotConfigsEqual,
   areOverlayStylesEqual,
   DEFAULT_CONVERSION_RULES,
+  DEFAULT_DONATION_BOT_CONFIG,
   formatSessionDate,
   formatTimerHms,
+  getBrlMsPerUnit,
+  normalizeDonationBotDraft,
   normalizeOverlayStyle,
 } from "../utils";
 
@@ -62,6 +68,7 @@ export function SubathonDetailPage() {
     deleteSession,
     updateConversion,
     updateStyle,
+    updateDonationBot,
     play,
     pause,
     reset,
@@ -89,11 +96,15 @@ export function SubathonDetailPage() {
   const [styleDraft, setStyleDraft] = useState<OverlayStyle>(
     normalizeOverlayStyle(undefined),
   );
+  const [donationBotDraft, setDonationBotDraft] = useState<DonationBotConfig>(
+    DEFAULT_DONATION_BOT_CONFIG,
+  );
   const [activateDialogOpen, setActivateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [savingName, setSavingName] = useState(false);
   const [savingRules, setSavingRules] = useState(false);
   const [savingStyle, setSavingStyle] = useState(false);
+  const [savingDonationBot, setSavingDonationBot] = useState(false);
   const [undoingEntryId, setUndoingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -140,6 +151,7 @@ export function SubathonDetailPage() {
     setNameDraft(session.name);
     setRules(normalizeConversionRules(session.conversionRules));
     setStyleDraft(normalizeOverlayStyle(session.style));
+    setDonationBotDraft(normalizeDonationBotDraft(session.donationBot));
     // Hydrate drafts when opening a different session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id]);
@@ -163,8 +175,23 @@ export function SubathonDetailPage() {
         setStyleDraft(normalizeOverlayStyle(session.style));
       }
     }
+
+    if (!savingDonationBot) {
+      const donationDirty = !areDonationBotConfigsEqual(
+        donationBotDraft,
+        normalizeDonationBotDraft(session.donationBot),
+      );
+      if (!donationDirty) {
+        setDonationBotDraft(normalizeDonationBotDraft(session.donationBot));
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.updatedAt, session?.conversionRules, session?.style]);
+  }, [
+    session?.updatedAt,
+    session?.conversionRules,
+    session?.style,
+    session?.donationBot,
+  ]);
 
   useEffect(() => {
     if (errorNonce === 0) {
@@ -174,6 +201,7 @@ export function SubathonDetailPage() {
     setSavingName(false);
     setSavingRules(false);
     setSavingStyle(false);
+    setSavingDonationBot(false);
     setUndoingEntryId(null);
   }, [errorNonce]);
 
@@ -213,6 +241,22 @@ export function SubathonDetailPage() {
       toast.success(t("SUBATHON_STYLE_SAVED"));
     }
   }, [session, savingStyle, styleDraft, t]);
+
+  useEffect(() => {
+    if (!session || !savingDonationBot) {
+      return;
+    }
+
+    if (
+      areDonationBotConfigsEqual(
+        donationBotDraft,
+        normalizeDonationBotDraft(session.donationBot),
+      )
+    ) {
+      setSavingDonationBot(false);
+      toast.success(t("SUBATHON_DONATION_BOT_SAVED"));
+    }
+  }, [session, savingDonationBot, donationBotDraft, t]);
 
   useEffect(() => {
     if (!undoingEntryId) {
@@ -262,6 +306,12 @@ export function SubathonDetailPage() {
   const styleDirty = session
     ? !areOverlayStylesEqual(styleDraft, session.style)
     : false;
+  const donationBotDirty = session
+    ? !areDonationBotConfigsEqual(
+        donationBotDraft,
+        normalizeDonationBotDraft(session.donationBot),
+      )
+    : false;
   const currentRemainingMs = isActiveHere
     ? displayMs
     : (session?.snapshot.remainingMs ?? 0);
@@ -299,6 +349,26 @@ export function SubathonDetailPage() {
     const sent = updateStyle(session.id, styleDraft);
     if (!sent) {
       setSavingStyle(false);
+    }
+  };
+
+  const handleSaveDonationBot = () => {
+    if (!session || !connected) {
+      return;
+    }
+
+    const normalized: DonationBotConfig = {
+      enabled: donationBotDraft.enabled,
+      botUsername: donationBotDraft.botUsername.trim(),
+      templates: donationBotDraft.templates
+        .map((item) => item.trim())
+        .filter(Boolean),
+    };
+    setDonationBotDraft(normalized);
+    setSavingDonationBot(true);
+    const sent = updateDonationBot(session.id, normalized);
+    if (!sent) {
+      setSavingDonationBot(false);
     }
   };
 
@@ -508,6 +578,17 @@ export function SubathonDetailPage() {
             serverConnected={connected}
             scopes={userData?.scopes}
             onToggle={toggleEventsub}
+          />
+
+          <DonationBotSettings
+            config={donationBotDraft}
+            brlMsPerUnit={getBrlMsPerUnit(session?.conversionRules ?? rules)}
+            dirty={donationBotDirty}
+            saving={savingDonationBot}
+            disabled={!session || !connected}
+            chatConnected={eventsubEnabled && eventsubConnected}
+            onChange={setDonationBotDraft}
+            onSave={handleSaveDonationBot}
           />
 
           <div className="grid gap-6 lg:grid-cols-2">
