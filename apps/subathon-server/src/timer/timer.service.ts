@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import {
   computeRemainingMs,
+  normalizeConversionRules,
   type ConversionRule,
   type OverlayStyle,
   type SubathonSession,
@@ -69,10 +70,11 @@ export class TimerService {
     rules: ConversionRule[],
   ): SubathonSession {
     const now = new Date().toISOString();
+    const normalizedRules = normalizeConversionRules(rules);
     const session: SessionRow = {
       id,
       name,
-      conversion_rules_json: JSON.stringify(rules),
+      conversion_rules_json: JSON.stringify(normalizedRules),
       style_json: JSON.stringify(DEFAULT_STYLE),
       status: initialMs > 0 ? "paused" : "ended",
       remaining_ms: initialMs,
@@ -143,11 +145,12 @@ export class TimerService {
 
   updateConversion(sessionId: string, rules: ConversionRule[]): SubathonSession {
     const now = new Date().toISOString();
+    const normalizedRules = normalizeConversionRules(rules);
     this.database.connection
       .prepare(
         "UPDATE sessions SET conversion_rules_json = ?, updated_at = ? WHERE id = ?",
       )
-      .run(JSON.stringify(rules), now, sessionId);
+      .run(JSON.stringify(normalizedRules), now, sessionId);
 
     const session = this.getSession(sessionId);
     if (!session) {
@@ -376,7 +379,9 @@ export class TimerService {
       updatedAt: row.updated_at,
       lastRunAt: row.last_run_at ?? null,
       initialMs: row.initial_ms ?? row.remaining_ms,
-      conversionRules: JSON.parse(row.conversion_rules_json) as ConversionRule[],
+      conversionRules: normalizeConversionRules(
+        JSON.parse(row.conversion_rules_json) as ConversionRule[],
+      ),
       style: JSON.parse(row.style_json) as OverlayStyle,
       snapshot: {
         status,

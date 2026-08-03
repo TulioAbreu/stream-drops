@@ -6,7 +6,13 @@ import {
 import { ApiClient } from "@twurple/api";
 import { StaticAuthProvider } from "@twurple/auth";
 import { EventSubWsListener } from "@twurple/eventsub-ws";
-import type { LedgerEntry } from "@stream-drops/subathon-protocol";
+import {
+  giftUnitForTier,
+  parseTwitchSubTier,
+  subUnitForTier,
+  type ConversionUnit,
+  type LedgerEntry,
+} from "@stream-drops/subathon-protocol";
 import { BroadcastService } from "../gateway/broadcast.service";
 import { LedgerService } from "../ledger/ledger.service";
 import { TimerService } from "../timer/timer.service";
@@ -52,11 +58,15 @@ export class EventSubService implements OnModuleDestroy {
     this.listener.onChannelSubscription(
       broadcasterUserId,
       async (event) => {
+        if (event.isGift) {
+          return;
+        }
+
         await this.handleSub(
           `sub-${event.userId}-${Date.now()}`,
           event.userDisplayName,
           1,
-          "sub",
+          subUnitForTier(parseTwitchSubTier(event.tier)),
         );
       },
     );
@@ -68,7 +78,7 @@ export class EventSubService implements OnModuleDestroy {
           `gift-${event.gifterId ?? "anon"}-${Date.now()}-${event.amount}`,
           event.gifterDisplayName,
           event.amount,
-          "sub_gift",
+          giftUnitForTier(parseTwitchSubTier(event.tier)),
         );
       },
     );
@@ -117,7 +127,7 @@ export class EventSubService implements OnModuleDestroy {
     eventId: string,
     actor: string,
     amount: number,
-    unit: "sub" | "sub_gift",
+    unit: ConversionUnit,
   ) {
     const sessionId = this.timer.getActiveSessionId();
     if (!sessionId) {

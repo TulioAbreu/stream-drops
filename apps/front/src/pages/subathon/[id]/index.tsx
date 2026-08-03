@@ -24,6 +24,7 @@ import type {
   ConversionUnit,
   OverlayStyle,
 } from "@stream-drops/subathon-protocol";
+import { normalizeConversionRules } from "@stream-drops/subathon-protocol";
 import { ArrowLeft, Loader2, Pencil, TrashIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -137,7 +138,7 @@ export function SubathonDetailPage() {
     }
 
     setNameDraft(session.name);
-    setRules(session.conversionRules);
+    setRules(normalizeConversionRules(session.conversionRules));
     setStyleDraft(normalizeOverlayStyle(session.style));
     // Hydrate drafts when opening a different session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,9 +150,10 @@ export function SubathonDetailPage() {
     }
 
     if (!savingRules) {
-      const rulesDirty = !areConversionRulesEqual(rules, session.conversionRules);
+      const normalized = normalizeConversionRules(session.conversionRules);
+      const rulesDirty = !areConversionRulesEqual(rules, normalized);
       if (!rulesDirty) {
-        setRules(session.conversionRules);
+        setRules(normalized);
       }
     }
 
@@ -192,7 +194,10 @@ export function SubathonDetailPage() {
       return;
     }
 
-    if (areConversionRulesEqual(rules, session.conversionRules)) {
+    if (areConversionRulesEqual(
+      rules,
+      normalizeConversionRules(session.conversionRules),
+    )) {
       setSavingRules(false);
       toast.success(t("SUBATHON_CONVERSION_SAVED"));
     }
@@ -249,7 +254,10 @@ export function SubathonDetailPage() {
     : formatTimerHms(session?.snapshot.remainingMs ?? 0);
   const nameDirty = session ? nameDraft.trim() !== session.name : false;
   const rulesDirty = session
-    ? !areConversionRulesEqual(rules, session.conversionRules)
+    ? !areConversionRulesEqual(
+        rules,
+        normalizeConversionRules(session.conversionRules),
+      )
     : false;
   const styleDirty = session
     ? !areOverlayStylesEqual(styleDraft, session.style)

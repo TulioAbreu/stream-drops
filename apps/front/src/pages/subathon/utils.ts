@@ -1,16 +1,13 @@
-import type {
-  ConversionRule,
-  ConversionUnit,
-  LedgerEntry,
-  OverlayStyle,
+import {
+  DEFAULT_CONVERSION_RULES,
+  type ConversionRule,
+  type ConversionUnit,
+  type LedgerConversionUnit,
+  type LedgerEntry,
+  type OverlayStyle,
 } from "@stream-drops/subathon-protocol";
 
-export const DEFAULT_CONVERSION_RULES: ConversionRule[] = [
-  { unit: "brl", msPerUnit: 60_000, label: "R$" },
-  { unit: "bits", msPerUnit: 1_000, label: "bits" },
-  { unit: "sub", msPerUnit: 300_000, label: "sub" },
-  { unit: "sub_gift", msPerUnit: 300_000, label: "sub gift" },
-];
+export { DEFAULT_CONVERSION_RULES };
 
 export const EVENTSUB_ENABLED_STORAGE_KEY = "stream-drops-subathon-eventsub";
 
@@ -187,7 +184,9 @@ export function areOverlayStylesEqual(
   );
 }
 
-export function getConversionUnitLabel(unit: ConversionUnit): string {
+export function getConversionUnitLabel(
+  unit: LedgerConversionUnit | ConversionUnit,
+): string {
   switch (unit) {
     case "brl":
       return "R$";
@@ -197,6 +196,18 @@ export function getConversionUnitLabel(unit: ConversionUnit): string {
       return "sub";
     case "sub_gift":
       return "sub gift";
+    case "sub_1000":
+      return "sub T1";
+    case "sub_2000":
+      return "sub T2";
+    case "sub_3000":
+      return "sub T3";
+    case "sub_gift_1000":
+      return "sub gift T1";
+    case "sub_gift_2000":
+      return "sub gift T2";
+    case "sub_gift_3000":
+      return "sub gift T3";
     default:
       return unit;
   }
@@ -229,6 +240,24 @@ export function formatLedgerAmount(entry: LedgerEntry): string {
       return entry.amount === 1
         ? "1 sub presenteado"
         : `${entry.amount} subs presenteados`;
+    case "sub_1000":
+      return entry.amount === 1 ? "1 sub T1" : `${entry.amount} subs T1`;
+    case "sub_2000":
+      return entry.amount === 1 ? "1 sub T2" : `${entry.amount} subs T2`;
+    case "sub_3000":
+      return entry.amount === 1 ? "1 sub T3" : `${entry.amount} subs T3`;
+    case "sub_gift_1000":
+      return entry.amount === 1
+        ? "1 sub presenteado T1"
+        : `${entry.amount} subs presenteados T1`;
+    case "sub_gift_2000":
+      return entry.amount === 1
+        ? "1 sub presenteado T2"
+        : `${entry.amount} subs presenteados T2`;
+    case "sub_gift_3000":
+      return entry.amount === 1
+        ? "1 sub presenteado T3"
+        : `${entry.amount} subs presenteados T3`;
     default:
       return `${entry.amount} ${entry.unit ?? ""}`.trim();
   }
