@@ -230,6 +230,13 @@ export function OperationCenter({
           </Button>
           <Button
             variant="outline"
+            onClick={() => onAddMinutes(2)}
+            disabled={!isActiveHere || !connected}
+          >
+            {t("SUBATHON_ADD_MINUTES", { minutes: 2 })}
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => onAddMinutes(5)}
             disabled={!isActiveHere || !connected}
           >
