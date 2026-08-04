@@ -38,10 +38,13 @@ function isGiftRecipientUserstate(
   return false;
 }
 
+const isDev = process.env.NODE_ENV === "development";
+
 @Injectable()
 export class ChatListenerService implements OnModuleDestroy {
   private readonly logger = new Logger(ChatListenerService.name);
   private client: TmiClient | null = null;
+  private channelLogin = "";
 
   constructor(
     private readonly ledger: LedgerService,
@@ -59,6 +62,8 @@ export class ChatListenerService implements OnModuleDestroy {
     if (!enabled) {
       return;
     }
+
+    this.channelLogin = channelLogin;
 
     this.client = new tmi.Client({
       channels: [channelLogin],
@@ -78,6 +83,17 @@ export class ChatListenerService implements OnModuleDestroy {
 
       const tier = parseTwitchSubTier(userstate["msg-param-sub-plan"]);
       const eventId = `chat-sub-${userstate["msg-id"] ?? username}-${Date.now()}`;
+
+      this.logChannelEvent("subscription", {
+        channel: this.channelLogin,
+        username,
+        userId: userstate["user-id"],
+        displayName: userstate["display-name"],
+        tier,
+        msgId: userstate["msg-id"],
+        eventId,
+      });
+
       void this.handleSub(
         eventId,
         username,
@@ -94,19 +110,43 @@ export class ChatListenerService implements OnModuleDestroy {
       }
 
       const eventId = `chat-bits-${userstate.id ?? userstate["user-id"]}-${bits}-${Date.now()}`;
-      void this.handleBits(
-        eventId,
-        String(userstate["display-name"] ?? "unknown"),
+      const actor = String(userstate["display-name"] ?? "unknown");
+
+      this.logChannelEvent("cheer", {
+        channel: this.channelLogin,
+        username: String(userstate.username ?? userstate.login ?? ""),
+        userId: userstate["user-id"],
+        displayName: actor,
         bits,
-      );
+        content: String(args[2] ?? ""),
+        msgId: userstate.id ?? userstate["msg-id"],
+        eventId,
+      });
+
+      void this.handleBits(eventId, actor, bits);
     });
 
     this.client.on("message", (...args: unknown[]) => {
+      const channel = String(args[0] ?? this.channelLogin);
       const userstate = (args[1] ?? {}) as Record<string, string>;
       const message = String(args[2] ?? "");
       const username = String(
         userstate.username ?? userstate.login ?? "",
       ).toLowerCase();
+
+      this.logChannelEvent("message", {
+        channel,
+        username,
+        userId: userstate["user-id"],
+        displayName: userstate["display-name"],
+        content: message,
+        msgId: userstate.id ?? userstate["msg-id"],
+        badges: userstate.badges,
+        mod: userstate.mod,
+        subscriber: userstate.subscriber,
+        color: userstate.color,
+      });
+
       void this.handleDonationMessage(username, message, userstate);
     });
 
@@ -127,6 +167,7 @@ export class ChatListenerService implements OnModuleDestroy {
   }
 
   async disconnect() {
+    this.channelLogin = "";
     if (this.client) {
       try {
         await this.client.disconnect();
@@ -139,6 +180,19 @@ export class ChatListenerService implements OnModuleDestroy {
 
   onModuleDestroy() {
     void this.disconnect();
+  }
+
+  private logChannelEvent(
+    kind: "message" | "subscription" | "cheer",
+    data: Record<string, unknown>,
+  ) {
+    if (!isDev) {
+      return;
+    }
+
+    this.logger.log(
+      `Chat ${kind} processed: ${JSON.stringify(data)}`,
+    );
   }
 
   private publishCredit(entry: LedgerEntry) {
