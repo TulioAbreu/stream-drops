@@ -11,6 +11,11 @@ export interface DonationMatch {
   amount: number;
 }
 
+/** Trim, strip leading `@`, and lowercase for Twitch login comparison. */
+export function normalizeBotUsername(username: string): string {
+  return username.trim().replace(/^@+/, "").toLowerCase();
+}
+
 /**
  * Parse a money amount from bot chat text.
  * - Both `.` and `,`: last separator is decimal
@@ -171,8 +176,13 @@ export function matchDonationMessage(
   templates: string[],
   message: string,
 ): DonationMatch | null {
+  const trimmedMessage = message.trim();
+  if (!trimmedMessage) {
+    return null;
+  }
+
   for (const template of templates) {
-    const matched = matchDonationTemplate(template, message);
+    const matched = matchDonationTemplate(template, trimmedMessage);
     if (matched) {
       return matched;
     }
@@ -189,13 +199,18 @@ export function normalizeDonationBotConfig(
 
   const obj = raw as Record<string, unknown>;
   const templates = Array.isArray(obj.templates)
-    ? obj.templates.filter((t): t is string => typeof t === "string")
+    ? obj.templates
+        .filter((t): t is string => typeof t === "string")
+        .map((t) => t.trim())
+        .filter(Boolean)
     : [];
 
   return {
     enabled: Boolean(obj.enabled),
     botUsername:
-      typeof obj.botUsername === "string" ? obj.botUsername.trim() : "",
+      typeof obj.botUsername === "string"
+        ? normalizeBotUsername(obj.botUsername)
+        : "",
     templates,
   };
 }

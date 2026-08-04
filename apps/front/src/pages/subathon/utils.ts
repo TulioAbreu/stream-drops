@@ -1,6 +1,8 @@
 import {
   DEFAULT_CONVERSION_RULES,
   DEFAULT_DONATION_BOT_CONFIG,
+  normalizeBotUsername,
+  normalizeDonationBotConfig,
   type ConversionRule,
   type ConversionUnit,
   type DonationBotConfig,
@@ -193,30 +195,23 @@ export function areDonationBotConfigsEqual(
 ): boolean {
   if (
     left.enabled !== right.enabled ||
-    left.botUsername.trim().toLowerCase() !==
-      right.botUsername.trim().toLowerCase() ||
+    normalizeBotUsername(left.botUsername) !==
+      normalizeBotUsername(right.botUsername) ||
     left.templates.length !== right.templates.length
   ) {
     return false;
   }
 
   return left.templates.every(
-    (template, index) => template === right.templates[index],
+    (template, index) =>
+      template.trim() === right.templates[index]?.trim(),
   );
 }
 
 export function normalizeDonationBotDraft(
   config: DonationBotConfig | undefined,
 ): DonationBotConfig {
-  if (!config) {
-    return { ...DEFAULT_DONATION_BOT_CONFIG };
-  }
-
-  return {
-    enabled: Boolean(config.enabled),
-    botUsername: config.botUsername ?? "",
-    templates: Array.isArray(config.templates) ? [...config.templates] : [],
-  };
+  return normalizeDonationBotConfig(config);
 }
 
 export function getBrlMsPerUnit(rules: ConversionRule[]): number {

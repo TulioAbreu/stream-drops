@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from "@nestjs/common";
 import {
   matchDonationMessage,
+  normalizeBotUsername,
   parseTwitchSubTier,
   subUnitForTier,
   type ConversionUnit,
@@ -129,10 +130,10 @@ export class ChatListenerService implements OnModuleDestroy {
     this.client.on("message", (...args: unknown[]) => {
       const channel = String(args[0] ?? this.channelLogin);
       const userstate = (args[1] ?? {}) as Record<string, string>;
-      const message = String(args[2] ?? "");
-      const username = String(
-        userstate.username ?? userstate.login ?? "",
-      ).toLowerCase();
+      const message = String(args[2] ?? "").trim();
+      const username = normalizeBotUsername(
+        String(userstate.username ?? userstate.login ?? ""),
+      );
 
       this.logChannelEvent("message", {
         channel,
@@ -212,7 +213,8 @@ export class ChatListenerService implements OnModuleDestroy {
     message: string,
     userstate: Record<string, string>,
   ) {
-    if (!username || !message.trim()) {
+    const trimmedMessage = message.trim();
+    if (!username || !trimmedMessage) {
       return;
     }
 
@@ -227,15 +229,16 @@ export class ChatListenerService implements OnModuleDestroy {
     }
 
     const config = session.donationBot;
-    if (!config.enabled || !config.botUsername.trim()) {
+    const configuredBot = normalizeBotUsername(config.botUsername);
+    if (!config.enabled || !configuredBot) {
       return;
     }
 
-    if (username !== config.botUsername.trim().toLowerCase()) {
+    if (username !== configuredBot) {
       return;
     }
 
-    const matched = matchDonationMessage(config.templates, message);
+    const matched = matchDonationMessage(config.templates, trimmedMessage);
     if (!matched) {
       return;
     }

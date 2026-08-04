@@ -25,7 +25,10 @@ import type {
   DonationBotConfig,
   OverlayStyle,
 } from "@stream-drops/subathon-protocol";
-import { normalizeConversionRules } from "@stream-drops/subathon-protocol";
+import {
+  normalizeConversionRules,
+  normalizeDonationBotConfig,
+} from "@stream-drops/subathon-protocol";
 import { ArrowLeft, Loader2, Pencil, TrashIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -357,13 +360,7 @@ export function SubathonDetailPage() {
       return;
     }
 
-    const normalized: DonationBotConfig = {
-      enabled: donationBotDraft.enabled,
-      botUsername: donationBotDraft.botUsername.trim(),
-      templates: donationBotDraft.templates
-        .map((item) => item.trim())
-        .filter(Boolean),
-    };
+    const normalized = normalizeDonationBotConfig(donationBotDraft);
     setDonationBotDraft(normalized);
     setSavingDonationBot(true);
     const sent = updateDonationBot(session.id, normalized);
