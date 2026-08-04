@@ -305,7 +305,7 @@
     "SUBATHON_DONATION_BOT_HELP_PLACEHOLDERS": "Use {user} para o doador e {amount} para o valor. O restante do texto deve coincidir com a mensagem do bot.",
     "SUBATHON_DONATION_BOT_HELP_AMOUNTS": "Valores aceitos: 10.40, 10,40, 1.000, 1.000,50 (e equivalentes).",
     "SUBATHON_DONATION_BOT_HELP_EXAMPLE": "Ex.: {user} fez uma doação no valor de R${amount} <3",
-    "SUBATHON_DONATION_BOT_CHAT_OFF_HINT": "A integração Twitch precisa estar conectada para o chat processar doações. A configuração ainda pode ser salva.",
+    "SUBATHON_DONATION_BOT_CHAT_OFF_HINT": "O chat IRC ainda não está conectado. Com login Twitch no app, o servidor local reconecta sozinho — a configuração ainda pode ser salva.",
     "SUBATHON_DONATION_BOT_TEST_TITLE": "Testar mensagem",
     "SUBATHON_DONATION_BOT_TEST_PLACEHOLDER": "Cole aqui uma mensagem de exemplo do bot…",
     "SUBATHON_DONATION_BOT_TEST_OK": "Match: {{user}} · {{amount}} · +{{duration}}",

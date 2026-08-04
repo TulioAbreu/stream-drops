@@ -81,6 +81,7 @@ export function SubathonDetailPage() {
     setRemaining,
     eventsubEnabled,
     eventsubConnected,
+    chatConnected,
     toggleEventsub,
     displayMs,
     snapshot,
@@ -583,7 +584,7 @@ export function SubathonDetailPage() {
             dirty={donationBotDirty}
             saving={savingDonationBot}
             disabled={!session || !connected}
-            chatConnected={eventsubEnabled && eventsubConnected}
+            chatConnected={chatConnected}
             onChange={setDonationBotDraft}
             onSave={handleSaveDonationBot}
           />

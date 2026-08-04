@@ -46,12 +46,17 @@ export class ChatListenerService implements OnModuleDestroy {
   private readonly logger = new Logger(ChatListenerService.name);
   private client: TmiClient | null = null;
   private channelLogin = "";
+  private connected = false;
 
   constructor(
     private readonly ledger: LedgerService,
     private readonly timer: TimerService,
     private readonly broadcast: BroadcastService,
   ) {}
+
+  isConnected(): boolean {
+    return this.connected && this.client !== null;
+  }
 
   async configure(
     accessToken: string,
@@ -153,9 +158,11 @@ export class ChatListenerService implements OnModuleDestroy {
 
     try {
       await this.client.connect();
+      this.connected = true;
       this.logger.log(`Chat IRC connected on #${channelLogin}`);
     } catch (error) {
       this.client = null;
+      this.connected = false;
       const message =
         error instanceof Error ? error.message : String(error);
       this.logger.warn(`Chat IRC login failed: ${message}`);
@@ -168,6 +175,7 @@ export class ChatListenerService implements OnModuleDestroy {
   }
 
   async disconnect() {
+    this.connected = false;
     this.channelLogin = "";
     if (this.client) {
       try {

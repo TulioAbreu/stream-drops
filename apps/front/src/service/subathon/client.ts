@@ -84,6 +84,7 @@ export class SubathonClient {
           type: "connection.status",
           connected: false,
           eventsub: false,
+          chat: false,
         });
       };
     });

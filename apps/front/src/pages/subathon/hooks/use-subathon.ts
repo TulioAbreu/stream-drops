@@ -62,6 +62,7 @@ function useSubathonState() {
   const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
   const [eventsubEnabled, setEventsubEnabled] = useState(readEventsubPreference);
   const [eventsubConnected, setEventsubConnected] = useState(false);
+  const [chatConnected, setChatConnected] = useState(false);
   const [displayMs, setDisplayMs] = useState(0);
   const [lastCreatedSessionId, setLastCreatedSessionId] = useState<
     string | null
@@ -224,6 +225,7 @@ function useSubathonState() {
       if (message.type === "connection.status") {
         setConnected(message.connected);
         setEventsubConnected(message.eventsub);
+        setChatConnected(message.chat ?? false);
       }
     });
 
@@ -434,6 +436,7 @@ function useSubathonState() {
     overlayUrl,
     eventsubEnabled,
     eventsubConnected,
+    chatConnected,
     lastCreatedSessionId,
     errorNonce,
     clearLastCreatedSessionId,

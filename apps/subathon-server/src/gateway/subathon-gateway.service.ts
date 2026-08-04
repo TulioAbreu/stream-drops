@@ -19,6 +19,10 @@ import { LedgerService } from "../ledger/ledger.service";
 import { TimerService } from "../timer/timer.service";
 import { BroadcastService } from "./broadcast.service";
 
+const META_TWITCH_ACCESS_TOKEN = "twitch.accessToken";
+const META_TWITCH_CHANNEL_LOGIN = "twitch.channelLogin";
+const META_TWITCH_CHAT_ENABLED = "twitch.chatEnabled";
+
 @Injectable()
 export class SubathonGatewayService implements OnModuleInit {
   private readonly logger = new Logger(SubathonGatewayService.name);
@@ -35,6 +39,7 @@ export class SubathonGatewayService implements OnModuleInit {
 
   onModuleInit() {
     this.logger.log("Subathon gateway ready");
+    void this.restoreChatListener();
   }
 
   setPort(port: number) {
@@ -102,11 +107,7 @@ export class SubathonGatewayService implements OnModuleInit {
           activeSessionId,
           dbPath: this.database.dbPath,
         });
-        this.send(client, {
-          type: "connection.status",
-          connected: true,
-          eventsub: this.eventSub.isConnected(),
-        });
+        this.send(client, this.buildConnectionStatus(true));
         this.send(client, {
           type: "timer.snapshot",
           snapshot: this.timer.buildSnapshot(activeSessionId),
@@ -130,13 +131,10 @@ export class SubathonGatewayService implements OnModuleInit {
           process.env.TWITCH_CLIENT_ID ||
           process.env.VITE_TWITCH_CLIENT_ID ||
           "";
+        const chatEnabled = message.chatEnabled !== false;
 
         if (message.enabled && !clientId) {
-          this.broadcast({
-            type: "connection.status",
-            connected: true,
-            eventsub: false,
-          });
+          this.broadcast(this.buildConnectionStatus(true));
           this.send(client, {
             type: "error",
             code: "CLIENT_ID_MISSING",
@@ -151,16 +149,11 @@ export class SubathonGatewayService implements OnModuleInit {
               clientId,
             )
             .then(() => {
-              this.broadcast({
-                type: "connection.status",
-                connected: true,
-                eventsub: this.eventSub.isConnected(),
-              });
+              this.broadcast(this.buildConnectionStatus(true));
             })
             .catch((error) => {
               this.broadcast({
-                type: "connection.status",
-                connected: true,
+                ...this.buildConnectionStatus(true),
                 eventsub: false,
               });
               this.send(client, {
@@ -174,14 +167,28 @@ export class SubathonGatewayService implements OnModuleInit {
             });
         }
 
-        if (message.chatEnabled && message.enabled) {
+        // IRC chat is independent of EventSub: persist credentials and keep
+        // the listener alive even when the front disconnects or toggles EventSub.
+        if (chatEnabled) {
+          this.persistChatCredentials(
+            message.accessToken,
+            message.channelLogin,
+            true,
+          );
           void this.chatListener
             .configure(
               message.accessToken,
               message.channelLogin,
               true,
             )
+            .then(() => {
+              this.broadcast(this.buildConnectionStatus(true));
+            })
             .catch((error) => {
+              this.broadcast({
+                ...this.buildConnectionStatus(true),
+                chat: false,
+              });
               this.send(client, {
                 type: "error",
                 code: "CHAT_LOGIN_FAILED",
@@ -192,7 +199,14 @@ export class SubathonGatewayService implements OnModuleInit {
               });
             });
         } else {
-          void this.chatListener.disconnect();
+          this.persistChatCredentials(
+            message.accessToken,
+            message.channelLogin,
+            false,
+          );
+          void this.chatListener.disconnect().then(() => {
+            this.broadcast(this.buildConnectionStatus(true));
+          });
         }
         return;
       }
@@ -291,6 +305,9 @@ export class SubathonGatewayService implements OnModuleInit {
           message.config,
         );
         this.broadcastSession(session);
+        if (session.donationBot.enabled) {
+          void this.ensureChatListener();
+        }
         return;
       }
 
@@ -421,6 +438,71 @@ export class SubathonGatewayService implements OnModuleInit {
     }
 
     return sessionId;
+  }
+
+  private buildConnectionStatus(
+    connected: boolean,
+  ): Extract<ServerMessage, { type: "connection.status" }> {
+    return {
+      type: "connection.status",
+      connected,
+      eventsub: this.eventSub.isConnected(),
+      chat: this.chatListener.isConnected(),
+    };
+  }
+
+  private persistChatCredentials(
+    accessToken: string,
+    channelLogin: string,
+    chatEnabled: boolean,
+  ) {
+    this.database.setMeta(META_TWITCH_ACCESS_TOKEN, accessToken);
+    this.database.setMeta(META_TWITCH_CHANNEL_LOGIN, channelLogin);
+    this.database.setMeta(
+      META_TWITCH_CHAT_ENABLED,
+      chatEnabled ? "1" : "0",
+    );
+  }
+
+  private async restoreChatListener() {
+    const chatEnabled =
+      this.database.getMeta(META_TWITCH_CHAT_ENABLED) === "1";
+    if (!chatEnabled) {
+      return;
+    }
+
+    await this.ensureChatListener();
+  }
+
+  private async ensureChatListener() {
+    if (this.chatListener.isConnected()) {
+      return;
+    }
+
+    const accessToken = this.database.getMeta(META_TWITCH_ACCESS_TOKEN);
+    const channelLogin = this.database.getMeta(META_TWITCH_CHANNEL_LOGIN);
+    if (!accessToken || !channelLogin) {
+      this.logger.warn(
+        "Chat IRC credentials missing; waiting for configureTwitch from front",
+      );
+      return;
+    }
+
+    try {
+      await this.chatListener.configure(accessToken, channelLogin, true);
+      this.database.setMeta(META_TWITCH_CHAT_ENABLED, "1");
+      this.broadcast(this.buildConnectionStatus(true));
+      this.logger.log(
+        `Chat IRC restored on #${channelLogin} without front connection`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Chat IRC restore failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      this.broadcast(this.buildConnectionStatus(true));
+    }
   }
 
   private broadcastSnapshot() {

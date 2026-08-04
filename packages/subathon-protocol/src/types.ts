@@ -146,5 +146,10 @@ export type ServerMessage =
   | { type: "sessions.list"; sessions: SubathonSession[] }
   | { type: "ledger.entry"; entry: LedgerEntry }
   | { type: "ledger.list"; entries: LedgerEntry[] }
-  | { type: "connection.status"; connected: boolean; eventsub: boolean }
+  | {
+      type: "connection.status";
+      connected: boolean;
+      eventsub: boolean;
+      chat?: boolean;
+    }
   | { type: "error"; code: string; message: string };
