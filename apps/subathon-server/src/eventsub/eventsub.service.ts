@@ -9,6 +9,7 @@ import { EventSubWsListener } from "@twurple/eventsub-ws";
 import {
   giftUnitForTier,
   parseTwitchSubTier,
+  SUB_CREDIT_DEDUP_WINDOW_MS,
   subUnitForTier,
   type ConversionUnit,
   type LedgerEntry,
@@ -16,6 +17,10 @@ import {
 import { BroadcastService } from "../gateway/broadcast.service";
 import { LedgerService } from "../ledger/ledger.service";
 import { TimerService } from "../timer/timer.service";
+
+function isNonGiftSubUnit(unit: ConversionUnit): boolean {
+  return unit === "sub_1000" || unit === "sub_2000" || unit === "sub_3000";
+}
 
 @Injectable()
 export class EventSubService implements OnModuleDestroy {
@@ -62,11 +67,27 @@ export class EventSubService implements OnModuleDestroy {
           return;
         }
 
+        const tier = parseTwitchSubTier(event.tier);
         await this.handleSub(
-          `sub-${event.userId}-${Date.now()}`,
+          `es:subscribe:${event.userId}:${tier}:${Date.now()}`,
+          event.userId,
           event.userDisplayName,
           1,
-          subUnitForTier(parseTwitchSubTier(event.tier)),
+          subUnitForTier(tier),
+        );
+      },
+    );
+
+    this.listener.onChannelSubscriptionMessage(
+      broadcasterUserId,
+      async (event) => {
+        const tier = parseTwitchSubTier(event.tier);
+        await this.handleSub(
+          `es:resub:${event.userId}:${event.cumulativeMonths}:${tier}`,
+          event.userId,
+          event.userDisplayName,
+          1,
+          subUnitForTier(tier),
         );
       },
     );
@@ -74,11 +95,14 @@ export class EventSubService implements OnModuleDestroy {
     this.listener.onChannelSubscriptionGift(
       broadcasterUserId,
       async (event) => {
+        const tier = parseTwitchSubTier(event.tier);
         await this.handleSub(
-          `gift-${event.gifterId ?? "anon"}-${Date.now()}-${event.amount}`,
+          `es:gift:${event.gifterId ?? "anon"}:${event.amount}:${tier}:${Date.now()}`,
+          event.gifterId ?? "anon",
           event.gifterDisplayName,
           event.amount,
-          giftUnitForTier(parseTwitchSubTier(event.tier)),
+          giftUnitForTier(tier),
+          { skipSubDedup: true },
         );
       },
     );
@@ -87,7 +111,7 @@ export class EventSubService implements OnModuleDestroy {
       broadcasterUserId,
       async (event) => {
         await this.handleBits(
-          `bits-${event.userId ?? "anon"}-${Date.now()}-${event.bits}`,
+          `es:bits:${event.userId ?? "anon"}:${event.bits}:${Date.now()}`,
           event.userDisplayName ?? event.userName ?? "anonymous",
           event.bits,
         );
@@ -125,12 +149,29 @@ export class EventSubService implements OnModuleDestroy {
 
   private async handleSub(
     eventId: string,
+    twitchUserId: string,
     actor: string,
     amount: number,
     unit: ConversionUnit,
+    options?: { skipSubDedup?: boolean },
   ) {
     const sessionId = this.timer.getActiveSessionId();
     if (!sessionId) {
+      return;
+    }
+
+    if (
+      !options?.skipSubDedup &&
+      isNonGiftSubUnit(unit) &&
+      this.ledger.hasRecentNonGiftSubCredit(
+        sessionId,
+        twitchUserId,
+        SUB_CREDIT_DEDUP_WINDOW_MS,
+      )
+    ) {
+      this.logger.debug(
+        `Skipping duplicate sub credit for user ${twitchUserId} (${eventId})`,
+      );
       return;
     }
 

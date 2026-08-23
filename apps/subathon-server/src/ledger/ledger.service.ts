@@ -53,6 +53,33 @@ export class LedgerService {
     return Boolean(row);
   }
 
+  /**
+   * True when a non-gift sub credit for this Twitch user was recorded recently.
+   * Matches external_event_id values shaped as es:{kind}:{userId}:...
+   */
+  hasRecentNonGiftSubCredit(
+    sessionId: string,
+    twitchUserId: string,
+    windowMs: number,
+  ): boolean {
+    const since = new Date(Date.now() - windowMs).toISOString();
+    const pattern = `es:%:${twitchUserId}:%`;
+    const row = this.database.connection
+      .prepare(
+        `SELECT id FROM ledger_entries
+         WHERE session_id = ?
+           AND type = 'credit'
+           AND unit IN ('sub_1000', 'sub_2000', 'sub_3000')
+           AND external_event_id LIKE ?
+           AND created_at >= ?
+           AND undone_by_entry_id IS NULL
+         LIMIT 1`,
+      )
+      .get(sessionId, pattern, since) as { id: string } | undefined;
+
+    return Boolean(row);
+  }
+
   addCredit(params: {
     sessionId: string;
     deltaMs: number;
