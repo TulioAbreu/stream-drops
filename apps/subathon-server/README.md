@@ -17,14 +17,14 @@ Rode o front em paralelo (`bun run --filter @stream-drops/front dev`).
    - `VITE_TWITCH_REDIRECT_URL` — ex.: `http://localhost:3000/auth`
 2. No Console Twitch, o redirect deve bater com o `.env`. Scopes usados pelo app (OAuth implicit no front):
    - `channel:read:subscriptions`, `bits:read` (EventSub)
-   - `chat:read`, `chat:edit` (backup IRC)
+   - `chat:read`, `chat:edit` (IRC para doações BRL)
    - `user:read:chat`, `user:write:chat`, `channel:manage:redemptions` (outras features)
 3. Opcional: copie [`.env.example`](.env.example) para `.env` neste pacote e defina `TWITCH_CLIENT_ID` (mesmo valor do front). Em dev normal **não é obrigatório** — o front envia o Client ID no WebSocket `configureTwitch`.
 4. Suba front + este server (`bun dev` em ambos).
 5. Faça login Twitch no app. Na sessão Subathon, em **Configurações → Ativar integração Twitch**:
    - Se faltarem scopes, aparece o banner **Reautorizar Twitch** (`force_verify`) — confirme no popup.
    - O status deve ir para **conectado** (não ficar em “Conectando…”).
-6. Sem Client ID nem no WS nem no env, o server responde `CLIENT_ID_MISSING`. Sem scopes IRC, o backup de chat falha com `CHAT_LOGIN_FAILED` (EventSub ainda pode funcionar).
+6. Sem Client ID nem no WS nem no env, o server responde `CLIENT_ID_MISSING`. Sem scopes IRC, o reconhecimento de doações no chat falha com `CHAT_LOGIN_FAILED` (EventSub ainda pode funcionar).
 
 ## Portas e discovery
 

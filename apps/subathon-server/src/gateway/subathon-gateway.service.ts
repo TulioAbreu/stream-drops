@@ -167,8 +167,8 @@ export class SubathonGatewayService implements OnModuleInit {
             });
         }
 
-        // IRC chat is independent of EventSub: persist credentials and keep
-        // the listener alive even when the front disconnects or toggles EventSub.
+        // IRC is donation-only (BRL bot templates) and independent of EventSub.
+        // Persist credentials so donations still work when EventSub is off.
         if (chatEnabled) {
           this.persistChatCredentials(
             message.accessToken,
@@ -195,7 +195,7 @@ export class SubathonGatewayService implements OnModuleInit {
                 message:
                   error instanceof Error
                     ? error.message
-                    : "Failed to connect chat IRC backup",
+                    : "Failed to connect chat IRC",
               });
             });
         } else {

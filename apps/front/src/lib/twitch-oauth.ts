@@ -1,6 +1,6 @@
 export const CHANNEL_POINTS_MANAGE_SCOPE = "channel:manage:redemptions";
 
-/** IRC scopes required by Subathon chat backup (tmi.js). */
+/** IRC scopes required by Subathon donation-bot chat (tmi.js). */
 export const CHAT_READ_SCOPE = "chat:read";
 export const CHAT_EDIT_SCOPE = "chat:edit";
 
