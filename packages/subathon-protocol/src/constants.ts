@@ -18,3 +18,6 @@ export const DISCOVERY_TIMEOUT_MS = 400;
 export const RECONNECT_BACKOFF_MS = [1000, 2000, 5000, 10000] as const;
 
 export const LAST_PORT_STORAGE_KEY = "stream-drops-subathon-last-port";
+
+/** Ignore duplicate non-gift sub credits for the same Twitch user within this window. */
+export const SUB_CREDIT_DEDUP_WINDOW_MS = 60 * 60 * 1000;

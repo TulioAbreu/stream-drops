@@ -26,6 +26,19 @@ Rode o front em paralelo (`bun run --filter @stream-drops/front dev`).
    - O status deve ir para **conectado** (não ficar em “Conectando…”).
 6. Sem Client ID nem no WS nem no env, o server responde `CLIENT_ID_MISSING`. Sem scopes IRC, o reconhecimento de doações no chat falha com `CHAT_LOGIN_FAILED` (EventSub ainda pode funcionar).
 
+### Eventos EventSub creditados no timer
+
+| Evento Twitch | Quando credita |
+|---------------|----------------|
+| `channel.subscribe` | Sub novo (não-gift), tier T1/T2/T3 |
+| `channel.subscription.message` | Resub anunciado no chat, tier T1/T2/T3 |
+| `channel.subscription.gift` | Subs presenteados, tier T1/T2/T3 |
+| `channel.cheer` | Bits |
+
+Renovações **sem** mensagem de resub no chat não têm EventSub documentado. Doações BRL vêm só do IRC (bot configurado), não do EventSub.
+
+Créditos duplicados do mesmo viewer (ex.: `subscribe` + `subscription.message` no mesmo minuto) são ignorados numa janela de 60 minutos.
+
 ## Portas e discovery
 
 - Bind em `127.0.0.1`, portas `8080..8090` (primeira livre)
