@@ -51,6 +51,7 @@ import {
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
+import { rankWinnersByDrawOrder } from "@/lib/giveaway-winner-rank";
 import { useTranslation } from "@/i18n";
 import { v7 } from "uuid";
 import { useExclusionListDb } from "@/database/ExclusionListItem";
@@ -204,6 +205,12 @@ export function ChannelPointsGiveawayDetail() {
       ),
     [giveaway?.winners]
   );
+
+  const winnerRanks = useMemo(
+    () => rankWinnersByDrawOrder(giveaway?.winners ?? []),
+    [giveaway?.winners]
+  );
+  const pendingWinnerRank = (giveaway?.winners.length ?? 0) + 1;
 
   const progressValue = useMemo(() => {
     if (!collectionProgress) return 0;
@@ -796,7 +803,7 @@ export function ChannelPointsGiveawayDetail() {
                             tier: pendingWinner.participant.tier,
                           }}
                           messages={messages}
-                          rank={1}
+                          rank={pendingWinnerRank}
                           onConfirm={handleConfirmWinner}
                           onDismiss={() => setPendingWinner(null)}
                           onCancel={() => setPendingWinner(null)}
@@ -819,11 +826,11 @@ export function ChannelPointsGiveawayDetail() {
                           </Empty>
                         </div>
                       ) : (
-                        sortedWinners.map((winner, index) => {
+                        sortedWinners.map((winner) => {
                           const participant = giveaway.participants.find(
                             (p) => p.userId === winner.userId
                           );
-                          const rank = pendingWinner ? index + 2 : index + 1;
+                          const rank = winnerRanks.get(winner.id) ?? 0;
 
                           return (
                             <GiveawayWinnerRow

@@ -16,6 +16,7 @@ import { drawWinner } from "@/service/chat-giveaway";
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
+import { rankWinnersByDrawOrder } from "@/lib/giveaway-winner-rank";
 import { useTranslation } from "react-i18next";
 import type { ChatParticipant } from "../types";
 import { WinnerConfirmationInline } from "./components/winner-confirmation-inline";
@@ -80,6 +81,12 @@ export function ChatGiveawayDetail() {
       ),
     [giveaway?.winners]
   );
+
+  const winnerRanks = useMemo(
+    () => rankWinnersByDrawOrder(giveaway?.winners ?? []),
+    [giveaway?.winners]
+  );
+  const pendingWinnerRank = (giveaway?.winners.length ?? 0) + 1;
 
   useEffect(() => {
     if (!id) return;
@@ -433,6 +440,7 @@ export function ChatGiveawayDetail() {
                         key={pendingWinner.id}
                         pendingWinner={pendingWinner}
                         messages={messages}
+                        rank={pendingWinnerRank}
                         onConfirm={handleConfirmWinner}
                         onDismiss={handleDismissPendingWinner}
                         onCancel={handleCancelWinner}
@@ -457,11 +465,11 @@ export function ChatGiveawayDetail() {
                     ) : (
                       sortedWinners
                         .filter((winner) => winner.id !== pendingWinner?.id)
-                        .map((winner, index) => {
+                        .map((winner) => {
                           const participantData = participants.find(
                             (p) => p.id === winner.twitchId
                           );
-                          const rank = pendingWinner ? index + 2 : index + 1;
+                          const rank = winnerRanks.get(winner.id) ?? 0;
 
                           return (
                             <GiveawayWinnerRow
