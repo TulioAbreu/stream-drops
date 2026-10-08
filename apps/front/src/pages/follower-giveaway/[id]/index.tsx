@@ -29,11 +29,27 @@ import { fetchSubscribers } from "@/usecase/fetch-subscribers";
 import { filterElegibleSubscribers } from "@/usecase/filter-eligible-subscribers";
 import { toast } from "sonner";
 import { useExclusionListDb } from "@/database/ExclusionListItem";
+import { useLiveExclusions } from "@/hooks/use-live-exclusions";
+import { filterExcludedByUserId } from "@/lib/filter-excluded-participants";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
 import { formatChancePercentage } from "@/lib/utils";
 import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
 import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
+
+function isDrawableSubscriber(
+    participant: BroadcasterSubscriber,
+    winners: BroadcasterSubscriber[],
+    requiredSubscriber: number,
+): boolean {
+    if (winners.some((winner) => winner.user_id === participant.user_id)) {
+        return false;
+    }
+    if (requiredSubscriber > 0 && Number(participant.tier) < requiredSubscriber) {
+        return false;
+    }
+    return true;
+}
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
@@ -41,6 +57,7 @@ export function FollowerGiveawayId() {
     const navigate = useNavigate();
     const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
     const { getExclusions, addExclusion } = useExclusionListDb();
+    const { excludedUserIds, refreshExclusions } = useLiveExclusions();
     const { twitchApiClient, userData } = useTwitchApi();
     const [giveaway, setGiveaway] = useState<FollowerGiveawayFormData | null>(null);
     const [fetchUsersProgress, setFetchUsersProgress] = useState<number>(0);
@@ -118,12 +135,41 @@ export function FollowerGiveawayId() {
         });
     };
 
+    const visibleParticipants = useMemo(
+        () =>
+            filterExcludedByUserId(
+                giveaway?.participants ?? [],
+                excludedUserIds,
+                (participant) => participant.user_id,
+            ),
+        [giveaway?.participants, excludedUserIds],
+    );
+
     const onClickDrawWinners = async () => {
         if (!giveaway || !twitchApiClient || !userData) {
             return;
         }
+
+        const latestExcluded = await refreshExclusions();
+        const participants = filterExcludedByUserId(
+            giveaway.participants ?? [],
+            latestExcluded,
+            (participant) => participant.user_id,
+        );
+        const requiredTier = giveaway.subscriptionRequirement ?? 0;
+        const drawableParticipants = participants.filter((participant) =>
+            isDrawableSubscriber(participant, giveaway.winners ?? [], requiredTier),
+        );
+
+        // Com 0 elegíveis o do…while de getGiveawayResult lê
+        // winner.participant de undefined. Não chama o sorteio.
+        if (drawableParticipants.length === 0) {
+            toast.error(t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS"));
+            return;
+        }
+
         const newWinners = getGiveawayResult({
-            participants: giveaway.participants ?? [],
+            participants,
             winners: giveaway.winners ?? [],
             repeatWinners: false,
             requiredSubscriber: giveaway?.subscriptionRequirement ?? 0,
@@ -134,6 +180,12 @@ export function FollowerGiveawayId() {
             },
             totalWinners: 1,
         });
+
+        if (newWinners.length === 0) {
+            toast.error(t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS"));
+            return;
+        }
+
         const winners = [...newWinners, ...giveaway.winners];
         const savedDraw = await updateGiveaway({
             ...giveaway,
@@ -145,26 +197,13 @@ export function FollowerGiveawayId() {
 
         // Send chat message for new winners
         if (twitchApiClient && userData) {
+            const multipliers = giveaway.subscriberMultiplier ?? { "1000": 1, "2000": 1, "3000": 1 };
+            const totalTickets = drawableParticipants.reduce((sum, participant) => {
+                const multiplier = multipliers[participant.tier] || 1;
+                return sum + multiplier;
+            }, 0);
+
             for (const winner of newWinners) {
-                // Calculate chance
-                // Re-create the pool of eligible participants at the time of drawing
-                const currentWinnersIds = giveaway.winners.map(w => w.user_id);
-                // Participants excluding already winners
-                let eligibleParticipants = (giveaway.participants ?? []).filter(p => !currentWinnersIds.includes(p.user_id));
-
-                // Filter by requirement
-                const requiredTier = giveaway.subscriptionRequirement ?? 0;
-                if (requiredTier > 0) {
-                    eligibleParticipants = eligibleParticipants.filter(p => Number(p.tier) >= requiredTier);
-                }
-
-                // Calculate total tickets
-                const multipliers = giveaway.subscriberMultiplier ?? { "1000": 1, "2000": 1, "3000": 1 };
-                const totalTickets = eligibleParticipants.reduce((sum, p) => {
-                    const multiplier = multipliers[p.tier] || 1;
-                    return sum + multiplier;
-                }, 0);
-
                 const winnerTickets = multipliers[winner.tier] || 1;
                 const winChance = totalTickets > 0 ? (winnerTickets / totalTickets) * 100 : 0;
                 const winChanceFormatted = formatChancePercentage(winChance);
@@ -306,9 +345,8 @@ export function FollowerGiveawayId() {
         }
     };
 
-    const participants = giveaway?.participants ?? [];
     const tierCount = (tier: "1000" | "2000" | "3000") =>
-        participants.filter((user) => user.tier === tier).length;
+        visibleParticipants.filter((user) => user.tier === tier).length;
     const revealedTier =
         revealedWinner?.tier === "1000" ||
         revealedWinner?.tier === "2000" ||
@@ -354,7 +392,7 @@ export function FollowerGiveawayId() {
                             <Button
                                 variant="drop"
                                 onClick={onClickDrawWinners}
-                                disabled={giveaway?.participants === null || giveaway?.participants.length === 0}
+                                disabled={giveaway != null && visibleParticipants.length === 0}
                             >
                                 <PartyPopperIcon />
                                 <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
@@ -393,7 +431,7 @@ export function FollowerGiveawayId() {
                 </ShellHeader>
                 <div className="flex flex-wrap gap-3">
                     <GiveawayInfoCard title={t("FOLLOWER_GIVEAWAY_STAT_PARTICIPANTS")}>
-                        {participants.length}
+                        {visibleParticipants.length}
                     </GiveawayInfoCard>
                     <GiveawayInfoCard title={t("TIER_1000")}>
                         {tierCount("1000")}
@@ -408,16 +446,16 @@ export function FollowerGiveawayId() {
                 <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
                     <InventoryPanel
                         title={t("FOLLOWER_GIVEAWAY_PARTICIPANTS_PANEL")}
-                        meta={String(participants.length)}
+                        meta={String(visibleParticipants.length)}
                     >
-                        {(giveaway?.participants === null || giveaway?.participants.length === 0) ? (
+                        {(giveaway != null && visibleParticipants.length === 0) ? (
                             <p className="text-sm text-muted-foreground">
                                 {t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}
                             </p>
                         ) : (
                             <TableVirtuoso
                                 style={{ height: "300px" }}
-                                data={giveaway?.participants}
+                                data={giveaway ? visibleParticipants : undefined}
                                 components={{
                                     Table,
                                     TableBody,

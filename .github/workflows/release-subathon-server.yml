@@ -39,8 +39,8 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-      - name: Install zip
-        run: sudo apt-get update && sudo apt-get install -y zip
+      - name: Install zip and wine
+        run: sudo apt-get update && sudo apt-get install -y zip wine
 
       - name: Cross-compile binaries
         working-directory: apps/subathon-server
@@ -73,6 +73,16 @@ jobs:
               --outfile="$OUTFILE" \
               -e @nestjs/microservices \
               -e @nestjs/platform-socket.io
+
+            # Bun 1.3.14 aceita --windows-icon, mas só quando o host é
+            # Windows. Este job cross-compila no Ubuntu, então o ícone
+            # entra com rcedit depois do compile. Não muda o binário
+            # além do recurso de ícone.
+            if [[ "$PLATFORM" == windows-* ]]; then
+              bash scripts/apply-windows-icon.sh \
+                "$OUT_DIR/subathon-server.exe" \
+                assets/subathon-server.ico
+            fi
 
             if [[ ! -f "$OUT_DIR/subathon-server" && ! -f "$OUT_DIR/subathon-server.exe" ]]; then
               echo "::error::Binary missing for $PLATFORM"
