@@ -267,6 +267,7 @@ describe("página do Chat Giveaway", () => {
     setChatListenerTestOverrides({
       createClient: () => createFakeClient(),
       batchMaxWaitMs: 0,
+      persistIntervalMs: 0,
     });
   });
 

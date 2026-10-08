@@ -58,6 +58,7 @@ export function ChatGiveawayDetail() {
     messages,
     connectionStatus,
     error: chatError,
+    flushParticipants,
   } = useChatListener({
     channel: userData?.login || "",
     keyword: giveaway?.keyword || "",
@@ -66,6 +67,7 @@ export function ChatGiveawayDetail() {
     twitchApiClient: twitchApiClient || undefined,
     broadcasterId: userData?.id,
     excludedUserIds,
+    giveawayId: id,
   });
 
   const liveParticipantsRef = useRef(allParticipants);
@@ -229,9 +231,11 @@ export function ChatGiveawayDetail() {
     }
 
     setIsDrawing(true);
+    const flushed = flushParticipants();
 
     // Simulate drawing animation delay
     setTimeout(async () => {
+      await flushed;
       const excludeIds = giveaway.winners.map(w => w.twitchId);
       await executeDraw(excludeIds);
     }, 500);
@@ -241,6 +245,7 @@ export function ChatGiveawayDetail() {
     if (!giveaway || !pendingWinner) return;
 
     setIsRedrawing(true);
+    const flushed = flushParticipants();
 
     // Add current pending winner to excluded list for this session
     const newExcludedIds = [...redrawExcludedIds, pendingWinner.id];
@@ -254,6 +259,7 @@ export function ChatGiveawayDetail() {
 
     // Simulate drawing animation delay
     setTimeout(async () => {
+      await flushed;
       await executeDraw(allExcludedIds);
     }, 500);
   };
