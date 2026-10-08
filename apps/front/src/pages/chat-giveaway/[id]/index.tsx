@@ -481,6 +481,7 @@ export function ChatGiveawayDetail() {
                               drawnAt={winner.drawnAt}
                               tier={participantData?.tier}
                               onRemove={() => onClickRemoveWinner(winner.id)}
+                              className={pendingWinner ? "opacity-55" : undefined}
                             />
                           );
                         })

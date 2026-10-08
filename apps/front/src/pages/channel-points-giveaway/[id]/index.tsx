@@ -846,6 +846,7 @@ export function ChannelPointsGiveawayDetail() {
                                   ? () => onClickRemoveWinner(winner.id)
                                   : undefined
                               }
+                              className={pendingWinner ? "opacity-55" : undefined}
                             />
                           );
                         })

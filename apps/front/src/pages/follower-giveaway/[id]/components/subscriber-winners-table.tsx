@@ -1,10 +1,12 @@
 import {
   forwardRef,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type ComponentProps,
   type ComponentPropsWithRef,
+  type RefObject,
 } from "react";
 import { TableVirtuoso, type TableVirtuosoHandle } from "react-virtuoso";
 import { ArrowUp, XIcon } from "lucide-react";
@@ -24,12 +26,72 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
+import { reverseWinnersForDisplay } from "@/lib/giveaway-winner-rank";
 import { cn } from "@/lib/utils";
 
 interface Props {
   /** Ordem salva (prepend: mais novo primeiro). Só a exibição é invertida. */
   winners: BroadcasterSubscriber[];
   onRemove: (userId: string) => void;
+}
+
+function scrollerOf(root: HTMLElement | null): HTMLElement | null {
+  const node = root?.querySelector("[data-virtuoso-scroller]");
+  return node instanceof HTMLElement ? node : null;
+}
+
+function pinScrollerToEnd(
+  rootRef: RefObject<HTMLDivElement | null>,
+  handleRef: RefObject<TableVirtuosoHandle | null>
+) {
+  let attempts = 0;
+  let frame = 0;
+  let cancelled = false;
+
+  const tick = () => {
+    if (cancelled) return;
+    const node = scrollerOf(rootRef.current);
+    handleRef.current?.scrollToIndex({
+      index: "LAST",
+      align: "end",
+      behavior: "auto",
+    });
+    if (node) node.scrollTop = node.scrollHeight;
+    const atEnd =
+      !!node &&
+      node.scrollHeight > node.clientHeight + 1 &&
+      node.scrollHeight - node.scrollTop - node.clientHeight <= 2;
+    attempts += 1;
+    if (!atEnd && attempts < 45) frame = requestAnimationFrame(tick);
+  };
+
+  tick();
+  return () => {
+    cancelled = true;
+    cancelAnimationFrame(frame);
+  };
+}
+
+function holdScroll(
+  rootRef: RefObject<HTMLDivElement | null>,
+  top: number
+) {
+  const until = performance.now() + 400;
+  let frame = 0;
+  let cancelled = false;
+
+  const tick = () => {
+    if (cancelled) return;
+    const node = scrollerOf(rootRef.current);
+    if (node && Math.abs(node.scrollTop - top) > 1) node.scrollTop = top;
+    if (performance.now() < until) frame = requestAnimationFrame(tick);
+  };
+
+  tick();
+  return () => {
+    cancelled = true;
+    cancelAnimationFrame(frame);
+  };
 }
 
 const VirtuosoTable = forwardRef<
@@ -48,32 +110,100 @@ const VirtuosoTable = forwardRef<
 
 export function SubscriberWinnersTable({ winners, onRemove }: Props) {
   const { t } = useTranslation();
-  const display = useMemo(() => [...winners].reverse(), [winners]);
+  const display = useMemo(() => reverseWinnersForDisplay(winners), [winners]);
   const ref = useRef<TableVirtuosoHandle>(null);
-  const prevLen = useRef(winners.length);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const prevLen = useRef(-1);
+  const restoreTopRef = useRef<number | null>(null);
+  const actionRef = useRef<"open" | "grow" | "shrink" | "none">("open");
   const [atTop, setAtTop] = useState(true);
   const [firstVisible, setFirstVisible] = useState(0);
+  const [flashUserId, setFlashUserId] = useState<string | null>(null);
+  const displayRef = useRef(display);
+  const flashUserIdRef = useRef(flashUserId);
+  displayRef.current = display;
+  flashUserIdRef.current = flashUserId;
 
-  useEffect(() => {
-    if (winners.length > prevLen.current) {
-      requestAnimationFrame(() =>
-        ref.current?.scrollToIndex({ index: "LAST", behavior: "auto" })
-      );
-    }
+  if (prevLen.current === -1) {
+    actionRef.current = "open";
+  } else if (winners.length > prevLen.current) {
+    actionRef.current = "grow";
+  } else if (winners.length < prevLen.current) {
+    actionRef.current = "shrink";
+    const node = rootRef.current?.querySelector("[data-virtuoso-scroller]");
+    if (node instanceof HTMLElement) restoreTopRef.current = node.scrollTop;
+  } else {
+    actionRef.current = "none";
+  }
+
+  useLayoutEffect(() => {
+    const action = actionRef.current;
     prevLen.current = winners.length;
-  }, [winners.length]);
+
+    if (action === "shrink") {
+      const top = restoreTopRef.current ?? 0;
+      return holdScroll(rootRef, top);
+    }
+
+    if (action === "none") return;
+
+    if (action === "grow") {
+      setFlashUserId(winners[0]?.user_id ?? null);
+    }
+
+    const stop = pinScrollerToEnd(rootRef, ref);
+    const timer =
+      action === "grow"
+        ? window.setTimeout(() => setFlashUserId(null), 1200)
+        : null;
+
+    return () => {
+      stop();
+      if (timer !== null) window.clearTimeout(timer);
+    };
+  }, [winners]);
+
+  const Row = useMemo(
+    () =>
+      forwardRef<
+        HTMLTableRowElement,
+        ComponentProps<"tr"> & { "data-index"?: number }
+      >(function Row(props, rowRef) {
+        const idx = props["data-index"];
+        const user =
+          typeof idx === "number" ? displayRef.current[idx] : undefined;
+        const flashing = !!user && user.user_id === flashUserIdRef.current;
+        return (
+          <TableRow
+            {...props}
+            ref={rowRef}
+            className={cn(props.className, flashing && "winner-flash")}
+          />
+        );
+      }),
+    []
+  );
+
+  const components = useMemo(
+    () => ({
+      Table: VirtuosoTable,
+      TableBody,
+      TableRow: Row,
+      TableHead: TableHeader,
+    }),
+    [Row]
+  );
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <TableVirtuoso
         ref={ref}
         style={{ height: "300px" }}
         data={display}
-        initialTopMostItemIndex={display.length - 1}
         computeItemKey={(_i, user) => user.user_id}
         atTopStateChange={setAtTop}
         rangeChanged={(r) => setFirstVisible(r.startIndex)}
-        components={{ Table: VirtuosoTable, TableBody, TableHead: TableHeader }}
+        components={components}
         fixedHeaderContent={() => (
           <TableRow className="bg-card">
             <TableHead className="w-12 text-muted-foreground">#</TableHead>
@@ -97,7 +227,7 @@ export function SubscriberWinnersTable({ winners, onRemove }: Props) {
           <TableCell key="actions">
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -116,7 +246,10 @@ export function SubscriberWinnersTable({ winners, onRemove }: Props) {
         <div className="pointer-events-none absolute inset-x-0 top-[41px] z-20 h-9 bg-gradient-to-b from-card via-card/70 to-transparent" />
       )}
       {firstVisible > 0 && (
-        <div className="pointer-events-none absolute left-1/2 top-[46px] z-30 -translate-x-1/2 inline-flex items-center gap-1 rounded-full border bg-secondary/95 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-[46px] z-30 -translate-x-1/2 inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground"
+        >
           <ArrowUp className="size-3" />
           {firstVisible} {firstVisible === 1 ? "anterior" : "anteriores"}
         </div>

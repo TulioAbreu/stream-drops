@@ -249,3 +249,16 @@
   max-width: 100% !important;
   max-height: 100% !important;
 }
+
+@keyframes winner-flash {
+  0% {
+    background-color: color-mix(in oklab, var(--primary) 30%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.winner-flash {
+  animation: winner-flash 1200ms ease-out 1;
+}

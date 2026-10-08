@@ -39,9 +39,22 @@ export function WinnersList({
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const lastKeyRef = useRef<string | null>(null);
+  const triggerKeyRef = useRef(triggerKey);
+  const pinObserverRef = useRef<ResizeObserver | null>(null);
+  const pinTimerRef = useRef<number | null>(null);
 
+  triggerKeyRef.current = triggerKey;
   if (triggerKey) lastKeyRef.current = triggerKey;
   const effectiveKey = triggerKey ?? lastKeyRef.current;
+
+  const stopPin = useCallback(() => {
+    pinObserverRef.current?.disconnect();
+    pinObserverRef.current = null;
+    if (pinTimerRef.current !== null) {
+      window.clearTimeout(pinTimerRef.current);
+      pinTimerRef.current = null;
+    }
+  }, []);
 
   const [scrolledFromTop, setScrolledFromTop] = useState(false);
   const [hiddenAbove, setHiddenAbove] = useState(0);
@@ -76,16 +89,22 @@ export function WinnersList({
     toEnd();
     const raf = requestAnimationFrame(toEnd);
 
-    const ro = new ResizeObserver(toEnd);
-    if (contentRef.current) ro.observe(contentRef.current);
-    const timeout = window.setTimeout(() => ro.disconnect(), PIN_WINDOW_MS);
+    stopPin();
+    if (triggerKeyRef.current) {
+      const ro = new ResizeObserver(toEnd);
+      pinObserverRef.current = ro;
+      if (contentRef.current) ro.observe(contentRef.current);
+      pinTimerRef.current = window.setTimeout(stopPin, PIN_WINDOW_MS);
+    }
 
     return () => {
       cancelAnimationFrame(raf);
-      window.clearTimeout(timeout);
-      ro.disconnect();
     };
-  }, [effectiveKey, updateIndicators]);
+  }, [effectiveKey, stopPin, updateIndicators]);
+
+  useLayoutEffect(() => {
+    if (!triggerKey) stopPin();
+  }, [triggerKey, stopPin]);
 
   const showFade = scrolledFromTop;
 
@@ -120,7 +139,10 @@ export function WinnersList({
         <div className="pointer-events-none absolute inset-x-0 right-4 top-0 z-20 h-10 bg-gradient-to-b from-card via-card/70 to-transparent" />
       )}
       {hiddenAbove > 0 && (
-        <div className="pointer-events-none absolute left-1/2 top-1.5 z-30 -translate-x-1/2 inline-flex items-center gap-1 rounded-full border bg-secondary/95 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1.5 z-30 -translate-x-1/2 inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground"
+        >
           <ArrowUp className="size-3" />
           {hiddenAbove} {hiddenAbove === 1 ? "anterior" : "anteriores"}
         </div>

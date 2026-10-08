@@ -17,6 +17,14 @@ export function rankWinnersByDrawOrder<
 }
 
 /**
+ * Inverte só a exibição de Subscribers (prepend salvo → cronológico).
+ * Não muta o array original.
+ */
+export function reverseWinnersForDisplay<T>(winners: readonly T[]): T[] {
+  return [...winners].reverse();
+}
+
+/**
  * Ordena vencedores em ordem cronológica (asc por drawnAt).
  * Desempate pelo índice original (mesma regra do rank).
  */

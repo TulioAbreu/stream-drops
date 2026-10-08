@@ -1,40 +1,46 @@
-import { describe, it, expect } from "vitest";
-import { sortWinnersByDrawOrder } from "./giveaway-winner-rank";
+import { describe, expect, it } from "vitest";
+import {
+  reverseWinnersForDisplay,
+  sortWinnersByDrawOrder,
+} from "./giveaway-winner-rank";
 
 describe("sortWinnersByDrawOrder", () => {
-  it("U1: ordena em ordem cronológica ascendente por drawnAt", () => {
+  it("U1: ordena asc por drawnAt e desempata pelo índice original", () => {
     const winners = [
       { id: "c", drawnAt: "2026-10-08T12:10:00Z" },
       { id: "a", drawnAt: "2026-10-08T12:00:00Z" },
+      { id: "tie-2", drawnAt: "2026-10-08T12:05:00Z" },
       { id: "b", drawnAt: "2026-10-08T12:05:00Z" },
     ];
 
     const sorted = sortWinnersByDrawOrder(winners);
 
-    expect(sorted.map((w) => w.id)).toEqual(["a", "b", "c"]);
+    expect(sorted.map((winner) => winner.id)).toEqual([
+      "a",
+      "tie-2",
+      "b",
+      "c",
+    ]);
+    expect(winners.map((winner) => winner.id)).toEqual([
+      "c",
+      "a",
+      "tie-2",
+      "b",
+    ]);
   });
 
-  it("U1: desempata pelo índice original quando drawnAt é igual", () => {
-    const winners = [
-      { id: "x", drawnAt: "2026-10-08T12:00:00Z" },
-      { id: "y", drawnAt: "2026-10-08T12:00:00Z" },
-      { id: "z", drawnAt: "2026-10-08T12:00:00Z" },
+  it("U2: a inversão de Subscribers não muta o array original", () => {
+    const saved = [
+      { user_id: "c" },
+      { user_id: "b" },
+      { user_id: "a" },
     ];
+    const snapshot = saved.map((winner) => winner.user_id);
 
-    const sorted = sortWinnersByDrawOrder(winners);
+    const display = reverseWinnersForDisplay(saved);
 
-    expect(sorted.map((w) => w.id)).toEqual(["x", "y", "z"]);
-  });
-
-  it("U2: não muta o array original", () => {
-    const winners = [
-      { id: "b", drawnAt: "2026-10-08T12:05:00Z" },
-      { id: "a", drawnAt: "2026-10-08T12:00:00Z" },
-    ];
-    const original = [...winners];
-
-    sortWinnersByDrawOrder(winners);
-
-    expect(winners).toEqual(original);
+    expect(display.map((winner) => winner.user_id)).toEqual(["a", "b", "c"]);
+    expect(saved.map((winner) => winner.user_id)).toEqual(snapshot);
+    expect(display).not.toBe(saved);
   });
 });
