@@ -17,6 +17,7 @@ import {
   getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
 import { ChannelPointsAccessBanner } from "../../components/channel-points-access-banner";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
 import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChannelPointsGiveawayEdit() {
@@ -119,7 +120,16 @@ export function ChannelPointsGiveawayEdit() {
         updatedAt: new Date().toISOString(),
       };
 
-      await updateChannelPointsGiveaway(updatedGiveaway);
+      const saved = await updateChannelPointsGiveaway(updatedGiveaway);
+      if (
+        redirectIfGiveawayDeleted(
+          saved,
+          navigate,
+          "/dashboard/channel-points-giveaway",
+        )
+      ) {
+        return;
+      }
       toast.success(t("CHANNEL_POINTS_GIVEAWAY_EDIT_SUCCESS"));
       navigate(`/dashboard/channel-points-giveaway/${giveaway.id}`);
     } catch (error) {

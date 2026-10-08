@@ -30,6 +30,7 @@ import { WinnerConfirmationInline } from "./components/winner-confirmation-inlin
 import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
 import { ParticipantTag } from "./components/participant-tag";
 import { chatWinnerContextFromParticipant } from "../winner-context";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
 import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChatGiveawayDetail() {
@@ -295,7 +296,8 @@ export function ChatGiveawayDetail() {
     };
 
     try {
-      await updateChatGiveaway(updatedGiveaway);
+      const saved = await updateChatGiveaway(updatedGiveaway);
+      if (redirectIfGiveawayDeleted(saved, navigate, "/dashboard")) return;
       setGiveaway(updatedGiveaway);
       toast.success(`🎉 ${pendingWinner.displayName} foi confirmado como vencedor!`);
     } catch (error) {
@@ -325,7 +327,8 @@ export function ChatGiveawayDetail() {
       updatedAt: new Date().toISOString(),
     };
 
-    await updateChatGiveaway(updatedGiveaway);
+    const saved = await updateChatGiveaway(updatedGiveaway);
+    if (redirectIfGiveawayDeleted(saved, navigate, "/dashboard")) return;
     setGiveaway(updatedGiveaway);
 
     toast.success("Vencedor removido com sucesso!");

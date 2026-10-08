@@ -18,6 +18,9 @@ import { openDb } from ".";
  * `participation.v` fica em 1 para a leitura tolerante futura.
  */
 
+/** O update recusou gravar porque o sorteio já está soft-deleted. */
+export type GiveawayWriteResult = "saved" | "deleted";
+
 export type ParticipationUser =
   | [userId: string, displayName: string, at: number]
   | [userId: string, displayName: string, at: number, tickets: number];
@@ -209,13 +212,19 @@ export function pruneChatGiveaway(
     rows,
     record.createdAt,
   );
-  return {
-    ...record,
+  const { winners, ...rest } = record;
+  const next = {
+    ...rest,
     deletedAt,
     participants: [],
     participation,
-    winners: copyWinnerContext(record.winners ?? [], contextByUser),
-  };
+  } as unknown as ChatGiveawayFormData;
+  if (Array.isArray(winners)) {
+    next.winners = copyWinnerContext(winners, contextByUser);
+  } else {
+    delete (next as { winners?: ChatGiveawayFormData["winners"] }).winners;
+  }
+  return next;
 }
 
 function pointsDisplayName(person: ChannelPointsParticipant): string {
@@ -250,17 +259,21 @@ export function pruneChannelPointsGiveaway(
     people.set(userId, [userId, current[1], nextAt, nextTickets]);
   }
 
-  const next: ChannelPointsGiveawayFormData = {
-    ...record,
+  const { winners, collectionProgress: _collectionProgress, ...rest } = record;
+  const next = {
+    ...rest,
     deletedAt,
     participants: [],
     participation: {
       v: 1,
       users: order.map((userId) => people.get(userId) as ParticipationUser),
     },
-    winners: record.winners,
-  };
-  delete next.collectionProgress;
+  } as unknown as ChannelPointsGiveawayFormData;
+  if (Array.isArray(winners)) {
+    next.winners = winners;
+  } else {
+    delete (next as { winners?: ChannelPointsGiveawayFormData["winners"] }).winners;
+  }
   return next;
 }
 
@@ -268,12 +281,18 @@ export function pruneSubscriberGiveaway(
   record: FollowerGiveawayFormData,
   deletedAt: string,
 ): FollowerGiveawayFormData {
-  return {
-    ...record,
+  const { winners, ...rest } = record;
+  const next = {
+    ...rest,
     deletedAt,
     participants: [],
-    winners: record.winners,
-  };
+  } as unknown as FollowerGiveawayFormData;
+  if (Array.isArray(winners)) {
+    next.winners = winners;
+  } else {
+    delete (next as { winners?: FollowerGiveawayFormData["winners"] }).winners;
+  }
+  return next;
 }
 
 function settle<T>(

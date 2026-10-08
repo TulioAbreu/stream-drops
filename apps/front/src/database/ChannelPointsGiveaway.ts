@@ -4,6 +4,7 @@ import {
   hardDeleteChannelPointsGiveaway,
   isDeletedGiveaway,
   softDeleteChannelPointsGiveaway,
+  type GiveawayWriteResult,
 } from "./giveaway-deletion";
 
 export type ChannelPointsGiveawayStatus =
@@ -124,20 +125,24 @@ export function useChannelPointsGiveawayDb() {
 
   const updateChannelPointsGiveaway = async (
     data: ChannelPointsGiveawayFormData
-  ) => {
+  ): Promise<GiveawayWriteResult> => {
     const db = await openDb();
-    return new Promise<void>((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readwrite");
       const store = tx.objectStore(STORE_NAME);
+      let result: GiveawayWriteResult = "saved";
       const request = store.get(data.id);
       request.onsuccess = () => {
         const previous = request.result as
           | ChannelPointsGiveawayFormData
           | undefined;
-        if (isDeletedGiveaway(previous)) return;
+        if (isDeletedGiveaway(previous)) {
+          result = "deleted";
+          return;
+        }
         store.put(data);
       };
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => resolve(result);
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });

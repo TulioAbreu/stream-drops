@@ -250,11 +250,16 @@ export function ChannelPointsGiveawayPage() {
     }
 
     try {
-      await updateChannelPointsGiveaway({
+      const saved = await updateChannelPointsGiveaway({
         ...giveaway,
         rewardEnabled: nextEnabled,
         updatedAt: new Date().toISOString(),
       });
+      if (saved === "deleted") {
+        toast.info(t("GIVEAWAY_DELETED_TOAST"));
+        await fetchGiveaways(false);
+        return;
+      }
       toast.success(t("CHANNEL_POINTS_GIVEAWAY_TOGGLE_SUCCESS"));
     } catch (error) {
       console.error(error);

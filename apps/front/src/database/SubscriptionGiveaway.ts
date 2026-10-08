@@ -4,6 +4,7 @@ import {
     hardDeleteSubscriberGiveaway,
     isDeletedGiveaway,
     softDeleteSubscriberGiveaway,
+    type GiveawayWriteResult,
 } from "./giveaway-deletion";
 
 /** Vencedor de Subscribers. `drawnAt` só existe em quem entrou a partir da S3. */
@@ -135,19 +136,25 @@ export function useSubscriptionGiveawayDb() {
     const getGiveawayIncludingDeleted = readGiveaway;
 
     // UPDATE
-    const updateGiveaway = async (data: FollowerGiveawayFormData) => {
+    const updateGiveaway = async (
+        data: FollowerGiveawayFormData,
+    ): Promise<GiveawayWriteResult> => {
         const db = await openDb();
         const now = new Date().toISOString();
-        return new Promise<void>((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
             const store = tx.objectStore(STORE_NAME);
+            let result: GiveawayWriteResult = "saved";
             const request = store.get(data.id);
             request.onsuccess = () => {
                 const previous = request.result as FollowerGiveawayFormData | undefined;
-                if (isDeletedGiveaway(previous)) return;
+                if (isDeletedGiveaway(previous)) {
+                    result = "deleted";
+                    return;
+                }
                 store.put(mergeSubscriberGiveawayUpdate(previous, data, now));
             };
-            tx.oncomplete = () => resolve();
+            tx.oncomplete = () => resolve(result);
             tx.onerror = () => reject(tx.error);
             tx.onabort = () => reject(tx.error);
         });

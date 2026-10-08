@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  clearDatabase,
   DATABASE_NAME,
   DATABASE_STORES,
   DATABASE_VERSION,
@@ -145,6 +146,10 @@ function stable(snapshot: DatabaseSnapshot) {
 }
 
 describe("export de backup JSON", () => {
+  beforeEach(async () => {
+    await clearDatabase();
+  });
+
   afterEach(async () => {
     localStorage.clear();
     await deleteDatabase();

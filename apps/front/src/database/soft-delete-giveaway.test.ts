@@ -7,7 +7,10 @@ import {
   type ChatGiveawayFormData,
   type ChatGiveawayWinner,
 } from "./ChatGiveaway";
-import type { ChatParticipantRecord } from "./chat-participants";
+import {
+  addChatParticipantRows,
+  type ChatParticipantRecord,
+} from "./chat-participants";
 import { useSubscriptionGiveawayDb } from "./SubscriptionGiveaway";
 import {
   buildWinnerIndexFromDatabase,
@@ -910,12 +913,143 @@ describe("soft-delete de sorteios", () => {
       expect.not.objectContaining({ drawnAt: expect.anything() }),
     ]);
     expect(await subscriberDb.getGiveaway(id)).toBeUndefined();
-    await subscriberDb.updateGiveaway({
+    expect(await subscriberDb.updateGiveaway({
       ...(after as never),
       title: "não pode voltar",
-    });
+    })).toBe("deleted");
     const still = await readRaw<Record<string, unknown>>("giveaways", id);
     expect(still?.title).toBe("Legado");
     expect(still?.deletedAt).toBe(NOW);
+  });
+
+  it("registro legado sem winners não ganha a chave na poda", async () => {
+    const chat = {
+      id: "chat-sem-winners",
+      title: "Chat legado",
+      description: "",
+      keyword: "!join",
+      cost: 0,
+      minimumSuscriptionTimeInMonths: 0,
+      subscriberMultiplier: 1,
+      subscribersOnly: false,
+      participants: [chatPerson("p", 1_700_000_000_000)],
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    const points = {
+      id: "points-sem-winners",
+      title: "Pontos legado",
+      description: "",
+      cost: 50,
+      rewardId: null,
+      maxPerStream: null,
+      subscribersOnly: false,
+      subscriptionRequirement: 1000,
+      subscriberMultiplier: { "1000": 1, "2000": 2, "3000": 3 },
+      refundIneligible: false,
+      allowMultipleWins: false,
+      status: "open",
+      participants: [],
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    const subs = {
+      id: "sub-sem-winners",
+      title: "Subs legado",
+      description: "",
+      subscriptionRequirement: 1000,
+      subscriberMultiplier: { "1000": 1, "2000": 2, "3000": 3 },
+      participants: [subscriber("legado")],
+      spreadsheetUrl: null,
+    };
+    await putRaw("chat-giveaways", [chat]);
+    await putRaw("channel-points-giveaways", [points]);
+    await putRaw("giveaways", [subs]);
+
+    await chatDb.softDeleteChatGiveaway(chat.id, NOW);
+    await pointsDb.softDeleteChannelPointsGiveaway(points.id, NOW);
+    await subscriberDb.softDeleteGiveaway(subs.id, NOW);
+
+    const chatAfter = await readRaw<Record<string, unknown>>("chat-giveaways", chat.id);
+    const pointsAfter = await readRaw<Record<string, unknown>>(
+      "channel-points-giveaways",
+      points.id,
+    );
+    const subsAfter = await readRaw<Record<string, unknown>>("giveaways", subs.id);
+    expect(chatAfter).not.toHaveProperty("winners");
+    expect(pointsAfter).not.toHaveProperty("winners");
+    expect(subsAfter).not.toHaveProperty("winners");
+    expect(chatAfter?.title).toBe("Chat legado");
+    expect(pointsAfter?.title).toBe("Pontos legado");
+    expect(subsAfter?.title).toBe("Subs legado");
+    expect(chatAfter?.deletedAt).toBe(NOW);
+    expect(pointsAfter?.deletedAt).toBe(NOW);
+    expect(subsAfter?.deletedAt).toBe(NOW);
+    expect(await pointsDb.updateChannelPointsGiveaway({
+      ...(pointsAfter as never),
+      title: "não grava",
+    })).toBe("deleted");
+    expect(
+      (await readRaw<Record<string, unknown>>("channel-points-giveaways", points.id))?.title,
+    ).toBe("Pontos legado");
+  });
+
+  it("soft-deleted não recebe linha nova e o ativo não é regravado", async () => {
+    const activeId = "chat-ativo-linhas";
+    const deletedId = "chat-apagado-linhas";
+    await putRaw("chat-giveaways", [
+      chatGiveaway(activeId, []),
+      { ...chatGiveaway(deletedId, []), deletedAt: NOW, participants: [] },
+    ]);
+    const beforeActive = JSON.stringify(await readRaw("chat-giveaways", activeId));
+    const beforeDeleted = JSON.stringify(await readRaw("chat-giveaways", deletedId));
+    const spy = installWriteSpy();
+    let activeResult: { durableUserIds: string[]; retry: boolean } | undefined;
+    let deletedResult: { durableUserIds: string[]; retry: boolean } | undefined;
+    try {
+      activeResult = await addChatParticipantRows([
+        chatRow(activeId, "novo", 1_700_000_000_000, "Novo"),
+      ]);
+      deletedResult = await addChatParticipantRows([
+        chatRow(deletedId, "orfao", 1_700_000_000_100, "Órfão"),
+      ]);
+    } finally {
+      spy.restore();
+    }
+
+    expect(activeResult).toEqual({ durableUserIds: ["novo"], retry: false });
+    expect(deletedResult).toEqual({ durableUserIds: ["orfao"], retry: false });
+    expect(JSON.stringify(await readRaw("chat-giveaways", activeId))).toBe(beforeActive);
+    expect(JSON.stringify(await readRaw("chat-giveaways", deletedId))).toBe(beforeDeleted);
+    const rows = await new Promise<ChatParticipantRecord[]>((resolve, reject) => {
+      openDb().then((db) => {
+        const tx = db.transaction("chat-participants", "readonly");
+        const request = tx.objectStore("chat-participants").getAll();
+        request.onsuccess = () => resolve(request.result as ChatParticipantRecord[]);
+        request.onerror = () => reject(request.error);
+      }).catch(reject);
+    });
+    expect(rows.map((row) => row.userId)).toEqual(["novo"]);
+    expect(spy.writes.filter((write) => write.store === "chat-giveaways")).toEqual([]);
+    const activeWrites = spy.writes.filter((write) => write.store === "chat-participants");
+    expect(activeWrites.map((write) => write.op)).toEqual(["add"]);
+    expect(activeWrites[0]?.key).toBe(`${activeId}:novo`);
+
+    const active = await readRaw<ChatGiveawayFormData>("chat-giveaways", activeId);
+    expect(await chatDb.updateChatGiveaway({
+      ...(active as ChatGiveawayFormData),
+      title: "Título novo",
+    })).toBe("saved");
+    expect((await readRaw<ChatGiveawayFormData>("chat-giveaways", activeId))?.title).toBe(
+      "Título novo",
+    );
+    const deleted = await readRaw<ChatGiveawayFormData>("chat-giveaways", deletedId);
+    expect(await chatDb.updateChatGiveaway({
+      ...(deleted as ChatGiveawayFormData),
+      title: "não grava",
+    })).toBe("deleted");
+    expect((await readRaw<ChatGiveawayFormData>("chat-giveaways", deletedId))?.title).toBe(
+      `Sorteio ${deletedId}`,
+    );
   });
 });

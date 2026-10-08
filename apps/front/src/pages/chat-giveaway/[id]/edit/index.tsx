@@ -4,6 +4,7 @@ import { useChatGiveawayDb, type ChatGiveawayFormData } from "@/database/ChatGiv
 import { Layout } from "@/components/layout";
 import { ChatGiveawayFormComponent } from "../../components/chat-giveaway-form";
 import { type ChatGiveawayForm } from "../../types";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
 import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChatGiveawayEdit() {
@@ -53,7 +54,10 @@ export function ChatGiveawayEdit() {
         updatedAt: new Date().toISOString(),
       };
 
-      await updateChatGiveaway(updatedGiveaway);
+      const saved = await updateChatGiveaway(updatedGiveaway);
+      if (redirectIfGiveawayDeleted(saved, navigate, "/dashboard/chat-giveaway")) {
+        return;
+      }
       navigate(`/dashboard/chat-giveaway/${giveaway.id}`);
     } catch (error) {
       console.error("Error updating giveaway:", error);

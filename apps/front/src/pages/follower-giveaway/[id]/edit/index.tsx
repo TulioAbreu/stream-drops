@@ -14,6 +14,7 @@ import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
 import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 const FIELD_CONTAINER = "flex flex-col gap-2";
@@ -33,7 +34,10 @@ export function EditFollowerGiveawayPage() {
     const onClickSubmit = async (data: FollowerGiveawayFormData) => {
         if (!id) return;
         try {
-            await updateGiveaway(data);
+            const saved = await updateGiveaway(data);
+            if (redirectIfGiveawayDeleted(saved, navigate, "/dashboard/follower-giveaway")) {
+                return;
+            }
             navigate(`/dashboard/follower-giveaway/${id}`);
         } catch (error) {
             console.error("Error updating giveaway:", error);

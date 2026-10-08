@@ -1,6 +1,16 @@
 import { DeleteGiveawayDialog } from "@/components/delete-giveaway-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import "@/i18n";
+import { DialogTitle } from "@radix-ui/react-dialog";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
@@ -98,5 +108,38 @@ describe("diálogo de excluir sorteio", () => {
     await shot("light-checked");
 
     expect(storageKeys()).toEqual(before);
+  });
+
+  it("o diálogo antigo só confirmava a exclusão", async () => {
+    render(
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button type="button">Abrir exclusão antiga</Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar exclusão</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">Cancelar</Button>
+            </DialogClose>
+            <Button type="button" variant="destructive">Deletar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir exclusão antiga" }));
+    expect(await screen.findByRole("heading", { name: "Confirmar exclusão" })).toBeTruthy();
+    expect(screen.queryByRole("checkbox")).toBeNull();
+
+    setTheme("dark");
+    await shot("before-dark");
+    setTheme("light");
+    await shot("before-light");
   });
 });
