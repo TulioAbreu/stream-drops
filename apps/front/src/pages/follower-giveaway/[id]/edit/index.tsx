@@ -2,7 +2,7 @@ import { Layout } from "@/components/layout";
 import { PageHeader } from "@/components/page-header/page-header";
 import { PageHeaderTitle } from "@/components/page-header/page-header-title";
 import { type FollowerGiveawayFormData, useSubscriptionGiveawayDb } from "@/database/SubscriptionGiveaway";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
@@ -14,6 +14,7 @@ import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 const FIELD_CONTAINER = "flex flex-col gap-2";
 
@@ -24,6 +25,8 @@ export function EditFollowerGiveawayPage() {
     const form = useForm<FollowerGiveawayFormData>();
 
     const { getGiveaway, updateGiveaway } = useSubscriptionGiveawayDb();
+    const [missing, setMissing] = useState(false);
+    useRedirectWhenMissing(missing, "/dashboard/follower-giveaway");
 
     const giveaway = form.watch();
 
@@ -45,7 +48,14 @@ export function EditFollowerGiveawayPage() {
     useEffect(() => {
         if (!id) return;
         getGiveaway(id)
-            .then((data) => form.reset(data))
+            .then((data) => {
+                if (!data) {
+                    setMissing(true);
+                    return;
+                }
+                setMissing(false);
+                form.reset(data);
+            })
             .catch((_error) => {
                 // TODO: Handle error (e.g., show a notification)
             });

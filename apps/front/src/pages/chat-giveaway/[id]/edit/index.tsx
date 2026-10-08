@@ -4,6 +4,7 @@ import { useChatGiveawayDb, type ChatGiveawayFormData } from "@/database/ChatGiv
 import { Layout } from "@/components/layout";
 import { ChatGiveawayFormComponent } from "../../components/chat-giveaway-form";
 import { type ChatGiveawayForm } from "../../types";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChatGiveawayEdit() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,8 @@ export function ChatGiveawayEdit() {
   const [giveaway, setGiveaway] = useState<ChatGiveawayFormData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [missing, setMissing] = useState(false);
+  useRedirectWhenMissing(missing, "/dashboard/chat-giveaway");
 
   useEffect(() => {
     if (!id) return;
@@ -22,8 +25,7 @@ export function ChatGiveawayEdit() {
         if (data) {
           setGiveaway(data);
         } else {
-          // Handle not found
-          navigate("/dashboard/chat-giveaway");
+          setMissing(true);
         }
       } catch (error) {
         console.error("Error fetching giveaway:", error);

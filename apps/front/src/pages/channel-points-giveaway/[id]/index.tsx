@@ -81,6 +81,7 @@ import { WinnerConfirmationInline } from "@/components/giveaway/winner-confirmat
 import { ParticipantTag } from "@/pages/chat-giveaway/[id]/components/participant-tag";
 import { ChannelPointsAccessBanner } from "../components/channel-points-access-banner";
 import { useChatMessages } from "../hooks/use-chat-messages";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 interface PendingChannelPointsWinner {
   participant: ChannelPointsParticipant;
@@ -117,6 +118,8 @@ export function ChannelPointsGiveawayDetail() {
   const [redrawExcludedRedemptionIds, setRedrawExcludedRedemptionIds] =
     useState<string[]>([]);
   const [isRedrawing, setIsRedrawing] = useState(false);
+  const [missing, setMissing] = useState(false);
+  useRedirectWhenMissing(missing, "/dashboard/channel-points-giveaway");
 
   const chatEnabled =
     !!userData?.login &&
@@ -133,9 +136,10 @@ export function ChannelPointsGiveawayDetail() {
     const loadGiveaway = async () => {
       const data = await getChannelPointsGiveaway(id);
       if (!data) {
-        navigate("/dashboard/channel-points-giveaway");
+        setMissing(true);
         return;
       }
+      setMissing(false);
       setGiveaway({
         ...data,
         maxPerStream: data.maxPerStream ?? null,
@@ -143,7 +147,7 @@ export function ChannelPointsGiveawayDetail() {
     };
 
     loadGiveaway();
-  }, [id, getChannelPointsGiveaway, navigate]);
+  }, [id, getChannelPointsGiveaway]);
 
   useEffect(() => {
     if (!pendingWinner) {

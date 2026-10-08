@@ -24,6 +24,7 @@ import { useExclusionListDb } from "@/database/ExclusionListItem";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
 import { formatChancePercentage } from "@/lib/utils";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
@@ -36,6 +37,8 @@ export function FollowerGiveawayId() {
     const [fetchUsersProgress, setFetchUsersProgress] = useState<number>(0);
     const [isFetchingParticipants, startFetchParticipantsTransition] = useTransition();
     const [isExportingResultSheets, startExportingResultSheetsTransition] = useTransition();
+    const [missing, setMissing] = useState(false);
+    useRedirectWhenMissing(missing, "/dashboard/follower-giveaway");
 
     const fetchGiveaway = async () => {
         if (!id) {
@@ -44,7 +47,11 @@ export function FollowerGiveawayId() {
 
         const giveawayData = await getGiveaway(id);
         if (giveawayData) {
+            setMissing(false);
             setGiveaway(giveawayData);
+        } else {
+            setGiveaway(null);
+            setMissing(true);
         }
     };
 

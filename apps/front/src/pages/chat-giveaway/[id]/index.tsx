@@ -30,6 +30,7 @@ import { WinnerConfirmationInline } from "./components/winner-confirmation-inlin
 import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
 import { ParticipantTag } from "./components/participant-tag";
 import { chatWinnerContextFromParticipant } from "../winner-context";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChatGiveawayDetail() {
   const { id } = useParams<{ id: string }>();
@@ -44,6 +45,8 @@ export function ChatGiveawayDetail() {
   const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [missing, setMissing] = useState(false);
+  useRedirectWhenMissing(missing, "/dashboard");
 
   const getChatGiveawayRef = useRef(getChatGiveaway);
   const getExclusionsRef = useRef(getExclusions);
@@ -130,9 +133,10 @@ export function ChatGiveawayDetail() {
       const data = await getChatGiveawayRef.current(id);
       if (cancelled) return;
       if (!data) {
-        navigate("/dashboard");
+        setMissing(true);
         return;
       }
+      setMissing(false);
       setGiveaway(data);
     };
 
@@ -140,7 +144,7 @@ export function ChatGiveawayDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, navigate]);
+  }, [id]);
 
   useEffect(() => {
     refreshExclusions();

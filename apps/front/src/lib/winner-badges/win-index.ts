@@ -37,6 +37,8 @@ export interface WinnerIndex extends WinnerHistoryProvider {
    * permanecem. Não grava nada.
    */
   applySoftDelete(giveawayType: GiveawayType, record: unknown): void;
+  /** Hard delete: tira as vitórias desse sorteio. Não grava nada. */
+  applyHardDelete(giveawayType: GiveawayType, giveawayId: string): void;
 }
 
 function copyContext(context: WinContext | undefined): WinContext | undefined {
@@ -194,6 +196,10 @@ function bind(state: IndexState): WinnerIndex {
     },
     applySoftDelete(giveawayType, record) {
       replaceGiveaway(state, giveawayType, record);
+    },
+    applyHardDelete(giveawayType, giveawayId) {
+      if (!giveawayId) return;
+      removeGiveawayWins(state, giveawayType, giveawayId);
     },
   };
 }

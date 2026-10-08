@@ -1,6 +1,7 @@
 import { Layout } from "@/components/layout";
+import { DeleteGiveawayDialog } from "@/components/delete-giveaway-dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogDescription, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -53,7 +54,12 @@ export function ChatGiveaway() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const { getChatGiveaways, deleteChatGiveaway, addChatGiveaway } = useChatGiveawayDb();
+  const {
+    getChatGiveaways,
+    deleteChatGiveaway,
+    softDeleteChatGiveaway,
+    addChatGiveaway,
+  } = useChatGiveawayDb();
   const { getTemplates, addTemplate, deleteTemplate, updateTemplatesOrder } = useChatGiveawayTemplateDb();
 
   const [giveaways, setGiveaways] = useState<ChatGiveawayFormData[]>([]);
@@ -291,9 +297,13 @@ export function ChatGiveaway() {
     });
   };
 
-  const onClickConfirmDeleteGiveaway = async (giveawayId: string) => {
+  const onClickConfirmDeleteGiveaway = (
+    giveawayId: string,
+    hardDelete: boolean,
+  ) => {
     startIsDeletingGiveawayTransition(async () => {
-      await deleteChatGiveaway(giveawayId);
+      if (hardDelete) await deleteChatGiveaway(giveawayId);
+      else await softDeleteChatGiveaway(giveawayId);
       fetchGiveaways(false);
     });
   };
@@ -476,8 +486,7 @@ export function ChatGiveaway() {
                           </Tooltip>
                         </TooltipProvider>
 
-                        <Dialog>
-                          <DropdownMenu>
+                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
                                 <MoreHorizontal className="w-4 h-4" />
@@ -514,40 +523,23 @@ export function ChatGiveaway() {
                                 <span>Criar Template</span>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DialogTrigger asChild>
-                                <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}>
-                                  <TrashIcon className="mr-2 h-4 w-4" />
-                                  <span>{t("CHAT_GIVEAWAY_TABLE_ACTIONS_DELETE", "Excluir")}</span>
-                                </DropdownMenuItem>
-                              </DialogTrigger>
+                              <DeleteGiveawayDialog
+                                pending={isDeletingGiveaway}
+                                onConfirm={(hardDelete) =>
+                                  onClickConfirmDeleteGiveaway(giveaway.id, hardDelete)
+                                }
+                                trigger={
+                                  <DropdownMenuItem
+                                    className="cursor-pointer text-destructive focus:text-destructive"
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <TrashIcon className="mr-2 h-4 w-4" />
+                                    <span>{t("CHAT_GIVEAWAY_TABLE_ACTIONS_DELETE", "Excluir")}</span>
+                                  </DropdownMenuItem>
+                                }
+                              />
                             </DropdownMenuContent>
                           </DropdownMenu>
-
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>
-                                {t("CHAT_GIVEAWAY_DELETE_DIALOG_TITLE", "Confirmar exclusão")}
-                              </DialogTitle>
-                              <DialogDescription>
-                                {t("CHAT_GIVEAWAY_DELETE_DIALOG_DESCRIPTION", "Tem certeza que deseja excluir este sorteio? Esta ação não pode ser desfeita.")}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <DialogClose asChild>
-                                <Button variant="outline" disabled={isDeletingGiveaway}>
-                                  {t("CANCEL", "Cancelar")}
-                                </Button>
-                              </DialogClose>
-                              <Button
-                                variant="destructive"
-                                loading={isDeletingGiveaway}
-                                onClick={() => onClickConfirmDeleteGiveaway(giveaway.id)}
-                              >
-                                {t("DELETE", "Excluir")}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
                       </div>
                     </TableCell>
                   </TableRow>

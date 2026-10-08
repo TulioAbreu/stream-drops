@@ -1,5 +1,10 @@
 import type { BroadcasterSubscriber, TwitchSubscriptionTier } from "@/service/twitch/types";
 import { openDb } from ".";
+import {
+    hardDeleteSubscriberGiveaway,
+    isDeletedGiveaway,
+    softDeleteSubscriberGiveaway,
+} from "./giveaway-deletion";
 
 /** Vencedor de Subscribers. `drawnAt` só existe em quem entrou a partir da S3. */
 export type SubscriberGiveawayWinner = BroadcasterSubscriber & {
@@ -19,6 +24,8 @@ export interface FollowerGiveawayFormData {
     createdAt?: string;
     /** ISO UTC. Ausente nos sorteios gravados antes da S3. */
     updatedAt?: string;
+    /** ISO UTC. Ausente = sorteio ativo. Sem resumo `participation`. */
+    deletedAt?: string;
 }
 
 function hasDrawnAt(winner: SubscriberGiveawayWinner): boolean {
@@ -86,19 +93,19 @@ export function useSubscriptionGiveawayDb() {
         });
     };
 
-    // READ ALL
-    const getGiveaways = async (): Promise<FollowerGiveawayFormData[]> => {
+    const readGiveaways = async (): Promise<FollowerGiveawayFormData[]> => {
         const db = await openDb();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readonly");
             const req = tx.objectStore(STORE_NAME).getAll();
-            req.onsuccess = () => resolve(req.result);
+            req.onsuccess = () => resolve(req.result ?? []);
             req.onerror = () => reject(req.error);
         });
     };
 
-    // READ ONE
-    const getGiveaway = async (id: string): Promise<FollowerGiveawayFormData | undefined> => {
+    const readGiveaway = async (
+        id: string,
+    ): Promise<FollowerGiveawayFormData | undefined> => {
         const db = await openDb();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readonly");
@@ -107,6 +114,25 @@ export function useSubscriptionGiveawayDb() {
             req.onerror = () => reject(req.error);
         });
     };
+
+    // READ ALL — só ativos. Sem `deletedAt` continua ativo.
+    const getGiveaways = async (): Promise<FollowerGiveawayFormData[]> => {
+        const rows = await readGiveaways();
+        return rows.filter((row) => !isDeletedGiveaway(row));
+    };
+
+    const getGiveawaysIncludingDeleted = readGiveaways;
+
+    // READ ONE — soft-deleted chega como não encontrado.
+    const getGiveaway = async (
+        id: string,
+    ): Promise<FollowerGiveawayFormData | undefined> => {
+        const row = await readGiveaway(id);
+        if (!row || isDeletedGiveaway(row)) return undefined;
+        return row;
+    };
+
+    const getGiveawayIncludingDeleted = readGiveaway;
 
     // UPDATE
     const updateGiveaway = async (data: FollowerGiveawayFormData) => {
@@ -118,6 +144,7 @@ export function useSubscriptionGiveawayDb() {
             const request = store.get(data.id);
             request.onsuccess = () => {
                 const previous = request.result as FollowerGiveawayFormData | undefined;
+                if (isDeletedGiveaway(previous)) return;
                 store.put(mergeSubscriberGiveawayUpdate(previous, data, now));
             };
             tx.oncomplete = () => resolve();
@@ -126,22 +153,14 @@ export function useSubscriptionGiveawayDb() {
         });
     };
 
-    // DELETE
-    const deleteGiveaway = async (id: string) => {
-        const db = await openDb();
-        return new Promise<void>((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            tx.objectStore(STORE_NAME).delete(id);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
-    };
-
     return {
         addGiveaway,
         getGiveaways,
+        getGiveawaysIncludingDeleted,
         getGiveaway,
+        getGiveawayIncludingDeleted,
         updateGiveaway,
-        deleteGiveaway,
+        deleteGiveaway: hardDeleteSubscriberGiveaway,
+        softDeleteGiveaway: softDeleteSubscriberGiveaway,
     };
 }

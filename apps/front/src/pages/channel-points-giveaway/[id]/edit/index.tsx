@@ -17,6 +17,7 @@ import {
   getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
 import { ChannelPointsAccessBanner } from "../../components/channel-points-access-banner";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChannelPointsGiveawayEdit() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,8 @@ export function ChannelPointsGiveawayEdit() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [missing, setMissing] = useState(false);
+  useRedirectWhenMissing(missing, "/dashboard/channel-points-giveaway");
 
   useEffect(() => {
     if (!id) return;
@@ -43,7 +46,7 @@ export function ChannelPointsGiveawayEdit() {
       try {
         const data = await getChannelPointsGiveaway(id);
         if (!data) {
-          navigate("/dashboard/channel-points-giveaway");
+          setMissing(true);
           return;
         }
 
