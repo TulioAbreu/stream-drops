@@ -5,7 +5,6 @@ import { useEffect, useState, useMemo } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -16,7 +15,8 @@ import { drawWinner } from "@/service/chat-giveaway";
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
-import { rankWinnersByDrawOrder } from "@/lib/giveaway-winner-rank";
+import { rankWinnersByDrawOrder, sortWinnersByDrawOrder } from "@/lib/giveaway-winner-rank";
+import { WinnersList } from "@/components/giveaway/winners-list";
 import { useTranslation } from "react-i18next";
 import type { ChatParticipant } from "../types";
 import { WinnerConfirmationInline } from "./components/winner-confirmation-inline";
@@ -73,12 +73,9 @@ export function ChatGiveawayDetail() {
     [participants]
   );
 
-  // Sort winners by drawnAt (newest first) for display
+  // Ordem cronológica: 1º em cima, último embaixo
   const sortedWinners = useMemo(
-    () =>
-      [...(giveaway?.winners ?? [])].sort(
-        (a, b) => new Date(b.drawnAt).getTime() - new Date(a.drawnAt).getTime()
-      ),
+    () => sortWinnersByDrawOrder(giveaway?.winners ?? []),
     [giveaway?.winners]
   );
 
@@ -433,9 +430,12 @@ export function ChatGiveawayDetail() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex min-h-0 flex-1 flex-col">
-                <ScrollArea className="h-[420px] pr-4">
-                  <div className="space-y-3">
-                    {pendingWinner && (
+                <WinnersList
+                  className="h-[420px] pr-4"
+                  triggerKey={pendingWinner?.id ?? null}
+                  pendingRank={pendingWinnerRank}
+                  pending={
+                    pendingWinner ? (
                       <WinnerConfirmationInline
                         key={pendingWinner.id}
                         pendingWinner={pendingWinner}
@@ -447,8 +447,9 @@ export function ChatGiveawayDetail() {
                         onRedraw={handleRedraw}
                         isRedrawing={isRedrawing}
                       />
-                    )}
-
+                    ) : undefined
+                  }
+                >
                     {giveaway.winners.length === 0 && !pendingWinner ? (
                       <div className="flex items-center justify-center min-h-[320px]">
                         <Empty>
@@ -480,12 +481,12 @@ export function ChatGiveawayDetail() {
                               drawnAt={winner.drawnAt}
                               tier={participantData?.tier}
                               onRemove={() => onClickRemoveWinner(winner.id)}
+                              className={pendingWinner ? "opacity-55" : undefined}
                             />
                           );
                         })
                     )}
-                  </div>
-                </ScrollArea>
+                </WinnersList>
               </CardContent>
             </Card>
 

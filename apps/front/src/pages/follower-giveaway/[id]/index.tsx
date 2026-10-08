@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { TableVirtuoso } from "react-virtuoso";
 import { GiveawayInfoCard } from "./components/giveaway-info-card";
+import { SubscriberWinnersTable } from "./components/subscriber-winners-table";
 import { fetchSubscribers } from "@/usecase/fetch-subscribers";
 import { filterElegibleSubscribers } from "@/usecase/filter-eligible-subscribers";
 import { toast } from "sonner";
@@ -440,38 +441,9 @@ export function FollowerGiveawayId() {
                                     <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_WINNERS")}</p>
                                 </div>
                             ) : (
-                                <TableVirtuoso
-                                    style={{ height: "300px" }}
-                                    data={giveaway?.winners}
-                                    components={{
-                                        Table,
-                                        TableBody,
-                                        TableRow,
-                                        TableHead: TableHeader,
-                                    }}
-                                    fixedHeaderContent={() => (
-                                        <TableRow>
-                                            <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
-                                            <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
-                                            <TableHead></TableHead>
-                                        </TableRow>
-                                    )}
-                                    itemContent={(_index, user) => [
-                                        <TableCell>{user.user_name}</TableCell>,
-                                        <TableCell>{t(`TIER_${user.tier}`)}</TableCell>,
-                                        <TableCell>
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger>
-                                                        <Button variant="ghost" size="icon" onClick={() => onClickRemoveWinner(user.user_id)}>
-                                                            <XIcon />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Remover</TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        </TableCell>
-                                    ]}
+                                <SubscriberWinnersTable
+                                    winners={giveaway?.winners ?? []}
+                                    onRemove={onClickRemoveWinner}
                                 />
                             )}
                         </CardContent>

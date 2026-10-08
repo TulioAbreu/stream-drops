@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/tooltip";
 import { XIcon } from "lucide-react";
 import { SubscriptionTierBadge } from "./subscription-tier-badge";
+import { cn } from "@/lib/utils";
 
 export interface GiveawayWinnerRowProps {
   rank: number;
@@ -17,6 +18,7 @@ export interface GiveawayWinnerRowProps {
   tier?: null | 1000 | 2000 | 3000;
   onRemove?: () => void;
   removeLabel?: string;
+  className?: string;
 }
 
 export function GiveawayWinnerRow({
@@ -27,9 +29,16 @@ export function GiveawayWinnerRow({
   tier,
   onRemove,
   removeLabel = "Remover vencedor",
+  className,
 }: GiveawayWinnerRowProps) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+    <div
+      data-winner-item
+      className={cn(
+        "flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20 transition-opacity",
+        className
+      )}
+    >
       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
         {rank}
       </div>

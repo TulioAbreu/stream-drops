@@ -59,8 +59,9 @@ Persistência local: **IndexedDB** + **localStorage** (SPA). Integrações exter
 | Deploy | Vercel SPA (`apps/front/vercel.json` rewrite `/(.*) → /`; Root Directory `apps/front`) |
 | Dev server | `vite --port=3000` (via `bun run dev`) |
 | Package manager | Bun (`bun install`, lockfile `bun.lock`) |
+| Testes | Vitest 5 Browser Mode + Playwright/Chromium (`apps/front`, CI em PR) |
 
-**Não existe:** backend hospedado de produto, Prisma/ORM, Docker, testes (Vitest/Jest/Playwright), Stripe, analytics.
+**Não existe:** backend hospedado de produto, Prisma/ORM, Docker, Stripe, analytics.
 
 **Nota:** `apps/subathon-server` é binário local (`bun build --compile`); `apps/twitch-stub` é mock Nest em dev.
 
