@@ -85,6 +85,17 @@ describe("WinnerMoment", () => {
     expect(getComputedStyle(beam!).animationName).toBe("sd-winner-beam");
   });
 
+  it("Esc não confirma, não descarta e não esconde o palco", () => {
+    const { onConfirm, onDismiss, onCancel, onRedraw } = renderMoment();
+    const dialog = screen.getByRole("dialog", { name: "FlaviaQueen" });
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(onRedraw).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "FlaviaQueen" })).toBeTruthy();
+  });
+
   it("respeita prefers-reduced-motion: sem confete e sem animação", async () => {
     const client = cdp();
     await client.send("Emulation.setEmulatedMedia", {

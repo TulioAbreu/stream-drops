@@ -200,6 +200,8 @@ export function WinnerMoment({
     setPhase("exiting");
   };
 
+  // Esc não fecha o palco. Cancelar descarta o pendente e Confirmar grava;
+  // não há um fechar que só esconda o overlay e mantenha o vencedor no log.
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "Tab") return;
     const root = dialogRef.current;

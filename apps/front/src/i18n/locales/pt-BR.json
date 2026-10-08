@@ -143,6 +143,8 @@
     "CHAT_GIVEAWAY_LIVE": "ao vivo",
     "CHAT_GIVEAWAY_LOCAL": "Neste navegador",
     "CHAT_GIVEAWAY_HUD_KEYWORD": "Palavra-chave",
+    "CHAT_GIVEAWAY_KEYWORD_SEND": "Envie",
+    "CHAT_GIVEAWAY_KEYWORD_IN_CHAT": "no chat para participar",
     "CHAT_GIVEAWAY_HUD_MULTIPLIER": "Multiplicador sub",
     "CHAT_GIVEAWAY_HUD_ELIGIBLE": "Elegíveis",
     "CHAT_GIVEAWAY_STATUS_CONNECTED": "Conectado",

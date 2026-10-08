@@ -217,6 +217,10 @@ function renderDetail(id: string) {
 
 async function ready() {
   await screen.findByRole("heading", { name: "Sorteio S0" });
+  await screen.findByText((_, element) => {
+    const text = element?.textContent?.replace(/\s+/g, " ").trim();
+    return element?.tagName === "P" && text === "Envie !join no chat para participar";
+  });
   await screen.findByText("Conectado");
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 30));

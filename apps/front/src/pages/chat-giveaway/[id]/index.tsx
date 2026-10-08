@@ -397,6 +397,15 @@ export function ChatGiveawayDetail() {
             </>
           }
         >
+          {giveaway.keyword ? (
+            <p className="mt-2 text-base font-medium text-foreground">
+              {t("CHAT_GIVEAWAY_KEYWORD_SEND")}{" "}
+              <span className="font-mono text-base font-semibold">
+                {giveaway.keyword}
+              </span>{" "}
+              {t("CHAT_GIVEAWAY_KEYWORD_IN_CHAT")}
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {giveaway.keyword ? (
               <span className="inline-flex h-[30px] items-center gap-2 rounded-[8px] border border-border bg-[var(--sd-surface-2)] px-2.5 text-[12.5px] font-semibold">
