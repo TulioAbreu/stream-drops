@@ -1,9 +1,10 @@
 import type { ComponentProps } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cdp } from "vitest/browser";
 import "@/i18n";
 import { WinnerMoment } from "./winner-moment";
+import { nameAt } from "./winner-reveal";
 import type { PendingWinnerInfo } from "./types";
 
 const confetti = vi.hoisted(() => vi.fn());
@@ -110,5 +111,72 @@ describe("WinnerMoment", () => {
     expect(getComputedStyle(beam!).animationName).toBe("none");
     const name = document.querySelector(".sd-winner-name");
     expect(getComputedStyle(name!).animationName).toBe("none");
+  });
+
+  it("esconde o nome até a tampa estourar", () => {
+    expect(nameAt("common")).toBe(500);
+    expect(nameAt("rare")).toBe(610);
+    expect(nameAt("epic")).toBe(610);
+    expect(nameAt("legendary")).toBe(720);
+
+    const seek = (ms: number) => {
+      const name = document.querySelector(".sd-winner-name");
+      expect(name).toBeTruthy();
+      const animations = name!.getAnimations();
+      expect(animations.length).toBeGreaterThan(0);
+      for (const animation of animations) {
+        animation.pause();
+        animation.currentTime = ms;
+      }
+      return Number(getComputedStyle(name!).opacity);
+    };
+
+    renderMoment({
+      pendingWinner: { ...winner, tier: 3000, displayName: "Mari_Plays" },
+    });
+    expect(seek(700)).toBeLessThan(0.05);
+    expect(seek(960)).toBeGreaterThan(0.95);
+    expect(
+      document.querySelectorAll("[data-winner-confetti]").length,
+    ).toBeLessThanOrEqual(56);
+    expect(document.querySelectorAll("[data-winner-confetti]")).toHaveLength(56);
+
+    cleanup();
+    renderMoment({
+      pendingWinner: {
+        ...winner,
+        tier: undefined,
+        subscriber: false,
+        displayName: "Mari_Plays",
+      },
+    });
+    expect(seek(400)).toBeLessThan(0.05);
+    expect(seek(800)).toBeGreaterThan(0.95);
+  });
+
+  it("no movimento reduzido o palco já nasce assentado, sem confete", async () => {
+    const client = cdp();
+    await client.send("Emulation.setEmulatedMedia", {
+      features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+    });
+    renderMoment({
+      pendingWinner: { ...winner, tier: 3000, displayName: "Mari_Plays" },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    expect(confetti).not.toHaveBeenCalled();
+    expect(document.querySelectorAll("[data-winner-confetti]")).toHaveLength(0);
+    expect(document.querySelector("[data-reveal='rays']")).toBeNull();
+    const stage = document.querySelector("[data-winner-moment]");
+    expect(stage?.getAttribute("data-motion")).toBe("reduced");
+    const slot = document.querySelector("[data-winner-slot]") as HTMLElement;
+    expect(getComputedStyle(slot).transform).toBe("none");
+    const row = slot.parentElement;
+    expect(row?.querySelector("[data-slot='avatar']")).toBeTruthy();
+    const arm = document.querySelector(".b-armL") as HTMLElement;
+    expect(arm).toBeTruthy();
+    expect(getComputedStyle(arm).opacity).not.toBe("0");
+    const name = document.querySelector(".sd-winner-name");
+    expect(getComputedStyle(name!).animationName).toBe("none");
+    expect(Number(getComputedStyle(name!).opacity)).toBeGreaterThan(0.95);
   });
 });
