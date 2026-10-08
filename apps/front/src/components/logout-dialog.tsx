@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { clearAllBrowserData } from "@/database/clear-browser-data";
+import { wipeLocalData } from "@/database/clear-browser-data";
 import { useTranslation } from "@/i18n";
 import { useLoginStore } from "@/storage/login";
 import { LogOutIcon } from "lucide-react";
@@ -53,8 +53,15 @@ export function LogoutDialog({
     if (pending) return;
     if (deleteLocalData) {
       setPending(true);
+      let blockedNotice = false;
       try {
-        await clearAllBrowserData();
+        await wipeLocalData({
+          onBlocked: () => {
+            if (blockedNotice) return;
+            blockedNotice = true;
+            toast.warning(t("SETTINGS_DELETE_BLOCKED"));
+          },
+        });
       } catch (error) {
         console.error("Erro ao apagar dados no logout:", error);
         toast.error(t("SETTINGS_DELETE_ERROR"));
