@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  closeDb,
   DATABASE_NAME,
   DATABASE_STORES,
   DATABASE_VERSION,
@@ -52,6 +53,7 @@ const FIXTURE: Record<string, Record<string, unknown>[]> = {
 };
 
 function deleteDatabase(): Promise<void> {
+  closeDb();
   return new Promise((resolve, reject) => {
     const request = indexedDB.deleteDatabase(DATABASE_NAME);
     request.onsuccess = () => resolve();
@@ -95,8 +97,14 @@ function createFixture(): Promise<void> {
       }
     };
     request.onsuccess = () => {
-      expect(request.result.version).toBe(DATABASE_VERSION);
-      request.result.close();
+      const db = request.result;
+      const version = db.version;
+      const created = db.objectStoreNames.contains(PROBE_STORE);
+      db.close();
+      if (version !== DATABASE_VERSION || !created) {
+        reject(new Error("fixture do backup não foi criada"));
+        return;
+      }
       resolve();
     };
   });
@@ -145,6 +153,10 @@ function stable(snapshot: DatabaseSnapshot) {
 }
 
 describe("export de backup JSON", () => {
+  beforeEach(async () => {
+    await deleteDatabase();
+  });
+
   afterEach(async () => {
     localStorage.clear();
     await deleteDatabase();
