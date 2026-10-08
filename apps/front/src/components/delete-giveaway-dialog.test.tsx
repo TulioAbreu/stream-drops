@@ -5,7 +5,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
 
-const ARTIFACTS = "/opt/cursor/artifacts";
+/** Relativo ao arquivo de teste. O Vite não deixa gravar fora do app. */
+const SHOTS = "../../.vitest-screenshots";
 
 function storageKeys() {
   return {
@@ -24,7 +25,7 @@ function setTheme(theme: "dark" | "light") {
 async function shot(name: string) {
   const dialog = page.getByRole("dialog");
   await dialog.screenshot({
-    path: `${ARTIFACTS}/s4-dialog-${name}.png`,
+    path: `${SHOTS}/s4-dialog-${name}.png`,
   });
 }
 

@@ -304,7 +304,12 @@ describe("sorteio soft-deleted some das telas", () => {
     }
 
     expect(spy.writes).toEqual([]);
-    expect(spy.readwrite).toEqual([]);
+    // getTemplates abre readwrite para o backfill de sortOrder.
+    // Com a store vazia não há put. A lista do Chat monta duas vezes.
+    expect(spy.readwrite).toEqual([
+      "chat-giveaway-templates",
+      "chat-giveaway-templates",
+    ]);
     const after = await dumpDatabase();
     expect(after.version).toBe(12);
     expect(after.body).toBe(before.body);

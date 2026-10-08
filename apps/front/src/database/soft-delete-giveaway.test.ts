@@ -910,10 +910,10 @@ describe("soft-delete de sorteios", () => {
       expect.not.objectContaining({ drawnAt: expect.anything() }),
     ]);
     expect(await subscriberDb.getGiveaway(id)).toBeUndefined();
-    expect(await subscriberDb.updateGiveaway({
+    await subscriberDb.updateGiveaway({
       ...(after as never),
       title: "não pode voltar",
-    })).resolves.toBeUndefined();
+    });
     const still = await readRaw<Record<string, unknown>>("giveaways", id);
     expect(still?.title).toBe("Legado");
     expect(still?.deletedAt).toBe(NOW);
