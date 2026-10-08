@@ -130,6 +130,11 @@ export function openDb(): Promise<IDBDatabase> {
         request.onsuccess = () => {
             console.log(`✅ Banco de dados aberto com sucesso`);
             dbInstance = request.result;
+            dbInstance.onversionchange = () => {
+                dbInstance?.close();
+                dbInstance = null;
+                dbPromise = null;
+            };
 
             // Clear promise cache after successful connection
             dbPromise = null;
@@ -155,17 +160,20 @@ export function openDb(): Promise<IDBDatabase> {
     return dbPromise;
 }
 
+/** Fecha a conexão em cache. Não apaga dados. */
+export function closeDb(): void {
+    if (dbInstance) {
+        dbInstance.close();
+        dbInstance = null;
+    }
+    dbPromise = null;
+}
+
 // Função utilitária para limpar o banco em caso de problemas de versão
 export function clearDatabase(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         console.log(`🧹 Limpando banco de dados: ${DATABASE_NAME}`);
-
-        // Close existing connection if any
-        if (dbInstance) {
-            dbInstance.close();
-            dbInstance = null;
-        }
-        dbPromise = null;
+        closeDb();
 
         const deleteRequest = indexedDB.deleteDatabase(DATABASE_NAME);
 

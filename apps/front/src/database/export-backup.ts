@@ -1,4 +1,4 @@
-import { DATABASE_NAME } from ".";
+import { databaseExists, openExistingDatabase } from "./open-existing-database";
 
 export const BACKUP_APP = "stream-drops" as const;
 export const BACKUP_FORMAT = 1 as const;
@@ -18,28 +18,6 @@ export interface StreamDropsBackup {
 
 export interface ReadBackupOptions {
   now?: () => string;
-}
-
-async function databaseExists(): Promise<boolean> {
-  const databases = await indexedDB.databases();
-  return databases.some((database) => database.name === DATABASE_NAME);
-}
-
-/**
- * Abre o banco já existente sem passar versão, para não disparar upgrade
- * nem criar stores. Se o banco não existe, o chamador não deve abrir.
- */
-function openExistingDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE_NAME);
-    request.onupgradeneeded = () => {
-      request.transaction?.abort();
-      request.result.close();
-      reject(new Error("O backup não pode criar nem atualizar o banco"));
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
 }
 
 function readAllStores(

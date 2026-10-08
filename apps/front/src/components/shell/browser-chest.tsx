@@ -16,9 +16,10 @@ export function BrowserChest({ className }: { className?: string }) {
   const { t } = useTranslation();
   const summary = useLocalDatabaseSummary();
   const stores = (summary?.stores ?? [])
-    .filter((store) => store.bytes > 0)
-    .sort((a, b) => b.bytes - a.bytes);
-  const total = summary?.totalBytes ?? 0;
+    .filter((store) => store.count > 0)
+    .sort((a, b) => b.count - a.count);
+  const totalCount = stores.reduce((sum, store) => sum + store.count, 0);
+  const estimatedBytes = summary?.estimatedBytes;
 
   return (
     <div
@@ -31,17 +32,17 @@ export function BrowserChest({ className }: { className?: string }) {
         <HardDrive className="size-3.5" />
         <span>{t("SIDEBAR_CHEST_TITLE")}</span>
         <span className="ml-auto font-mono text-[11px] font-medium text-muted-foreground">
-          {formatByteSize(total)}
+          {estimatedBytes == null ? "—" : formatByteSize(estimatedBytes)}
         </span>
       </div>
       <div className="mt-2 flex h-2 gap-0.5 overflow-hidden rounded-full bg-[var(--sd-surface-3)]">
-        {total > 0
+        {totalCount > 0
           ? stores.map((store, index) => (
               <span
                 key={store.name}
                 className="block h-full"
                 style={{
-                  width: `${(store.bytes / total) * 100}%`,
+                  width: `${(store.count / totalCount) * 100}%`,
                   background: SEGMENT_COLORS[index % SEGMENT_COLORS.length],
                 }}
               />

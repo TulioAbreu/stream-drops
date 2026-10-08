@@ -9,49 +9,66 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { clearAllBrowserData } from "@/database/clear-browser-data";
 import { useTranslation } from "@/i18n";
 import { useLoginStore } from "@/storage/login";
 import { LogOutIcon } from "lucide-react";
 import { useId, useState } from "react";
+import { toast } from "sonner";
 
 interface LogoutDialogProps {
   trigger: React.ReactNode;
-  defaultDeleteLocalData?: boolean;
+  /** Navegação depois de sair. O padrão recarrega a home. */
+  leave?: () => void;
+}
+
+function redirectHome() {
+  window.location.href = "/";
 }
 
 /**
- * O mesmo fluxo de sempre: sair, com a opção de apagar dados locais.
- * O checkbox continua obrigatório para apagar; nada é apagado ao abrir.
+ * Sair da conta. A caixa de apagar dados começa desmarcada
+ * e volta a desmarcar cada vez que o diálogo abre.
  */
 export function LogoutDialog({
   trigger,
-  defaultDeleteLocalData = false,
+  leave = redirectHome,
 }: LogoutDialogProps) {
   const { t } = useTranslation();
   const checkboxId = useId();
-  const [deleteLocalData, setDeleteLocalData] = useState(
-    defaultDeleteLocalData,
-  );
+  const [open, setOpen] = useState(false);
+  const [deleteLocalData, setDeleteLocalData] = useState(false);
+  const [pending, setPending] = useState(false);
   const setTwitchAccessToken = useLoginStore(
     (state) => state.setTwitchAccessToken,
   );
 
-  const handleLogout = () => {
+  const handleOpenChange = (next: boolean) => {
+    if (pending) return;
+    setOpen(next);
+    if (next) setDeleteLocalData(false);
+  };
+
+  const handleLogout = async () => {
+    if (pending) return;
     if (deleteLocalData) {
-      localStorage.clear();
-      indexedDB.databases().then((dbs) => {
-        dbs.forEach((db) => {
-          indexedDB.deleteDatabase(db.name!);
-        });
-      });
+      setPending(true);
+      try {
+        await clearAllBrowserData();
+      } catch (error) {
+        console.error("Erro ao apagar dados no logout:", error);
+        toast.error(t("SETTINGS_DELETE_ERROR"));
+        setPending(false);
+        return;
+      }
     } else {
       setTwitchAccessToken(null);
     }
-    window.location.href = "/";
+    leave();
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogTitle>{t("SIDEBAR_LOGOUT_DIALOG_TITLE")}</DialogTitle>
@@ -74,7 +91,11 @@ export function LogoutDialog({
           </Label>
         </div>
         <DialogFooter>
-          <Button variant="destructive" onClick={handleLogout}>
+          <Button
+            variant="destructive"
+            onClick={handleLogout}
+            loading={pending}
+          >
             <LogOutIcon className="h-4 w-4" />
             {t("SIDEBAR_LOGOUT_BUTTON")}
           </Button>

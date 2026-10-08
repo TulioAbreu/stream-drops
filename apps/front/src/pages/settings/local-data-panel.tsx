@@ -1,6 +1,6 @@
+import { DeleteLocalDataDialog } from "@/components/delete-local-data-dialog";
 import { InventoryPanel } from "@/components/shell/inventory-panel";
 import { formatByteSize } from "@/lib/format-byte-size";
-import { LogoutDialog } from "@/components/logout-dialog";
 import { Button } from "@/components/ui/button";
 import {
   downloadLocalDatabaseBackup,
@@ -90,7 +90,9 @@ export function LocalDataPanel() {
       actions={
         <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-2.5 text-xs font-semibold text-[var(--sd-local)]">
           <HardDrive className="size-3.5" />
-          {formatByteSize(summary?.totalBytes ?? 0)}
+          {summary?.estimatedBytes == null
+            ? "—"
+            : formatByteSize(summary.estimatedBytes)}
         </span>
       }
     >
@@ -102,13 +104,7 @@ export function LocalDataPanel() {
           const meta = STORE_META[store.name];
           const Icon = meta?.icon ?? HardDrive;
           const label = meta ? t(meta.label) : store.name;
-          const count =
-            store.winnerCount != null && store.winnerCount > 0
-              ? t("SETTINGS_STORE_COUNT_WITH_WINNERS", {
-                  count: store.count,
-                  winners: store.winnerCount,
-                })
-              : String(store.count);
+          const count = String(store.count);
           return (
             <div
               key={store.name}
@@ -139,8 +135,7 @@ export function LocalDataPanel() {
           <Download className="size-3.5" />
           {t("SETTINGS_EXPORT_BACKUP")}
         </Button>
-        <LogoutDialog
-          defaultDeleteLocalData
+        <DeleteLocalDataDialog
           trigger={
             <Button
               variant="outline"
