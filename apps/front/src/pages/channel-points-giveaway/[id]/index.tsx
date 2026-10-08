@@ -15,7 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -51,7 +50,8 @@ import {
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
-import { rankWinnersByDrawOrder } from "@/lib/giveaway-winner-rank";
+import { rankWinnersByDrawOrder, sortWinnersByDrawOrder } from "@/lib/giveaway-winner-rank";
+import { WinnersList } from "@/components/giveaway/winners-list";
 import { useTranslation } from "@/i18n";
 import { v7 } from "uuid";
 import { useExclusionListDb } from "@/database/ExclusionListItem";
@@ -198,11 +198,7 @@ export function ChannelPointsGiveawayDetail() {
   );
 
   const sortedWinners = useMemo(
-    () =>
-      [...(giveaway?.winners ?? [])].sort(
-        (a, b) =>
-          new Date(b.drawnAt).getTime() - new Date(a.drawnAt).getTime()
-      ),
+    () => sortWinnersByDrawOrder(giveaway?.winners ?? []),
     [giveaway?.winners]
   );
 
@@ -790,9 +786,12 @@ export function ChannelPointsGiveawayDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex min-h-0 flex-1 flex-col">
-                  <ScrollArea className="h-[280px] pr-4">
-                    <div className="space-y-3">
-                      {pendingWinner && (
+                  <WinnersList
+                    className="h-[280px] pr-4"
+                    triggerKey={pendingWinner?.redemptionId ?? null}
+                    pendingRank={pendingWinnerRank}
+                    pending={
+                      pendingWinner ? (
                         <WinnerConfirmationInline
                           key={pendingWinner.redemptionId}
                           pendingWinner={{
@@ -810,8 +809,9 @@ export function ChannelPointsGiveawayDetail() {
                           onRedraw={handleRedraw}
                           isRedrawing={isRedrawing}
                         />
-                      )}
-
+                      ) : undefined
+                    }
+                  >
                       {sortedWinners.length === 0 && !pendingWinner ? (
                         <div className="flex items-center justify-center min-h-[200px]">
                           <Empty>
@@ -849,8 +849,7 @@ export function ChannelPointsGiveawayDetail() {
                           );
                         })
                       )}
-                    </div>
-                  </ScrollArea>
+                  </WinnersList>
                 </CardContent>
               </Card>
 
