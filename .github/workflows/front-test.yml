@@ -4,6 +4,14 @@ on:
   pull_request:
     branches:
       - main
+      - homolog
+    paths:
+      - "apps/front/**"
+      - "packages/**"
+      - ".github/workflows/front-test.yml"
+  push:
+    branches:
+      - homolog
     paths:
       - "apps/front/**"
       - "packages/**"
