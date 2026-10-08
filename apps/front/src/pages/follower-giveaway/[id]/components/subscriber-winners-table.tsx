@@ -40,9 +40,21 @@ function scrollerOf(root: HTMLElement | null): HTMLElement | null {
   return node instanceof HTMLElement ? node : null;
 }
 
+function lastRowInside(node: HTMLElement, name: string | undefined): boolean {
+  if (!name) return false;
+  const row = [...node.querySelectorAll("tbody tr")].find((element) =>
+    element.textContent?.includes(name)
+  );
+  if (!(row instanceof HTMLElement)) return false;
+  const rowRect = row.getBoundingClientRect();
+  const viewRect = node.getBoundingClientRect();
+  return rowRect.bottom <= viewRect.bottom + 2 && rowRect.top >= viewRect.top;
+}
+
 function pinScrollerToEnd(
   rootRef: RefObject<HTMLDivElement | null>,
-  handleRef: RefObject<TableVirtuosoHandle | null>
+  handleRef: RefObject<TableVirtuosoHandle | null>,
+  newestName: string | undefined
 ) {
   let attempts = 0;
   let frame = 0;
@@ -60,9 +72,10 @@ function pinScrollerToEnd(
     const atEnd =
       !!node &&
       node.scrollHeight > node.clientHeight + 1 &&
-      node.scrollHeight - node.scrollTop - node.clientHeight <= 2;
+      node.scrollHeight - node.scrollTop - node.clientHeight <= 2 &&
+      lastRowInside(node, newestName);
     attempts += 1;
-    if (!atEnd && attempts < 45) frame = requestAnimationFrame(tick);
+    if (!atEnd && attempts < 60) frame = requestAnimationFrame(tick);
   };
 
   tick();
@@ -116,6 +129,7 @@ export function SubscriberWinnersTable({ winners, onRemove }: Props) {
   const prevLen = useRef(-1);
   const restoreTopRef = useRef<number | null>(null);
   const actionRef = useRef<"open" | "grow" | "shrink" | "none">("open");
+  const pinCancelRef = useRef<() => void>(() => {});
   const [atTop, setAtTop] = useState(true);
   const [firstVisible, setFirstVisible] = useState(0);
   const [flashUserId, setFlashUserId] = useState<string | null>(null);
@@ -136,32 +150,39 @@ export function SubscriberWinnersTable({ winners, onRemove }: Props) {
     actionRef.current = "none";
   }
 
+  const grew =
+    prevLen.current !== -1 && winners.length > prevLen.current;
+  if (grew) {
+    flashUserIdRef.current = winners[0]?.user_id ?? null;
+  }
+
   useLayoutEffect(() => {
     const action = actionRef.current;
     prevLen.current = winners.length;
 
     if (action === "shrink") {
-      const top = restoreTopRef.current ?? 0;
-      return holdScroll(rootRef, top);
+      pinCancelRef.current();
+      pinCancelRef.current = holdScroll(rootRef, restoreTopRef.current ?? 0);
+      return;
     }
 
-    if (action === "none") return;
+    if (action !== "open" && action !== "grow") return;
 
+    pinCancelRef.current();
     if (action === "grow") {
       setFlashUserId(winners[0]?.user_id ?? null);
     }
+    const newestName = displayRef.current.at(-1)?.user_name;
+    pinCancelRef.current = pinScrollerToEnd(rootRef, ref, newestName);
+    if (action !== "grow") return;
 
-    const stop = pinScrollerToEnd(rootRef, ref);
-    const timer =
-      action === "grow"
-        ? window.setTimeout(() => setFlashUserId(null), 1200)
-        : null;
-
-    return () => {
-      stop();
-      if (timer !== null) window.clearTimeout(timer);
-    };
+    const timer = window.setTimeout(() => setFlashUserId(null), 1200);
+    return () => window.clearTimeout(timer);
   }, [winners]);
+
+  useLayoutEffect(() => {
+    return () => pinCancelRef.current();
+  }, []);
 
   const Row = useMemo(
     () =>
