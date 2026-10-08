@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - homolog
+      # S4 empilhada na #31. Sai quando a base voltar a ser a homolog.
+      - cursor/s3-winner-drawn-at-183f
     paths:
       - "apps/front/**"
       - "packages/**"
