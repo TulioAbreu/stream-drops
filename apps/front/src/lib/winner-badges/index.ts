@@ -70,6 +70,8 @@ export type {
 export {
   EMPTY_CARD_SELECTION,
   readCardBadges,
+  noteGiveawayHardDeleted,
+  noteGiveawaySoftDeleted,
   resetWinnerIndexSession,
   startWinnerIndex,
   useCardBadges,

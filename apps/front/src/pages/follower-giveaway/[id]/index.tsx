@@ -26,6 +26,8 @@ import { useExclusionListDb } from "@/database/ExclusionListItem";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
 import { formatChancePercentage } from "@/lib/utils";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function FollowerGiveawayId() {
     const { id } = useParams<{ id: string }>();
@@ -39,6 +41,8 @@ export function FollowerGiveawayId() {
     const [isFetchingParticipants, startFetchParticipantsTransition] = useTransition();
     const [isExportingResultSheets, startExportingResultSheetsTransition] = useTransition();
     const [revealedWinner, setRevealedWinner] = useState<BroadcasterSubscriber | null>(null);
+    const [missing, setMissing] = useState(false);
+    useRedirectWhenMissing(missing, "/dashboard/follower-giveaway");
 
     const fetchGiveaway = async () => {
         if (!id) {
@@ -47,7 +51,11 @@ export function FollowerGiveawayId() {
 
         const giveawayData = await getGiveaway(id);
         if (giveawayData) {
+            setMissing(false);
             setGiveaway(giveawayData);
+        } else {
+            setGiveaway(null);
+            setMissing(true);
         }
     };
 
@@ -86,10 +94,13 @@ export function FollowerGiveawayId() {
             }
 
             const eligibleSubscribers = filterElegibleSubscribers(subscribers, giveaway.subscriptionRequirement);
-            await updateGiveaway({
+            const savedParticipants = await updateGiveaway({
                 ...giveaway,
                 participants: eligibleSubscribers
             });
+            if (redirectIfGiveawayDeleted(savedParticipants, navigate, "/dashboard/follower-giveaway")) {
+                return;
+            }
 
             if (eligibleSubscribers.length === 0) {
                 toast.warning(t("FOLLOWER_GIVEAWAY_FORM_NO_ELIGIBLE_SUBSCRIBERS"));
@@ -117,10 +128,13 @@ export function FollowerGiveawayId() {
             totalWinners: 1,
         });
         const winners = [...newWinners, ...giveaway.winners];
-        await updateGiveaway({
+        const savedDraw = await updateGiveaway({
             ...giveaway,
             winners,
         });
+        if (redirectIfGiveawayDeleted(savedDraw, navigate, "/dashboard/follower-giveaway")) {
+            return;
+        }
 
         // Send chat message for new winners
         if (twitchApiClient && userData) {
@@ -201,10 +215,13 @@ export function FollowerGiveawayId() {
                 });
             }
 
-            await updateGiveaway({
+            const savedSheet = await updateGiveaway({
                 ...giveaway,
                 spreadsheetUrl: url,
             });
+            if (redirectIfGiveawayDeleted(savedSheet, navigate, "/dashboard/follower-giveaway")) {
+                return;
+            }
             await fetchGiveaway();
         });
     };
@@ -224,10 +241,13 @@ export function FollowerGiveawayId() {
             return;
         }
         const newParticipants = giveaway.participants.filter((user) => user.user_id !== userId);
-        await updateGiveaway({
+        const savedParticipants = await updateGiveaway({
             ...giveaway,
             participants: newParticipants,
         });
+        if (redirectIfGiveawayDeleted(savedParticipants, navigate, "/dashboard/follower-giveaway")) {
+            return;
+        }
         await fetchGiveaway();
     };
 
@@ -236,10 +256,13 @@ export function FollowerGiveawayId() {
             return;
         }
         const newWinners = giveaway.winners.filter((user) => user.user_id !== userId);
-        await updateGiveaway({
+        const savedWinners = await updateGiveaway({
             ...giveaway,
             winners: newWinners,
         });
+        if (redirectIfGiveawayDeleted(savedWinners, navigate, "/dashboard/follower-giveaway")) {
+            return;
+        }
         await fetchGiveaway();
     };
 

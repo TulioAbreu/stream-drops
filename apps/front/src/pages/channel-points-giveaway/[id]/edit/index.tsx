@@ -19,6 +19,8 @@ import {
   getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
 import { ChannelPointsAccessBanner } from "../../components/channel-points-access-banner";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChannelPointsGiveawayEdit() {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +39,8 @@ export function ChannelPointsGiveawayEdit() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [missing, setMissing] = useState(false);
+  useRedirectWhenMissing(missing, "/dashboard/channel-points-giveaway");
 
   useEffect(() => {
     if (!id) return;
@@ -45,7 +49,7 @@ export function ChannelPointsGiveawayEdit() {
       try {
         const data = await getChannelPointsGiveaway(id);
         if (!data) {
-          navigate("/dashboard/channel-points-giveaway");
+          setMissing(true);
           return;
         }
 
@@ -118,7 +122,16 @@ export function ChannelPointsGiveawayEdit() {
         updatedAt: new Date().toISOString(),
       };
 
-      await updateChannelPointsGiveaway(updatedGiveaway);
+      const saved = await updateChannelPointsGiveaway(updatedGiveaway);
+      if (
+        redirectIfGiveawayDeleted(
+          saved,
+          navigate,
+          "/dashboard/channel-points-giveaway",
+        )
+      ) {
+        return;
+      }
       toast.success(t("CHANNEL_POINTS_GIVEAWAY_EDIT_SUCCESS"));
       navigate(`/dashboard/channel-points-giveaway/${giveaway.id}`);
     } catch (error) {

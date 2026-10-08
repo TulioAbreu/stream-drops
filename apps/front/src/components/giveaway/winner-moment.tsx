@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import confetti from "canvas-confetti";
 import { CheckIcon, HardDrive, RotateCcw } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/i18n";
+import { WinnerChest, WinnerGem, WinnerSpark, gemColor, gemMid } from "./winner-chest";
+import {
+  applyNameFit,
+  dropRarity,
+  playWinnerReveal,
+  type NameFit,
+} from "./winner-reveal";
 import type { GiveawayChatMessage, PendingWinnerInfo } from "./types";
 
 type Phase = "entering" | "expanded" | "collapsing" | "exiting";
@@ -57,17 +63,22 @@ function labelColorForTier(tier: PendingWinnerInfo["tier"]): string {
   return "var(--foreground)";
 }
 
-function tokenColors(): string[] {
-  const style = getComputedStyle(document.documentElement);
-  return [
-    "--primary",
-    "--sd-brand-orange",
-    "--rarity-rare",
-    "--rarity-epic",
-    "--rarity-legendary",
-  ]
-    .map((name) => style.getPropertyValue(name).trim())
-    .filter(Boolean);
+function withEllipsisName(text: string, name: string): ReactNode {
+  if (!name) return text;
+  const index = text.indexOf(name);
+  if (index < 0) return text;
+  return (
+    <span>
+      {text.slice(0, index)}
+      <span
+        className="inline-block max-w-[240px] truncate align-bottom"
+        title={name}
+      >
+        {name}
+      </span>
+      {text.slice(index + name.length)}
+    </span>
+  );
 }
 
 export function WinnerMoment({
@@ -101,6 +112,12 @@ export function WinnerMoment({
   const [isPaused, setIsPaused] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(prefersReducedMotion);
+  const [nameFit, setNameFit] = useState<NameFit>({
+    size: 112,
+    trunc: false,
+    max: 0,
+    peak: 1.18,
+  });
   const finishActionRef = useRef<"confirm" | "cancel" | null>(null);
   const onCancelRef = useRef(onCancel);
   const onDismissRef = useRef(onDismiss);
@@ -140,31 +157,32 @@ export function WinnerMoment({
     const frame = requestAnimationFrame(() => setPhase("expanded"));
     dialogRef.current?.focus();
 
-    if (!prefersReducedMotion()) {
-      const colors = tokenColors();
-      const count = 160;
-      const defaults = { origin: { y: 0.72 }, colors, disableForReducedMotion: true };
-      confetti({ ...defaults, particleCount: Math.floor(count * 0.25), spread: 26, startVelocity: 55 });
-      confetti({ ...defaults, particleCount: Math.floor(count * 0.2), spread: 60 });
-      confetti({
-        ...defaults,
-        particleCount: Math.floor(count * 0.35),
-        spread: 100,
-        decay: 0.91,
-        scalar: 0.8,
-      });
-      confetti({
-        ...defaults,
-        particleCount: Math.floor(count * 0.1),
-        spread: 120,
-        startVelocity: 25,
-        decay: 0.92,
-        scalar: 1.2,
-      });
-    }
-
     return () => cancelAnimationFrame(frame);
   }, [pendingWinner.id]);
+
+  const rarity = dropRarity(pendingWinner.tier);
+  const showHalo = rarity !== "common";
+  const showSparkles = rarity === "epic" || rarity === "legendary";
+  const showRays = rarity === "legendary" && !reducedMotion;
+  const showVeil = rarity === "legendary" && !reducedMotion;
+
+  useLayoutEffect(() => {
+    const stage = dialogRef.current;
+    if (!stage) return;
+    const fit = applyNameFit(stage);
+    setNameFit((current) =>
+      current.size === fit.size &&
+      current.trunc === fit.trunc &&
+      current.max === fit.max
+        ? current
+        : fit,
+    );
+    return playWinnerReveal(stage, {
+      rarity,
+      reduced: reducedMotion,
+      peak: fit.peak,
+    });
+  }, [pendingWinner.id, pendingWinner.displayName, rarity, reducedMotion]);
 
   useEffect(() => {
     if (!timerStartTimestamp || isPaused || !isExpanded) return;
@@ -278,49 +296,103 @@ export function WinnerMoment({
       data-motion={reducedMotion ? "reduced" : "full"}
       onKeyDown={onKeyDown}
       className="sd-winner-stage fixed inset-0 z-[80] flex flex-col items-center justify-end overflow-hidden px-6 pt-16 pb-10 outline-none focus-visible:shadow-[var(--sd-focus)]"
-      style={{ ["--sd-winner-accent" as string]: accentForTier(pendingWinner.tier) }}
+      style={{
+        ["--sd-winner-accent" as string]: accentForTier(pendingWinner.tier),
+        ["--sd-drop-md" as string]: gemMid(rarity),
+      }}
     >
+      <div aria-hidden data-reveal="bg" className="sd-winner-bg" />
       <div aria-hidden data-winner-beam className="sd-winner-beam" />
       <div aria-hidden className="sd-winner-beam sd-winner-beam--soft" />
+      {showVeil ? <div aria-hidden data-reveal="veil" className="sd-winner-veil" /> : null}
+      {showHalo || showRays ? (
+        <div aria-hidden data-reveal="back" className="sd-winner-mid sd-winner-mid--back">
+          {showHalo ? <div data-reveal="halo" className="sd-winner-halo" /> : null}
+          {showRays ? <div data-reveal="rays" className="sd-winner-rays" /> : null}
+        </div>
+      ) : null}
+      <div aria-hidden data-reveal="gems" className="sd-winner-mid sd-winner-mid--gem">
+        <div data-reveal="gem" className="sd-winner-gem">
+          <div data-reveal="gem-move" className="size-full">
+            <div data-reveal="gem-bob" className="size-full">
+              <WinnerGem rarity={rarity} />
+            </div>
+          </div>
+        </div>
+        {showSparkles ? (
+          <>
+            <div data-reveal="spark" className="sd-winner-spark">
+              <WinnerSpark color={gemColor(rarity)} />
+            </div>
+            <div data-reveal="spark" className="sd-winner-spark">
+              <WinnerSpark color={gemColor(rarity)} />
+            </div>
+          </>
+        ) : null}
+      </div>
+      <div aria-hidden data-reveal="fx" className="sd-winner-fx" />
 
-      <div className="absolute inset-x-0 top-12 text-center sm:top-16">
+      <div
+        data-reveal="top"
+        className="sd-winner-top absolute inset-x-0 top-12 text-center sm:top-16"
+      >
         <p
+          data-reveal="eyebrow"
           className="text-[13px] font-bold tracking-[0.28em] uppercase sm:text-[15px]"
           style={{ color: labelColorForTier(pendingWinner.tier) }}
         >
           {eyebrow}
         </p>
-        <p id={nameId} className="sd-winner-name mt-4 font-display leading-none font-extrabold text-foreground">
-          {pendingWinner.displayName}
+        <p
+          id={nameId}
+          data-reveal="name"
+          className={`sd-winner-name mt-4 font-display leading-none font-extrabold text-foreground${nameFit.trunc ? " sd-winner-name--trunc" : ""}`}
+          style={{
+            fontSize: nameFit.size,
+            maxWidth: nameFit.trunc ? nameFit.max : undefined,
+          }}
+          title={nameFit.trunc ? pendingWinner.displayName : undefined}
+        >
+          <span className="sd-winner-name-text inline-block">
+            {pendingWinner.displayName}
+          </span>
         </p>
-        <p className="mx-auto mt-4 max-w-[720px] text-base text-muted-foreground sm:text-[22px]">
+        <p
+          data-reveal="subtitle"
+          className="mx-auto mt-4 max-w-[720px] text-base text-muted-foreground sm:text-[22px]"
+        >
           {subtitle}
         </p>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-5">
+      <div data-winner-bottom className="relative z-10 flex flex-col items-center gap-5">
         <div className="flex items-end justify-center gap-4">
-          <Avatar
-            className="size-24 border-2 shadow-[var(--sd-shadow-2)] sm:size-28"
-            style={{ borderColor: "var(--sd-winner-accent)" }}
-          >
-            {pendingWinner.avatar ? (
-              <AvatarImage src={pendingWinner.avatar} alt="" />
-            ) : null}
-            <AvatarFallback className="font-display text-3xl font-extrabold">
-              {pendingWinner.displayName[0]?.toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <img
-            src="/brand/bauzinho-acenando.svg"
-            alt=""
-            className="sd-winner-mascot h-28 w-auto sm:h-36"
-          />
+          <div data-reveal="avatar" className="shrink-0">
+            <Avatar
+              className="size-24 border-2 shadow-[var(--sd-shadow-2)] sm:size-28"
+              style={{ borderColor: "var(--sd-winner-accent)" }}
+            >
+              {pendingWinner.avatar ? (
+                <AvatarImage src={pendingWinner.avatar} alt="" />
+              ) : null}
+              <AvatarFallback className="font-display text-3xl font-extrabold">
+                {pendingWinner.displayName[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          <div data-reveal="slot" data-winner-slot className="sd-winner-slot">
+            <div data-reveal="shake" className="sd-winner-shake">
+              <WinnerChest rarity={rarity} />
+            </div>
+          </div>
         </div>
 
         {showChatWait ? (
-          <p className="inline-flex max-w-[560px] items-center justify-center rounded-full border border-dashed border-[var(--sd-border-strong)] bg-card/80 px-4 py-2 text-center text-sm text-foreground">
-            {waiting}
+          <p
+            data-reveal="notice"
+            className="inline-flex max-w-[560px] items-center justify-center rounded-full border border-dashed border-[var(--sd-border-strong)] bg-card/80 px-4 py-2 text-center text-sm text-foreground"
+          >
+            {withEllipsisName(waiting, pendingWinner.displayName)}
             {isPaused ? (
               <span className="ml-2 font-semibold text-[var(--sd-warning)]">
                 {t("WINNER_MOMENT_PAUSED")}
@@ -329,7 +401,7 @@ export function WinnerMoment({
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        <div data-reveal="actions" className="flex flex-wrap items-center justify-center gap-2">
           {showCancel ? (
             <Button
               variant="ghost"
@@ -364,7 +436,10 @@ export function WinnerMoment({
           </Button>
         </div>
 
-        <p className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-3 py-1 text-xs font-semibold text-[var(--sd-local)]">
+        <p
+          data-reveal="hint"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-3 py-1 text-xs font-semibold text-[var(--sd-local)]"
+        >
           <HardDrive className="size-3.5" />
           {localHint ?? t("WINNER_MOMENT_LOCAL")}
         </p>
