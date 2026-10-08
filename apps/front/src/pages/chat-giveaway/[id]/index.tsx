@@ -29,6 +29,9 @@ import { ShellHeader } from "@/components/shell/shell-header";
 import { useTranslation } from "react-i18next";
 import "@/i18n";
 import type { ChatParticipant } from "../types";
+import { chatWinnerContextFromParticipant } from "../winner-context";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChatGiveawayDetail() {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +46,8 @@ export function ChatGiveawayDetail() {
   const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [missing, setMissing] = useState(false);
+  useRedirectWhenMissing(missing, "/dashboard");
 
   const getChatGiveawayRef = useRef(getChatGiveaway);
   const getExclusionsRef = useRef(getExclusions);
@@ -129,9 +134,10 @@ export function ChatGiveawayDetail() {
       const data = await getChatGiveawayRef.current(id);
       if (cancelled) return;
       if (!data) {
-        navigate("/dashboard");
+        setMissing(true);
         return;
       }
+      setMissing(false);
       setGiveaway(data);
     };
 
@@ -139,7 +145,7 @@ export function ChatGiveawayDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, navigate]);
+  }, [id]);
 
   useEffect(() => {
     refreshExclusions();
@@ -267,26 +273,31 @@ export function ChatGiveawayDetail() {
   const handleConfirmWinner = async () => {
     if (!giveaway || !pendingWinner) return;
 
+    const participants = unionChatParticipants(
+      giveaway.participants ?? [],
+      liveParticipantsRef.current,
+    );
+    const source = participants.find((item) => item.id === pendingWinner.id)
+      ?? pendingWinner;
     const newWinner: ChatGiveawayWinner = {
       id: pendingWinner.id,
       name: pendingWinner.displayName,
       twitchId: pendingWinner.id,
       avatar: pendingWinner.avatar,
       drawnAt: new Date().toISOString(),
+      context: chatWinnerContextFromParticipant(source),
     };
 
     const updatedGiveaway = {
       ...giveaway,
       winners: [...giveaway.winners, newWinner],
-      participants: unionChatParticipants(
-        giveaway.participants ?? [],
-        liveParticipantsRef.current,
-      ),
+      participants,
       updatedAt: new Date().toISOString(),
     };
 
     try {
-      await updateChatGiveaway(updatedGiveaway);
+      const saved = await updateChatGiveaway(updatedGiveaway);
+      if (redirectIfGiveawayDeleted(saved, navigate, "/dashboard")) return;
       setGiveaway(updatedGiveaway);
       toast.success(`🎉 ${pendingWinner.displayName} foi confirmado como vencedor!`);
     } catch (error) {
@@ -316,7 +327,8 @@ export function ChatGiveawayDetail() {
       updatedAt: new Date().toISOString(),
     };
 
-    await updateChatGiveaway(updatedGiveaway);
+    const saved = await updateChatGiveaway(updatedGiveaway);
+    if (redirectIfGiveawayDeleted(saved, navigate, "/dashboard")) return;
     setGiveaway(updatedGiveaway);
 
     toast.success("Vencedor removido com sucesso!");

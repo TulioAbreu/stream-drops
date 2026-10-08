@@ -1022,6 +1022,89 @@ describe("normalização v12", () => {
     expect(sub?.name).toBe("Ana");
   });
 
+  it("Fiel usa winner.context e só junta participants no legado", () => {
+    const drawnAt = "2026-10-04T15:00:00.000Z";
+    const wins = normalizeWinnerHistory({
+      chat: [
+        {
+          id: "com-context",
+          winners: [
+            {
+              twitchId: "10",
+              name: "Com",
+              drawnAt,
+              context: { subscriptionMonths: 24, tier: 3000 },
+            },
+          ],
+          participants: [{ id: "10", subscriptionMonths: 6, tier: 1000 }],
+        },
+        {
+          id: "so-meses",
+          winners: [
+            {
+              twitchId: "11",
+              name: "Meses",
+              drawnAt,
+              context: { subscriptionMonths: 12 },
+            },
+          ],
+          participants: [{ id: "11", subscriptionMonths: 1, tier: null }],
+        },
+        {
+          id: "legado",
+          winners: [{ twitchId: "12", name: "Legado", drawnAt }],
+          participants: [
+            { id: "12", subscriptionMonths: 6, tier: 1000, subscriber: true },
+          ],
+        },
+        {
+          id: "context-vazio",
+          winners: [
+            {
+              twitchId: "13",
+              name: "Vazio",
+              drawnAt,
+              context: {},
+            },
+          ],
+          participants: [{ id: "13", subscriptionMonths: 24, tier: 3000 }],
+        },
+      ],
+    });
+    const clk = clock("America/Sao_Paulo", "2026-10-05T15:00:00.000Z");
+    const provider = memory(wins);
+
+    const withContext = wins.find((win) => win.userId === "10");
+    const monthsOnly = wins.find((win) => win.userId === "11");
+    const legacy = wins.find((win) => win.userId === "12");
+    const empty = wins.find((win) => win.userId === "13");
+    expect(withContext?.context).toEqual({
+      subscriptionMonths: 24,
+      tier: "3000",
+    });
+    expect(monthsOnly?.context).toEqual({ subscriptionMonths: 12 });
+    expect(legacy?.context).toEqual({
+      subscriptionMonths: 6,
+      tier: "1000",
+    });
+    expect(empty?.context).toBeUndefined();
+
+    const loyal = (userId: string) =>
+      computeMomentBadges(
+        provider,
+        wins.find((win) => win.userId === userId) as WinEvent,
+        clk,
+      ).find((badge) => badge.id === "loyal_sub");
+
+    expect(loyal("10")?.rarity).toBe("epic");
+    expect(loyal("10")?.count).toBe(24);
+    expect(loyal("11")?.rarity).toBe("rare");
+    expect(loyal("11")?.count).toBe(12);
+    expect(loyal("12")?.rarity).toBe("uncommon");
+    expect(loyal("12")?.count).toBe(6);
+    expect(loyal("13")).toBeUndefined();
+  });
+
   it("campos ausentes, nulos ou lixo não lançam", () => {
     expect(() =>
       normalizeWinnerHistory({

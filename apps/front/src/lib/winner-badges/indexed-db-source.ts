@@ -6,6 +6,10 @@ import { createWinnerIndexFromSource, type WinnerIndex } from "./win-index";
  * Leitura do histórico no `stream-drops-db` v12.
  *
  * Só `readonly`. Não cria store, não dá bump e não grava.
+ * Em Subscribers, `drawnAt` vira `wonAt` quando existe; sem ele,
+ * a vitória conta nos totais e fica fora dos selos temporais.
+ * No Chat, o Fiel lê `winner.context` e, se o campo não existe,
+ * junta com `participants`.
  * `chat-participants` fica para o índice de participação (M3):
  * o M1 emite as vitórias a partir dos três sorteios.
  *

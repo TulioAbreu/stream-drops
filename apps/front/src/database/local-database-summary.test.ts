@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  clearDatabase,
   DATABASE_NAME,
   DATABASE_STORES,
   DATABASE_VERSION,
@@ -123,6 +124,10 @@ function snapshotDatabase(): Promise<{
 }
 
 describe("baú deste navegador", () => {
+  beforeEach(async () => {
+    await clearDatabase();
+  });
+
   afterEach(async () => {
     await deleteDatabase();
   });

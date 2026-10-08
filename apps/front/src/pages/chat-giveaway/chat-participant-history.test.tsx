@@ -267,7 +267,11 @@ describe("histórico de participação do Chat", () => {
     const before = await getChatGiveaway(id);
 
     const readwrites: string[] = [];
+    const giveawayWrites: string[] = [];
     const originalTransaction = IDBDatabase.prototype.transaction;
+    const originalPut = IDBObjectStore.prototype.put;
+    const originalAdd = IDBObjectStore.prototype.add;
+    const originalDelete = IDBObjectStore.prototype.delete;
     IDBDatabase.prototype.transaction = function (
       this: IDBDatabase,
       storeNames: string | string[],
@@ -280,6 +284,14 @@ describe("histórico de participação do Chat", () => {
       }
       return originalTransaction.call(this, storeNames, mode, options);
     };
+    const track = (op: string, original: typeof originalPut) =>
+      function (this: IDBObjectStore, ...args: [unknown, ...unknown[]]) {
+        if (this.name === "chat-giveaways") giveawayWrites.push(op);
+        return original.apply(this, args as never);
+      };
+    IDBObjectStore.prototype.put = track("put", originalPut) as IDBObjectStore["put"];
+    IDBObjectStore.prototype.add = track("add", originalAdd) as IDBObjectStore["add"];
+    IDBObjectStore.prototype.delete = track("delete", originalDelete) as IDBObjectStore["delete"];
 
     try {
       renderDetail(id);
@@ -291,12 +303,22 @@ describe("histórico de participação do Chat", () => {
       }, { timeout: 15000 });
     } finally {
       IDBDatabase.prototype.transaction = originalTransaction;
+      IDBObjectStore.prototype.put = originalPut;
+      IDBObjectStore.prototype.add = originalAdd;
+      IDBObjectStore.prototype.delete = originalDelete;
     }
 
     const after = await getChatGiveaway(id);
     expect(after).toEqual(before);
     expect(JSON.stringify(after)).toBe(JSON.stringify(before));
-    expect(readwrites.every((names) => names === "chat-participants")).toBe(true);
+    expect(giveawayWrites).toEqual([]);
+    expect(readwrites.every((names) => {
+      const stores = names.split(",");
+      return stores.includes("chat-participants")
+        && stores.every((store) =>
+          store === "chat-participants" || store === "chat-giveaways",
+        );
+    })).toBe(true);
     expect(readwrites.length).toBeGreaterThan(0);
   }, 30000);
 

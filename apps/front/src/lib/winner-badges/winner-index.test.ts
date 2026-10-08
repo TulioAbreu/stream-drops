@@ -810,6 +810,35 @@ describe("atualização incremental", () => {
     expect(index.getWins().includes(pointsWin as WinEvent)).toBe(true);
     expect(index.getWins().includes(middleWin as WinEvent)).toBe(true);
   });
+
+  it("hard delete tira só as vitórias daquele sorteio", () => {
+    const chatRecord = {
+      id: "c1",
+      winners: [chatWinner("ana", "Ana", "2026-10-01T15:00:00.000Z")],
+    };
+    const pointsRecord = {
+      id: "p1",
+      winners: [
+        {
+          id: "w",
+          userId: "ana",
+          name: "Ana",
+          avatar: "a.png",
+          redemptionId: "r",
+          drawnAt: "2026-10-07T15:00:00.000Z",
+        },
+      ],
+    };
+    const index = createWinnerIndexFromSource({
+      chat: [chatRecord],
+      channelPoints: [pointsRecord],
+    });
+    const kept = index.getWins().find((win) => win.giveawayId === "p1");
+    index.applyHardDelete("chat", "c1");
+    expect(index.getWins().some((win) => win.giveawayId === "c1")).toBe(false);
+    expect(kept && index.getWins().includes(kept)).toBe(true);
+    expectSameHistory(index, { channelPoints: [pointsRecord] });
+  });
 });
 
 describe("prontidão do índice", () => {
