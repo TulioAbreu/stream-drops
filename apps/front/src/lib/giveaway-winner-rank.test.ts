@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { sortWinnersByDrawOrder } from "./giveaway-winner-rank";
 
 describe("sortWinnersByDrawOrder", () => {
-  it("U1: ordena em ordem cronológica ascendente", () => {
+  it("U1: ordena em ordem cronológica ascendente por drawnAt", () => {
     const winners = [
       { id: "c", drawnAt: "2026-10-08T12:10:00Z" },
       { id: "a", drawnAt: "2026-10-08T12:00:00Z" },

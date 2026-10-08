@@ -4,15 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database/SubscriptionGiveaway";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets, overrideGiveawayResultToSheets } from "@/service/google-drive";
-import { ArrowLeftIcon, BanIcon, CrownIcon, Edit3Icon, EllipsisIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, TrophyIcon, UserIcon } from "lucide-react";
+import { ArrowLeftIcon, BanIcon, CrownIcon, Edit3Icon, EllipsisIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, TrophyIcon, UserIcon, XIcon } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
+import { TableVirtuoso } from "react-virtuoso";
 import { GiveawayInfoCard } from "./components/giveaway-info-card";
 import { SubscriberWinnersTable } from "./components/subscriber-winners-table";
 import { fetchSubscribers } from "@/usecase/fetch-subscribers";
