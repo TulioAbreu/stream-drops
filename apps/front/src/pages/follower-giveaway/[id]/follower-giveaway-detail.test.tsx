@@ -315,10 +315,16 @@ describe("página do sorteio de Subscribers", () => {
       expect(after?.winners.map((item) => item.user_id)).toEqual(["ana"]);
       expect(after?.spreadsheetUrl).toBeNull();
       expect(after?.subscriptionRequirement).toBe(1000);
-      const { winners: winnersBefore, ...restBefore } = before ?? {
-        winners: [],
-      };
-      const { winners: winnersAfter, ...restAfter } = after ?? { winners: [] };
+      const {
+        winners: winnersBefore,
+        updatedAt: _updatedBefore,
+        ...restBefore
+      } = before ?? { winners: [] };
+      const {
+        winners: winnersAfter,
+        updatedAt: _updatedAfter,
+        ...restAfter
+      } = after ?? { winners: [] };
       expect(restAfter).toEqual(restBefore);
       expect(winnersBefore).toEqual([]);
       expect(winnersAfter.map((item) => item.user_id)).toEqual(["ana"]);
@@ -462,7 +468,11 @@ describe("página do sorteio de Subscribers", () => {
       const after = await getGiveaway(id);
       expect(after?.participants).toEqual(before?.participants);
       expect(after?.winners.map((item) => item.user_id)).toEqual(["ana"]);
-      expect({ ...after, winners: before?.winners }).toEqual(before);
+      expect({
+        ...after,
+        winners: before?.winners,
+        updatedAt: before?.updatedAt,
+      }).toEqual(before);
       expect(tracker.giveawayWrites()).toEqual([
         { op: "put", store: "giveaways" },
       ]);

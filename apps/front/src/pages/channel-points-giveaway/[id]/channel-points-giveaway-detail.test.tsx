@@ -261,6 +261,14 @@ function drawButton() {
   return screen.getByRole("button", { name: "Sortear Vencedor" });
 }
 
+async function flushFrames() {
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+  });
+}
+
 async function confirmWinner() {
   await screen.findByRole("button", { name: "Confirmar" }, { timeout: 4000 });
   await waitFor(() => {
@@ -655,6 +663,7 @@ describe("página do sorteio de Pontos", () => {
         expect(drawnCalls.length).toBe(before + 1);
         expect(screen.getByRole("dialog")).toBeTruthy();
       }, { timeout: 4000 });
+      await flushFrames();
 
       const cancelled = drawnCalls[0]?.result;
       expect(cancelled).toBeTruthy();
@@ -676,7 +685,9 @@ describe("página do sorteio de Pontos", () => {
       fireEvent.click(drawButton());
       await waitFor(() => {
         expect(drawnCalls.length).toBe(before + 2);
+        expect(screen.getByRole("dialog")).toBeTruthy();
       }, { timeout: 4000 });
+      await flushFrames();
       const beforeRedraw = drawnCalls.at(-1);
       expect(beforeRedraw?.result).toBeTruthy();
 
