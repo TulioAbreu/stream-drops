@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useTranslation } from "@/i18n";
 import type { TimerStatus } from "@stream-drops/subathon-protocol";
-import { ArrowRight, PlusIcon, Timer, TrashIcon } from "lucide-react";
+import { ArrowRight, PlusIcon, TrashIcon } from "lucide-react";
 import { useNavigate } from "react-router";
 import { OverlayUrlActions } from "./components/overlay-url-actions";
 import { useSubathon } from "./hooks/use-subathon";
@@ -101,8 +101,8 @@ export function SubathonListPage() {
       {!subathon.connected ? (
         <Empty>
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Timer />
+            <EmptyMedia variant="illustration">
+              <img src="/brand/empty-state-ilustracao.svg" alt="Baúzinho aguardando" />
             </EmptyMedia>
             <EmptyTitle>{t("SUBATHON_ONBOARDING_TITLE")}</EmptyTitle>
             <EmptyDescription>
@@ -126,8 +126,8 @@ export function SubathonListPage() {
       {subathon.connected && subathon.sessions.length === 0 ? (
         <Empty>
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Timer />
+            <EmptyMedia variant="illustration">
+              <img src="/brand/empty-state-ilustracao.svg" alt="Baúzinho aguardando" />
             </EmptyMedia>
             <EmptyTitle>{t("SUBATHON_EMPTY_TITLE")}</EmptyTitle>
             <EmptyDescription>

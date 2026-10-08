@@ -47,7 +47,7 @@ import {
 } from "@/database/ChannelPointsGiveaway";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useNavigate } from "react-router";
-import { ArrowRight, Coins, MoreHorizontal, Plus, TrashIcon } from "lucide-react";
+import { ArrowRight, MoreHorizontal, Plus, TrashIcon } from "lucide-react";
 import { useTranslation } from "@/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -355,8 +355,8 @@ export function ChannelPointsGiveawayPage() {
       ) : giveaways.length === 0 ? (
         <Empty>
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Coins />
+            <EmptyMedia variant="illustration">
+              <img src="/brand/empty-state-ilustracao.svg" alt="Baúzinho aguardando" />
             </EmptyMedia>
             <EmptyTitle>{t("CHANNEL_POINTS_GIVEAWAY_EMPTY_TITLE")}</EmptyTitle>
             <EmptyDescription>

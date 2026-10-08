@@ -54,7 +54,6 @@ import { useNavigate } from "react-router";
 import {
   ArrowRight,
   Copy,
-  Disc3,
   MoreHorizontal,
   Plus,
   TrashIcon,
@@ -237,8 +236,8 @@ export function RoulettePage() {
       ) : roulettes.length === 0 ? (
         <Empty>
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Disc3 />
+            <EmptyMedia variant="illustration">
+              <img src="/brand/empty-state-ilustracao.svg" alt="Baúzinho aguardando" />
             </EmptyMedia>
             <EmptyTitle>
               {t("ROULETTE_EMPTY_TITLE", "Nenhuma roleta salva ainda")}

@@ -17,6 +17,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { useTranslation } from "@/i18n";
 import { useLocation, Link } from "react-router";
@@ -32,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useLoginStore } from "@/storage/login";
+import { BrandLogo } from "@/components/brand-logo";
 
 interface NavbarItem {
   title: string;
@@ -83,6 +85,7 @@ const items: NavbarItem[] = [
 
 export function AppSidebar() {
   const { t } = useTranslation();
+  const { state } = useSidebar();
   const { userData } = useTwitchApi();
   const location = useLocation();
   const [deleteLocalData, setDeleteLocalData] = useState(false);
@@ -105,9 +108,11 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <div className="text-2xl font-bold flex flex-row gap-2">
-          <img src="/icon.png" alt="Logo" className="w-8 h-8 inline-block" />
-          {t("APP_NAME")}
+        <div className="flex flex-row items-center gap-2">
+          <BrandLogo
+            variant={state === "collapsed" ? "symbol" : "horizontal"}
+            className="h-8 w-auto"
+          />
         </div>
       </SidebarHeader>
       <SidebarContent>
