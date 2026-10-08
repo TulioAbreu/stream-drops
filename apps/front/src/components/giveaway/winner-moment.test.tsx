@@ -96,6 +96,33 @@ describe("WinnerMoment", () => {
     expect(screen.getByRole("dialog", { name: "FlaviaQueen" })).toBeTruthy();
   });
 
+  it("no modo de revelação, Esc não fecha e não há confirmar", () => {
+    const onClose = vi.fn();
+    renderMoment({
+      reveal: {
+        eyebrow: "Resultado da roleta",
+        subtitle: "Roleta de Prêmios da Live",
+        closeLabel: "Continuar",
+        onClose,
+      },
+    });
+    expect(screen.getByText("Resultado da roleta")).toBeTruthy();
+    expect(screen.getByText("Roleta de Prêmios da Live")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Confirmar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancelar" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Refazer" })).toBeNull();
+    expect(screen.queryByText("Salvo neste navegador ao confirmar")).toBeNull();
+
+    const dialog = screen.getByRole("dialog", { name: "FlaviaQueen" });
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "FlaviaQueen" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it("respeita prefers-reduced-motion: sem confete e sem animação", async () => {
     const client = cdp();
     await client.send("Emulation.setEmulatedMedia", {

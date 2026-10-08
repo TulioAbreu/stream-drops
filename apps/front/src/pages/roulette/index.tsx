@@ -1,4 +1,6 @@
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -215,19 +217,20 @@ export function RoulettePage() {
 
   return (
     <Layout>
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold mb-6">
-          {t("ROULETTE_TITLE", "Roleta")}
-        </h1>
-        <Button
-          variant="outline"
-          onClick={() => navigate("/dashboard/roulette/new")}
-          size="lg"
-        >
-          <Plus />
-          <span>{t("ROULETTE_CREATE_BUTTON", "Nova Roleta")}</span>
-        </Button>
-      </div>
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_ROULETTE")}
+        title={t("ROULETTE_TITLE", "Roleta")}
+        actions={
+          <Button
+            onClick={() => navigate("/dashboard/roulette/new")}
+            size="lg"
+          >
+            <Plus />
+            <span>{t("ROULETTE_CREATE_BUTTON", "Nova Roleta")}</span>
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
@@ -257,7 +260,11 @@ export function RoulettePage() {
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="flex flex-col gap-4">
+        <InventoryPanel
+          title={t("ROULETTE_LIST_PANEL")}
+          meta={String(roulettes.length)}
+          bodyClassName="flex flex-col gap-4 px-2"
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -293,7 +300,7 @@ export function RoulettePage() {
                     <TableCell>
                       <a
                         href={`/dashboard/roulette/${roulette.id}`}
-                        className="text-blue-500 hover:underline w-full"
+                        className="font-semibold text-[var(--sd-brand-amber-strong)] hover:underline"
                       >
                         {roulette.title}
                       </a>
@@ -435,7 +442,7 @@ export function RoulettePage() {
               </PaginationContent>
             </Pagination>
           )}
-        </div>
+        </InventoryPanel>
       )}
     </Layout>
   );

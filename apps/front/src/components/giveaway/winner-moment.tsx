@@ -11,6 +11,13 @@ type Phase = "entering" | "expanded" | "collapsing" | "exiting";
 
 const TRANSITION_MS = 320;
 
+export interface WinnerMomentReveal {
+  eyebrow: string;
+  subtitle: string;
+  closeLabel: string;
+  onClose: () => void;
+}
+
 export interface WinnerMomentProps {
   pendingWinner: PendingWinnerInfo;
   messages: GiveawayChatMessage[];
@@ -21,6 +28,11 @@ export interface WinnerMomentProps {
   onCancel: () => void;
   onRedraw: () => void;
   isRedrawing: boolean;
+  /**
+   * Palco só de revelação (roleta). Não confirma, não descarta e não
+   * grava. Esc continua sem fechar, como no palco do Chat.
+   */
+  reveal?: WinnerMomentReveal;
 }
 
 function formatElapsedTime(seconds: number): string {
@@ -71,6 +83,7 @@ export function WinnerMoment({
   onCancel,
   onRedraw,
   isRedrawing,
+  reveal,
 }: WinnerMomentProps) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -221,23 +234,27 @@ export function WinnerMoment({
     }
   };
 
-  const eyebrow = pendingWinner.tier
-    ? t("WINNER_MOMENT_TIER", { tier: pendingWinner.tier / 1000 })
-    : pendingWinner.subscriber
-      ? t("WINNER_MOMENT_SUB")
-      : t("WINNER_MOMENT_DROP");
+  const eyebrow = reveal
+    ? reveal.eyebrow
+    : pendingWinner.tier
+      ? t("WINNER_MOMENT_TIER", { tier: pendingWinner.tier / 1000 })
+      : pendingWinner.subscriber
+        ? t("WINNER_MOMENT_SUB")
+        : t("WINNER_MOMENT_DROP");
 
-  const subtitle = [
-    t("WINNER_MOMENT_RANK", { rank }),
-    pendingWinner.subscriptionMonths && pendingWinner.subscriptionMonths > 0
-      ? t("WINNER_MOMENT_SUB_MONTHS", {
-          count: pendingWinner.subscriptionMonths,
-        })
-      : null,
-    giveawayTitle,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const subtitle = reveal
+    ? reveal.subtitle
+    : [
+        t("WINNER_MOMENT_RANK", { rank }),
+        pendingWinner.subscriptionMonths && pendingWinner.subscriptionMonths > 0
+          ? t("WINNER_MOMENT_SUB_MONTHS", {
+              count: pendingWinner.subscriptionMonths,
+            })
+          : null,
+        giveawayTitle,
+      ]
+        .filter(Boolean)
+        .join(" · ");
 
   const elapsed = formatElapsedTime(elapsedSeconds);
   const waiting =
@@ -298,50 +315,58 @@ export function WinnerMoment({
           />
         </div>
 
-        <p className="inline-flex max-w-[560px] items-center justify-center rounded-full border border-dashed border-[var(--sd-border-strong)] bg-card/80 px-4 py-2 text-center text-sm text-foreground">
-          {waiting}
-          {isPaused ? (
-            <span className="ml-2 font-semibold text-[var(--sd-warning)]">
-              {t("WINNER_MOMENT_PAUSED")}
-            </span>
-          ) : null}
-        </p>
+        {reveal ? (
+          <Button size="lg" onClick={reveal.onClose}>
+            {reveal.closeLabel}
+          </Button>
+        ) : (
+          <>
+            <p className="inline-flex max-w-[560px] items-center justify-center rounded-full border border-dashed border-[var(--sd-border-strong)] bg-card/80 px-4 py-2 text-center text-sm text-foreground">
+              {waiting}
+              {isPaused ? (
+                <span className="ml-2 font-semibold text-[var(--sd-warning)]">
+                  {t("WINNER_MOMENT_PAUSED")}
+                </span>
+              ) : null}
+            </p>
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={handleCancel}
-            disabled={isRedrawing || isConfirming}
-          >
-            {t("WINNER_MOMENT_CANCEL")}
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={onRedraw}
-            disabled={isRedrawing || isConfirming}
-          >
-            <RotateCcw
-              className={isRedrawing ? "animate-spin motion-reduce:animate-none" : undefined}
-            />
-            {isRedrawing ? t("WINNER_MOMENT_REDRAWING") : t("WINNER_MOMENT_REDRAW")}
-          </Button>
-          <Button
-            size="lg"
-            onClick={handleConfirm}
-            disabled={isRedrawing || isConfirming}
-            loading={isConfirming && isExpanded}
-          >
-            <CheckIcon />
-            {t("WINNER_MOMENT_CONFIRM")}
-          </Button>
-        </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={handleCancel}
+                disabled={isRedrawing || isConfirming}
+              >
+                {t("WINNER_MOMENT_CANCEL")}
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={onRedraw}
+                disabled={isRedrawing || isConfirming}
+              >
+                <RotateCcw
+                  className={isRedrawing ? "animate-spin motion-reduce:animate-none" : undefined}
+                />
+                {isRedrawing ? t("WINNER_MOMENT_REDRAWING") : t("WINNER_MOMENT_REDRAW")}
+              </Button>
+              <Button
+                size="lg"
+                onClick={handleConfirm}
+                disabled={isRedrawing || isConfirming}
+                loading={isConfirming && isExpanded}
+              >
+                <CheckIcon />
+                {t("WINNER_MOMENT_CONFIRM")}
+              </Button>
+            </div>
 
-        <p className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-3 py-1 text-xs font-semibold text-[var(--sd-local)]">
-          <HardDrive className="size-3.5" />
-          {t("WINNER_MOMENT_LOCAL")}
-        </p>
+            <p className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-3 py-1 text-xs font-semibold text-[var(--sd-local)]">
+              <HardDrive className="size-3.5" />
+              {t("WINNER_MOMENT_LOCAL")}
+            </p>
+          </>
+        )}
       </div>
     </div>,
     document.body,
