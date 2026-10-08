@@ -96,15 +96,15 @@ describe("WinnerMoment", () => {
     expect(screen.getByRole("dialog", { name: "FlaviaQueen" })).toBeTruthy();
   });
 
-  it("no modo de revelação, Esc não fecha e não há confirmar", () => {
-    const onClose = vi.fn();
-    renderMoment({
-      reveal: {
-        eyebrow: "Resultado da roleta",
-        subtitle: "Roleta de Prêmios da Live",
-        closeLabel: "Continuar",
-        onClose,
-      },
+  it("no modo só de resultado, Esc não fecha e Continuar confirma", () => {
+    const { onConfirm, onDismiss, onCancel, onRedraw } = renderMoment({
+      showCancel: false,
+      showRedraw: false,
+      showChatWait: false,
+      confirmLabel: "Continuar",
+      localHint: "Neste navegador",
+      eyebrow: "Resultado da roleta",
+      subtitle: "Roleta de Prêmios da Live",
     });
     expect(screen.getByText("Resultado da roleta")).toBeTruthy();
     expect(screen.getByText("Roleta de Prêmios da Live")).toBeTruthy();
@@ -112,15 +112,20 @@ describe("WinnerMoment", () => {
     expect(screen.queryByRole("button", { name: "Confirmar" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Cancelar" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Refazer" })).toBeNull();
+    expect(screen.queryByText(/Aguardando/)).toBeNull();
     expect(screen.queryByText("Salvo neste navegador ao confirmar")).toBeNull();
+    expect(screen.getByText("Neste navegador")).toBeTruthy();
 
     const dialog = screen.getByRole("dialog", { name: "FlaviaQueen" });
     fireEvent.keyDown(dialog, { key: "Escape" });
-    expect(onClose).not.toHaveBeenCalled();
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(onRedraw).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog", { name: "FlaviaQueen" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-    expect(onClose).toHaveBeenCalledOnce();
+    expect(onConfirm).toHaveBeenCalledOnce();
   });
 
   it("respeita prefers-reduced-motion: sem confete e sem animação", async () => {

@@ -668,6 +668,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .winner-flash,
   .sd-winner-beam,
   .sd-winner-beam--soft,
   .sd-winner-name,

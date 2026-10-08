@@ -1,4 +1,6 @@
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogDescription, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -51,13 +53,17 @@ export function FollowerGiveaway() {
 
     return (
         <Layout>
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_TITLE")}</h1>
-                <Button variant="outline" onClick={onClickCreate} size="lg">
-                    <PlusIcon />
-                    <span>{t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}</span>
-                </Button>
-            </div>
+            <ShellHeader
+                section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+                page={t("DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY")}
+                title={t("FOLLOWER_GIVEAWAY_TITLE")}
+                actions={
+                    <Button onClick={onClickCreate} size="lg">
+                        <PlusIcon />
+                        <span>{t("FOLLOWER_GIVEAWAY_CREATE_BUTTON")}</span>
+                    </Button>
+                }
+            />
 
             {isLoading ? (
                 <div className="flex justify-center items-center py-12">
@@ -84,7 +90,11 @@ export function FollowerGiveaway() {
                     </EmptyContent>
                 </Empty>
             ) : (
-                <div className="flex flex-col gap-4">
+                <InventoryPanel
+                    title={t("FOLLOWER_GIVEAWAY_LIST_PANEL")}
+                    meta={String(giveaways.length)}
+                    bodyClassName="flex flex-col gap-4 px-2"
+                >
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -96,7 +106,7 @@ export function FollowerGiveaway() {
                             {giveaways.map((giveaway) => (
                                 <TableRow key={giveaway.id}>
                                     <TableCell>
-                                        <a href={`/dashboard/follower-giveaway/${giveaway.id}`} className="text-blue-500 hover:underline w-full">
+                                        <a href={`/dashboard/follower-giveaway/${giveaway.id}`} className="font-semibold text-[var(--sd-brand-amber-strong)] hover:underline w-full">
                                             {giveaway.title}
                                         </a>
                                     </TableCell>
@@ -175,7 +185,7 @@ export function FollowerGiveaway() {
                             }
                         </TableBody>
                     </Table>
-                </div>
+                </InventoryPanel>
             )}
         </Layout>
     )

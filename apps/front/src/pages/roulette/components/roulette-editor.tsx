@@ -295,17 +295,18 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
           }}
           messages={[]}
           giveawayTitle={heading}
+          showCancel={false}
+          showRedraw={false}
+          showChatWait={false}
+          confirmLabel={t("ROULETTE_RESULT_CONTINUE")}
+          localHint={t("ROULETTE_LOCAL")}
+          eyebrow={t("ROULETTE_RESULT_EYEBROW")}
+          subtitle={heading}
           onConfirm={() => undefined}
-          onDismiss={() => undefined}
+          onDismiss={() => setResultOpen(false)}
           onCancel={() => undefined}
           onRedraw={() => undefined}
           isRedrawing={false}
-          reveal={{
-            eyebrow: t("ROULETTE_RESULT_EYEBROW"),
-            subtitle: heading,
-            closeLabel: t("ROULETTE_RESULT_CONTINUE"),
-            onClose: () => setResultOpen(false),
-          }}
         />
       ) : null}
     </div>
