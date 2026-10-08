@@ -28,6 +28,11 @@ export default defineConfig({
         },
       }),
       instances: [{ browser: "chromium" }],
+      commands: {
+        emitCiLog(_context, line: string) {
+          process.stdout.write(`${line}\n`);
+        },
+      },
     },
   },
 });

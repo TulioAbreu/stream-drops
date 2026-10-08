@@ -7,7 +7,12 @@ export type ZonedParts = CalendarDate & {
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const BUCKET_MS = 6 * 60 * 60 * 1000;
 const formatters = new Map<string, Intl.DateTimeFormat>();
+const INSTANT_CACHE_LIMIT = 50_000;
+const instantCache = new Map<string, number | null>();
+const partsCache = new Map<string, ZonedParts | null>();
+const bucketOffsets = new Map<string, number | null>();
 
 function formatterFor(timeZone: string): Intl.DateTimeFormat {
   const cached = formatters.get(timeZone);
@@ -34,12 +39,56 @@ function readPart(
   return value === undefined ? Number.NaN : Number(value);
 }
 
-/** Dia e hora civis no fuso. `null` se o instante ou o fuso forem inválidos. */
-export function zonedParts(
+type TemporalZoned = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+};
+
+type TemporalApi = {
+  Instant: {
+    fromEpochMilliseconds(epochMilliseconds: number): {
+      toZonedDateTimeISO(timeZone: string): TemporalZoned;
+    };
+  };
+};
+
+function temporalApi(): TemporalApi | undefined {
+  return (globalThis as { Temporal?: TemporalApi }).Temporal;
+}
+
+function zonedFromTemporal(
+  instant: number,
+  timeZone: string,
+): ZonedParts | null | undefined {
+  const temporal = temporalApi();
+  if (!temporal) return undefined;
+  try {
+    const zoned = temporal.Instant.fromEpochMilliseconds(
+      instant,
+    ).toZonedDateTimeISO(timeZone);
+    return {
+      year: zoned.year,
+      month: zoned.month,
+      day: zoned.day,
+      hour: zoned.hour,
+      minute: zoned.minute,
+      second: zoned.second,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function exactZonedParts(
   instant: number,
   timeZone: string,
 ): ZonedParts | null {
-  if (!Number.isFinite(instant)) return null;
+  const temporal = zonedFromTemporal(instant, timeZone);
+  if (temporal !== undefined) return temporal;
   let parts: Intl.DateTimeFormatPart[];
   try {
     parts = formatterFor(timeZone).formatToParts(new Date(instant));
@@ -69,10 +118,101 @@ export function zonedParts(
   return { year, month, day, hour, minute, second };
 }
 
+function civilAsUtc(parts: ZonedParts): number {
+  return Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
+}
+
+function offsetOf(instant: number, parts: ZonedParts): number {
+  return civilAsUtc(parts) - Math.floor(instant / 1000) * 1000;
+}
+
+function partsFromOffset(instant: number, offsetMs: number): ZonedParts {
+  const shifted = new Date(instant + offsetMs);
+  return {
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+    hour: shifted.getUTCHours(),
+    minute: shifted.getUTCMinutes(),
+    second: shifted.getUTCSeconds(),
+  };
+}
+
+/**
+ * Deslocamento estável numa faixa de 6 h.
+ * Três sondas iguais permitem aritmética; uma transição (DST)
+ * devolve null e cada instante cai no cálculo exato.
+ */
+function stableOffset(timeZone: string, bucketStart: number): number | null {
+  const key = `${timeZone}\0${bucketStart}`;
+  const cached = bucketOffsets.get(key);
+  if (cached !== undefined) return cached;
+  const probes = [0, BUCKET_MS / 2, BUCKET_MS - 1];
+  let offset: number | null = null;
+  for (const delta of probes) {
+    const at = bucketStart + delta;
+    const parts = exactZonedParts(at, timeZone);
+    if (!parts) {
+      offset = null;
+      break;
+    }
+    const next = offsetOf(at, parts);
+    if (offset === null) offset = next;
+    else if (next !== offset) {
+      offset = null;
+      break;
+    }
+  }
+  if (bucketOffsets.size >= INSTANT_CACHE_LIMIT) bucketOffsets.clear();
+  bucketOffsets.set(key, offset);
+  return offset;
+}
+
+function zonedPartsUncached(
+  instant: number,
+  timeZone: string,
+): ZonedParts | null {
+  const bucketStart = Math.floor(instant / BUCKET_MS) * BUCKET_MS;
+  const offset = stableOffset(timeZone, bucketStart);
+  if (offset !== null) return partsFromOffset(instant, offset);
+  return exactZonedParts(instant, timeZone);
+}
+
+/**
+ * Dia e hora civis no fuso. `null` se o instante ou o fuso forem inválidos.
+ * O cache evita repetir `Intl` no card (milhares de vitórias, as mesmas datas).
+ */
+export function zonedParts(
+  instant: number,
+  timeZone: string,
+): ZonedParts | null {
+  if (!Number.isFinite(instant)) return null;
+  const key = `${timeZone}\0${instant}`;
+  const cached = partsCache.get(key);
+  if (cached !== undefined) return cached;
+  const parts = zonedPartsUncached(instant, timeZone);
+  if (parts) Object.freeze(parts);
+  if (partsCache.size >= INSTANT_CACHE_LIMIT) partsCache.clear();
+  partsCache.set(key, parts);
+  return parts;
+}
+
 export function parseInstant(iso: string | undefined): number | null {
   if (!iso) return null;
+  const cached = instantCache.get(iso);
+  if (cached !== undefined) return cached;
   const parsed = Date.parse(iso);
-  return Number.isFinite(parsed) ? parsed : null;
+  const result = Number.isFinite(parsed) ? parsed : null;
+  if (instantCache.size >= INSTANT_CACHE_LIMIT) instantCache.clear();
+  instantCache.set(iso, result);
+  return result;
 }
 
 export function calendarFromInstant(
