@@ -1,5 +1,5 @@
-const DATABASE_NAME = "stream-drops-db";
-const DATABASE_VERSION = 12;
+export const DATABASE_NAME = "stream-drops-db";
+export const DATABASE_VERSION = 12;
 
 // Singleton cache for database connection
 let dbInstance: IDBDatabase | null = null;
@@ -18,7 +18,7 @@ interface DatabaseTable {
     }[];
 }
 
-const stores: DatabaseTable[] = [
+export const DATABASE_STORES: DatabaseTable[] = [
     {
         name: "exclusion-list",
         primaryKey: {
@@ -109,7 +109,7 @@ export function openDb(): Promise<IDBDatabase> {
             console.log(`🔧 Atualizando banco de dados para versão ${DATABASE_VERSION}`);
             const db = request.result;
 
-            stores.forEach(store => {
+            DATABASE_STORES.forEach(store => {
                 if (!db.objectStoreNames.contains(store.name)) {
                     console.log(`📦 Criando tabela: ${store.name}`);
                     const objectStore = db.createObjectStore(store.name, store.primaryKey.options);
