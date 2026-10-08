@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { clearAllBrowserData } from "@/database/clear-browser-data";
+import { wipeLocalData } from "@/database/clear-browser-data";
 import {
   downloadLocalDatabaseBackup,
   readLocalDatabaseBackup,
@@ -83,8 +83,15 @@ export function DeleteLocalDataDialog({
   const handleConfirm = async () => {
     if (!confirmed || pending) return;
     setPending(true);
+    let blockedNotice = false;
     try {
-      await clearAllBrowserData();
+      await wipeLocalData({
+        onBlocked: () => {
+          if (blockedNotice) return;
+          blockedNotice = true;
+          toast.warning(t("SETTINGS_DELETE_BLOCKED"));
+        },
+      });
       leave();
     } catch (error) {
       console.error("Erro ao apagar dados locais:", error);
