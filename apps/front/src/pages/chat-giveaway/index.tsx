@@ -1,4 +1,6 @@
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogDescription, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -344,19 +346,20 @@ export function ChatGiveaway() {
 
   return (
     <Layout>
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold mb-6">
-          {t("CHAT_GIVEAWAY_TITLE", "Chat Giveaways")}
-        </h1>
-        <Button variant="outline" onClick={onClickCreate} size="lg">
-          <Plus />
-          <span>{t("CHAT_GIVEAWAY_CREATE_BUTTON", "Novo Sorteio")}</span>
-        </Button>
-      </div>
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY")}
+        title={t("CHAT_GIVEAWAY_TITLE", "Chat Giveaway")}
+        actions={
+          <Button onClick={onClickCreate} size="lg">
+            <Plus />
+            <span>{t("CHAT_GIVEAWAY_CREATE_BUTTON", "Novo Sorteio")}</span>
+          </Button>
+        }
+      />
 
       {templates.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Templates</h2>
+        <InventoryPanel title="Templates" className="mb-4">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -383,7 +386,7 @@ export function ChatGiveaway() {
               ) : null}
             </DragOverlay>
           </DndContext>
-        </div>
+        </InventoryPanel>
       )}
 
       {isLoading ? (
@@ -411,7 +414,11 @@ export function ChatGiveaway() {
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="flex flex-col gap-4">
+        <InventoryPanel
+          title={t("CHAT_GIVEAWAY_LIST_PANEL")}
+          meta={String(giveaways.length)}
+          bodyClassName="flex flex-col gap-4 px-2"
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -439,7 +446,7 @@ export function ChatGiveaway() {
                     <TableCell>
                       <a
                         href={`/dashboard/chat-giveaway/${giveaway.id}`}
-                        className="text-blue-500 hover:underline w-full"
+                        className="font-semibold text-[var(--sd-brand-amber-strong)] hover:underline"
                       >
                         {giveaway.title}
                       </a>
@@ -577,7 +584,7 @@ export function ChatGiveaway() {
               </PaginationContent>
             </Pagination>
           )}
-        </div>
+        </InventoryPanel>
       )}
       <Dialog open={isCreateTemplateOpen} onOpenChange={setIsCreateTemplateOpen}>
         <DialogContent>

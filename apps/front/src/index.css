@@ -552,3 +552,116 @@
 .winner-flash {
   animation: winner-flash 1200ms ease-out 1;
 }
+
+/* Momento do vencedor (palco). Cores só por token. */
+.sd-btn-drop {
+  background: linear-gradient(
+    180deg,
+    var(--sd-brand-cream),
+    var(--primary) 55%,
+    color-mix(in srgb, var(--primary) 72%, var(--sd-brand-wood))
+  );
+  color: var(--primary-foreground);
+  box-shadow:
+    inset 0 -3px 0 color-mix(in srgb, var(--sd-brand-wood) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--sd-brand-cream) 65%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--sd-brand-wood) 50%, transparent),
+    0 8px 28px -8px color-mix(in srgb, var(--primary) 60%, transparent);
+}
+
+.sd-btn-drop:hover {
+  background: linear-gradient(
+    180deg,
+    var(--sd-brand-cream),
+    var(--primary) 40%,
+    color-mix(in srgb, var(--primary) 80%, var(--sd-brand-wood))
+  );
+}
+
+.sd-btn-drop:active {
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--sd-brand-wood) 40%, transparent);
+}
+
+.sd-winner-stage {
+  background:
+    radial-gradient(
+      ellipse at 50% 108%,
+      color-mix(in srgb, var(--sd-winner-accent, var(--primary)) 28%, transparent),
+      transparent 58%
+    ),
+    var(--background);
+}
+
+.sd-winner-beam {
+  position: absolute;
+  left: 50%;
+  bottom: -8%;
+  width: min(520px, 72vw);
+  height: 78%;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--sd-winner-accent, var(--primary)) 55%, transparent),
+    transparent 78%
+  );
+  clip-path: polygon(36% 100%, 64% 100%, 82% 0, 18% 0);
+  animation: sd-winner-beam 2.6s var(--sd-ease-standard) infinite alternate;
+  pointer-events: none;
+}
+
+.sd-winner-beam--soft {
+  filter: blur(18px);
+  opacity: 0.7;
+  animation-duration: 3.4s;
+}
+
+.sd-winner-name {
+  font-size: clamp(var(--sd-text-stage), 8vw, 112px);
+  animation: sd-winner-reveal var(--sd-dur-reveal) var(--sd-ease-drop) both;
+  text-shadow: 0 0 40px
+    color-mix(in srgb, var(--sd-winner-accent, var(--primary)) 45%, transparent);
+}
+
+.sd-winner-mascot {
+  animation: sd-winner-pop var(--sd-dur-reveal) var(--sd-ease-drop) both;
+}
+
+@keyframes sd-winner-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sd-winner-pop {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sd-winner-beam {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-winner-beam,
+  .sd-winner-beam--soft,
+  .sd-winner-name,
+  .sd-winner-mascot {
+    animation: none;
+  }
+}

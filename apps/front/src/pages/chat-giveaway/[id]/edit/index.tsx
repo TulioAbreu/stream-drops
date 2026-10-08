@@ -2,10 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useChatGiveawayDb, type ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { ChatGiveawayFormComponent } from "../../components/chat-giveaway-form";
 import { type ChatGiveawayForm } from "../../types";
+import { useTranslation } from "react-i18next";
+import "@/i18n";
 
 export function ChatGiveawayEdit() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getChatGiveaway, updateChatGiveaway } = useChatGiveawayDb();
@@ -74,7 +79,15 @@ export function ChatGiveawayEdit() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-6">Editar Chat Giveaway</h1>
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY")}
+        title={t("CHAT_GIVEAWAY_EDIT_TITLE")}
+      />
+      <InventoryPanel
+        title={t("CHAT_GIVEAWAY_FORM_PANEL")}
+        className="max-w-3xl"
+      >
       <ChatGiveawayFormComponent
         defaultValues={{
           title: giveaway.title,
@@ -88,6 +101,7 @@ export function ChatGiveawayEdit() {
         submitLabel="Salvar Alterações"
         isLoading={isSaving}
       />
+      </InventoryPanel>
     </Layout>
   );
 }

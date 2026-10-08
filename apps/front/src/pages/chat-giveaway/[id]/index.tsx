@@ -5,12 +5,10 @@ import { useExclusionListDb } from "@/database/ExclusionListItem";
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Trophy, Sparkles, ArrowLeftIcon, Edit, AlertCircle } from "lucide-react";
+import { Trophy, Sparkles, ArrowLeftIcon, Edit, AlertCircle, HardDrive } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
 import {
   buildChatGiveawayPools,
@@ -23,12 +21,14 @@ import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
 import { rankWinnersByDrawOrder, sortWinnersByDrawOrder } from "@/lib/giveaway-winner-rank";
 import { WinnersList } from "@/components/giveaway/winners-list";
+import { WinnerMoment } from "@/components/giveaway/winner-moment";
+import { WinnerLogRow } from "@/components/giveaway/winner-log-row";
+import { ParticipantInventory } from "@/components/giveaway/participant-inventory";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { useTranslation } from "react-i18next";
 import "@/i18n";
 import type { ChatParticipant } from "../types";
-import { WinnerConfirmationInline } from "./components/winner-confirmation-inline";
-import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
-import { ParticipantTag } from "./components/participant-tag";
 
 export function ChatGiveawayDetail() {
   const { id } = useParams<{ id: string }>();
@@ -332,121 +332,153 @@ export function ChatGiveawayDetail() {
     );
   }
 
+  const connectionLabel =
+    connectionStatus === "connected"
+      ? t("CHAT_GIVEAWAY_STATUS_CONNECTED")
+      : connectionStatus === "connecting"
+        ? t("CHAT_GIVEAWAY_STATUS_CONNECTING")
+        : connectionStatus === "error"
+          ? t("CHAT_GIVEAWAY_STATUS_ERROR")
+          : null;
+
   return (
     <Layout>
       <div className="flex flex-col gap-4">
-        {/* Header with Actions */}
-        <div className="flex flex-row justify-between items-center flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{giveaway.title}</h1>
-            {giveaway.description && (
-              <p className="text-muted-foreground">{giveaway.description}</p>
-            )}
-            {giveaway.keyword && (
-              <p className="text-muted-foreground mt-2 flex items-center gap-2 flex-wrap">
-                Envie <Badge variant="secondary" className="font-mono">{giveaway.keyword}</Badge> no chat para participar
-              </p>
-            )}
-            <div className="flex gap-2 mt-3">
-              {giveaway.keyword && (
-                <Badge variant="outline">Palavra-chave: {giveaway.keyword}</Badge>
-              )}
-              {giveaway.subscribersOnly && (
-                <Badge variant="secondary">Apenas Subscribers</Badge>
-              )}
-              {giveaway.minimumSuscriptionTimeInMonths > 0 && (
-                <Badge variant="outline">
-                  Necessário ter {giveaway.minimumSuscriptionTimeInMonths} {giveaway.minimumSuscriptionTimeInMonths === 1 ? 'mês' : 'meses'} de Subscription
-                </Badge>
-              )}
-              {giveaway.subscriberMultiplier > 1 && (
-                <Badge variant="outline">
-                  Multiplicador Sub: {giveaway.subscriberMultiplier}x
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-row gap-4 flex-wrap">
-            <Button variant="ghost" size="lg" onClick={onClickBack}>
-              <ArrowLeftIcon className="w-4 h-4 mr-2" />
-              <span>{t("NAVIGATE_BACK", "Voltar")}</span>
-            </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => navigate(`/dashboard/chat-giveaway/${giveaway.id}/edit`)}
-                      disabled={giveaway.winners.length > 0}
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      <span>Editar</span>
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {giveaway.winners.length > 0 && (
-                  <TooltipContent>
-                    <p>Este sorteio já ocorreu e não pode mais ser editado.</p>
-                  </TooltipContent>
+        <ShellHeader
+          section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+          page={t("DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY")}
+          title={giveaway.title}
+          description={giveaway.description || undefined}
+          actions={
+            <>
+              <Button variant="ghost" size="lg" onClick={onClickBack}>
+                <ArrowLeftIcon />
+                <span>{t("NAVIGATE_BACK", "Voltar")}</span>
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => navigate(`/dashboard/chat-giveaway/${giveaway.id}/edit`)}
+                        disabled={giveaway.winners.length > 0}
+                      >
+                        <Edit />
+                        <span>{t("CHAT_GIVEAWAY_EDIT")}</span>
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {giveaway.winners.length > 0 && (
+                    <TooltipContent>
+                      <p>{t("CHAT_GIVEAWAY_EDIT_LOCKED")}</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+              <Button
+                variant="drop"
+                onClick={handleDraw}
+                disabled={isDrawing || !!pendingWinner || eligible.length === 0}
+              >
+                {isDrawing ? (
+                  <>
+                    <Sparkles className="animate-spin motion-reduce:animate-none" />
+                    {t("CHAT_GIVEAWAY_DRAWING")}
+                  </>
+                ) : (
+                  <>
+                    <Trophy />
+                    {t("CHAT_GIVEAWAY_DRAW")}
+                  </>
                 )}
-              </Tooltip>
-            </TooltipProvider>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleDraw}
-              disabled={isDrawing || !!pendingWinner || eligible.length === 0}
-            >
-              {isDrawing ? (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                  Sorteando...
-                </>
-              ) : (
-                <>
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Sortear Vencedor
-                </>
-              )}
-            </Button>
+              </Button>
+            </>
+          }
+        >
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {giveaway.keyword ? (
+              <span className="inline-flex h-[30px] items-center gap-2 rounded-[8px] border border-border bg-[var(--sd-surface-2)] px-2.5 text-[12.5px] font-semibold">
+                <span className="font-medium text-muted-foreground">
+                  {t("CHAT_GIVEAWAY_HUD_KEYWORD")}
+                </span>
+                <span className="font-mono">{giveaway.keyword}</span>
+              </span>
+            ) : null}
+            {giveaway.subscriberMultiplier > 1 ? (
+              <span className="inline-flex h-[30px] items-center gap-2 rounded-[8px] border border-border bg-[var(--sd-surface-2)] px-2.5 text-[12.5px] font-semibold">
+                <span className="font-medium text-muted-foreground">
+                  {t("CHAT_GIVEAWAY_HUD_MULTIPLIER")}
+                </span>
+                <span className="font-mono">{giveaway.subscriberMultiplier}×</span>
+              </span>
+            ) : null}
+            <span className="inline-flex h-[30px] items-center gap-2 rounded-[8px] border border-border bg-[var(--sd-surface-2)] px-2.5 text-[12.5px] font-semibold">
+              <span className="font-medium text-muted-foreground">
+                {t("CHAT_GIVEAWAY_HUD_ELIGIBLE")}
+              </span>
+              <span className="font-mono">{eligible.length}</span>
+            </span>
+            {giveaway.subscribersOnly ? (
+              <Badge variant="secondary">Apenas Subscribers</Badge>
+            ) : null}
+            {giveaway.minimumSuscriptionTimeInMonths > 0 ? (
+              <Badge variant="outline">
+                Necessário ter {giveaway.minimumSuscriptionTimeInMonths}{" "}
+                {giveaway.minimumSuscriptionTimeInMonths === 1 ? "mês" : "meses"} de Subscription
+              </Badge>
+            ) : null}
+            {connectionLabel ? (
+              <span
+                className={
+                  connectionStatus === "error"
+                    ? "inline-flex h-[22px] items-center gap-1.5 rounded-full bg-[var(--sd-danger-soft)] px-2 text-xs font-semibold text-foreground"
+                    : connectionStatus === "connecting"
+                      ? "inline-flex h-[22px] items-center gap-1.5 rounded-full bg-muted px-2 text-xs font-semibold text-foreground"
+                      : "inline-flex h-[22px] items-center gap-1.5 rounded-full bg-[var(--sd-success-soft)] px-2 text-xs font-semibold text-foreground"
+                }
+              >
+                <span
+                  className={
+                    connectionStatus === "error"
+                      ? "size-1.5 rounded-full bg-[var(--sd-danger)]"
+                      : connectionStatus === "connecting"
+                        ? "size-1.5 rounded-full bg-muted-foreground"
+                        : "size-1.5 rounded-full bg-[var(--sd-success)]"
+                  }
+                  aria-hidden
+                />
+                {connectionLabel}
+              </span>
+            ) : null}
+            <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-2.5 text-xs font-semibold text-[var(--sd-local)]">
+              <HardDrive className="size-3.5" />
+              {t("CHAT_GIVEAWAY_LOCAL")}
+            </span>
           </div>
-        </div>
+        </ShellHeader>
 
-        {/* Two columns: participants | winners + chat */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Participants Column */}
-          <Card className="flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Participantes
-                {connectionStatus === "connected" && (
-                  <Badge variant="secondary" className="text-xs">
-                    Conectado
-                  </Badge>
-                )}
-                {connectionStatus === "connecting" && (
-                  <Badge variant="outline" className="text-xs">
-                    Conectando...
-                  </Badge>
-                )}
-                {connectionStatus === "error" && (
-                  <Badge variant="destructive" className="text-xs">
-                    Erro
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
+          <ParticipantInventory
+            title={t("CHAT_GIVEAWAY_INVENTORY_TITLE")}
+            filter={nameFilter}
+            onFilterChange={setNameFilter}
+            filterLabel={t("CHAT_GIVEAWAY_FILTER_PLACEHOLDER", "Filtrar por nome...")}
+            participants={sortedParticipants}
+            summary={
+              <>
                 {nameFilter.trim() ? (
                   <>
-                    {t("CHAT_GIVEAWAY_FILTERED_COUNT", {
-                      found: displayed.length,
-                      eligible: eligible.length,
-                      defaultValue:
-                        "{{found}} encontrados (de {{eligible}} elegíveis)",
-                    })}
-                    <p className="mt-1">
+                    <p>
+                      {t("CHAT_GIVEAWAY_FILTERED_COUNT", {
+                        found: displayed.length,
+                        eligible: eligible.length,
+                        defaultValue:
+                          "{{found}} encontrados (de {{eligible}} elegíveis)",
+                      })}
+                    </p>
+                    <p>
                       {t(
                         "CHAT_GIVEAWAY_FILTER_DRAW_HINT",
                         "O sorteio considera todos os elegíveis, não só os filtrados",
@@ -454,165 +486,153 @@ export function ChatGiveawayDetail() {
                     </p>
                   </>
                 ) : (
-                  <>
+                  <p>
                     {t("CHAT_GIVEAWAY_ELIGIBLE_COUNT", {
                       total: eligible.length,
                       defaultValue: "{{total}} participantes elegíveis",
                     })}
-                  </>
-                )}
-                {chatError && (
-                  <p className="text-destructive text-sm mt-1">
-                    Erro no chat: {chatError}
                   </p>
                 )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-1 flex-col">
-              <div className="space-y-3">
-                <Input
-                  placeholder={t(
-                    "CHAT_GIVEAWAY_FILTER_PLACEHOLDER",
-                    "Filtrar por nome...",
-                  )}
-                  aria-label={t(
-                    "CHAT_GIVEAWAY_FILTER_PLACEHOLDER",
-                    "Filtrar por nome...",
-                  )}
-                  value={nameFilter}
-                  onChange={(e) => setNameFilter(e.target.value)}
-                  className="h-8"
-                />
-              </div>
-              {displayed.length === 0 ? (
-                <div className="flex flex-1 items-center justify-center min-h-[620px] mt-3">
-                  <Empty>
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <Sparkles />
-                      </EmptyMedia>
-                      <EmptyTitle>
-                        {nameFilter.trim()
-                          ? t("CHAT_GIVEAWAY_FILTER_EMPTY", {
-                              filter: nameFilter.trim(),
-                              defaultValue:
-                                "Nenhum participante encontrado para '{{filter}}'",
-                            })
-                          : t(
-                              "CHAT_GIVEAWAY_NO_PARTICIPANTS",
-                              "Nenhum participante",
-                            )}
-                      </EmptyTitle>
-                    </EmptyHeader>
-                  </Empty>
-                </div>
-              ) : (
-                <div className="mt-3 min-h-[620px] flex-1 overflow-auto content-start">
-                  <div className="flex flex-wrap gap-2 p-1">
-                    {sortedParticipants.map((participant) => (
-                      <ParticipantTag
-                        key={participant.id}
-                        participant={participant}
-                      />
-                    ))}
+                {chatError ? (
+                  <p className="text-destructive">Erro no chat: {chatError}</p>
+                ) : null}
+              </>
+            }
+            empty={
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <Sparkles />
+                  </EmptyMedia>
+                  <EmptyTitle>
+                    {nameFilter.trim()
+                      ? t("CHAT_GIVEAWAY_FILTER_EMPTY", {
+                          filter: nameFilter.trim(),
+                          defaultValue:
+                            "Nenhum participante encontrado para '{{filter}}'",
+                        })
+                      : t("CHAT_GIVEAWAY_NO_PARTICIPANTS", "Nenhum participante")}
+                  </EmptyTitle>
+                </EmptyHeader>
+              </Empty>
+            }
+          />
+
+          <div className="flex min-h-0 flex-col gap-4">
+            <InventoryPanel
+              title={t("CHAT_GIVEAWAY_LOG_TITLE")}
+              meta={
+                pendingWinner
+                  ? t("CHAT_GIVEAWAY_LOG_META_PENDING", {
+                      count: giveaway.winners.length,
+                      rank: pendingWinnerRank,
+                    })
+                  : t("CHAT_GIVEAWAY_LOG_META", { count: giveaway.winners.length })
+              }
+              bodyClassName="pt-3"
+            >
+              <WinnersList
+                className="h-[360px] pr-3"
+                triggerKey={pendingWinner?.id ?? null}
+                pendingRank={pendingWinnerRank}
+                pending={
+                  pendingWinner ? (
+                    <div
+                      data-pending-card
+                      className="rounded-[14px] border border-dashed border-[var(--sd-border-strong)] bg-card px-3 py-3"
+                    >
+                      <p className="text-sm font-semibold">
+                        {pendingWinner.displayName}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t("CHAT_GIVEAWAY_PENDING_WAIT")}
+                      </p>
+                    </div>
+                  ) : undefined
+                }
+              >
+                {giveaway.winners.length === 0 && !pendingWinner ? (
+                  <div className="flex min-h-[280px] items-center justify-center">
+                    <Empty>
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <Trophy />
+                        </EmptyMedia>
+                        <EmptyTitle>{t("CHAT_GIVEAWAY_NO_WINNERS")}</EmptyTitle>
+                      </EmptyHeader>
+                    </Empty>
                   </div>
+                ) : (
+                  sortedWinners
+                    .filter((winner) => winner.id !== pendingWinner?.id)
+                    .map((winner) => {
+                      const participantData = knownParticipants.find(
+                        (participant) => participant.id === winner.twitchId,
+                      );
+                      const rank = winnerRanks.get(winner.id) ?? 0;
+                      return (
+                        <WinnerLogRow
+                          key={winner.id}
+                          rank={rank}
+                          name={winner.name}
+                          avatar={winner.avatar}
+                          drawnAt={winner.drawnAt}
+                          tier={participantData?.tier}
+                          onRemove={() => onClickRemoveWinner(winner.id)}
+                          removeLabel={t("CHAT_GIVEAWAY_REMOVE_WINNER")}
+                          dimmed={!!pendingWinner}
+                        />
+                      );
+                    })
+                )}
+              </WinnersList>
+            </InventoryPanel>
+
+            <InventoryPanel
+              title={t("CHAT_GIVEAWAY_CHAT_TITLE")}
+              meta={
+                connectionStatus === "connected" ? (
+                  <span className="inline-flex items-center gap-1.5 text-foreground">
+                    <span className="size-1.5 rounded-full bg-[var(--sd-success)]" />
+                    {t("CHAT_GIVEAWAY_LIVE")}
+                  </span>
+                ) : null
+              }
+              className="overflow-hidden"
+              bodyClassName="p-0"
+            >
+              {userData?.login ? (
+                <iframe
+                  src={composeTwitchChatEmbedUrl(userData.login)}
+                  className="h-[220px] w-full border-0"
+                  title={`Chat do canal ${userData.login}`}
+                />
+              ) : (
+                <div className="flex h-[220px] flex-col items-center justify-center bg-muted p-6">
+                  <AlertCircle className="mb-3 size-8 text-destructive" />
+                  <p className="text-center text-sm font-medium text-destructive">
+                    Não foi possível montar o chat: dados do usuário ausentes.
+                  </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Right stack: winners (larger) + chat (smaller) */}
-          <div className="flex flex-col gap-4 min-h-0">
-            <Card className="flex flex-[1.7] flex-col min-h-0">
-              <CardHeader>
-                <CardTitle>Vencedores</CardTitle>
-                <CardDescription>
-                  {giveaway.winners.length} vencedor(es)
-                  {pendingWinner && " · aguardando confirmação"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex min-h-0 flex-1 flex-col">
-                <WinnersList
-                  className="h-[420px] pr-4"
-                  triggerKey={pendingWinner?.id ?? null}
-                  pendingRank={pendingWinnerRank}
-                  pending={
-                    pendingWinner ? (
-                      <WinnerConfirmationInline
-                        key={pendingWinner.id}
-                        pendingWinner={pendingWinner}
-                        messages={messages}
-                        rank={pendingWinnerRank}
-                        onConfirm={handleConfirmWinner}
-                        onDismiss={handleDismissPendingWinner}
-                        onCancel={handleCancelWinner}
-                        onRedraw={handleRedraw}
-                        isRedrawing={isRedrawing}
-                      />
-                    ) : undefined
-                  }
-                >
-                    {giveaway.winners.length === 0 && !pendingWinner ? (
-                      <div className="flex items-center justify-center min-h-[320px]">
-                        <Empty>
-                          <EmptyHeader>
-                            <EmptyMedia variant="icon">
-                              <Trophy />
-                            </EmptyMedia>
-                            <EmptyTitle>
-                              Nenhum vencedor ainda
-                            </EmptyTitle>
-                          </EmptyHeader>
-                        </Empty>
-                      </div>
-                    ) : (
-                      sortedWinners
-                        .filter((winner) => winner.id !== pendingWinner?.id)
-                        .map((winner) => {
-                          const participantData = knownParticipants.find(
-                            (p) => p.id === winner.twitchId
-                          );
-                          const rank = winnerRanks.get(winner.id) ?? 0;
-
-                          return (
-                            <GiveawayWinnerRow
-                              key={winner.id}
-                              rank={rank}
-                              name={winner.name}
-                              avatar={winner.avatar}
-                              drawnAt={winner.drawnAt}
-                              tier={participantData?.tier}
-                              onRemove={() => onClickRemoveWinner(winner.id)}
-                              className={pendingWinner ? "opacity-55" : undefined}
-                            />
-                          );
-                        })
-                    )}
-                </WinnersList>
-              </CardContent>
-            </Card>
-
-            <Card className="shrink-0 overflow-hidden p-0">
-              <CardContent className="p-0">
-                {userData?.login ? (
-                  <iframe
-                    src={composeTwitchChatEmbedUrl(userData.login)}
-                    className="w-full h-[240px] border-0"
-                    title={`Chat do canal ${userData.login}`}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-[240px] bg-muted p-6">
-                    <AlertCircle className="h-8 w-8 text-destructive mb-3" />
-                    <p className="text-center text-destructive font-medium text-sm">
-                      Não foi possível montar o chat: dados do usuário ausentes.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            </InventoryPanel>
           </div>
         </div>
       </div>
+      {pendingWinner ? (
+        <WinnerMoment
+          key={pendingWinner.id}
+          pendingWinner={pendingWinner}
+          messages={messages}
+          rank={pendingWinnerRank}
+          giveawayTitle={giveaway.title}
+          onConfirm={handleConfirmWinner}
+          onDismiss={handleDismissPendingWinner}
+          onCancel={handleCancelWinner}
+          onRedraw={handleRedraw}
+          isRedrawing={isRedrawing}
+        />
+      ) : null}
     </Layout>
   );
 }
