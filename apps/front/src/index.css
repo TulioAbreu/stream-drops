@@ -1,13 +1,30 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./fonts.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/* Design System 1.1 — nomes shadcn + --sd-* + raridade. Glow é sombra, não cor. */
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--sd-font-sans);
+  --font-display: var(--sd-font-display);
+  --font-mono: var(--sd-font-mono);
+  --shadow-2xs: var(--sd-shadow-1);
+  --shadow-xs: var(--sd-shadow-1);
+  --shadow-sm: var(--sd-shadow-1);
+  --shadow-md: var(--sd-shadow-2);
+  --shadow-lg: var(--sd-shadow-3);
+  --shadow-xl: var(--sd-shadow-3);
+  --shadow-2xl: var(--sd-shadow-3);
+  --shadow-rarity-common: var(--rarity-common-glow);
+  --shadow-rarity-uncommon: var(--rarity-uncommon-glow);
+  --shadow-rarity-rare: var(--rarity-rare-glow);
+  --shadow-rarity-epic: var(--rarity-epic-glow);
+  --shadow-rarity-legendary: var(--rarity-legendary-glow);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -39,75 +56,288 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-rarity-common: var(--rarity-common);
+  --color-rarity-common-foreground: var(--rarity-common-foreground);
+  --color-rarity-common-soft: var(--rarity-common-soft);
+  --color-rarity-uncommon: var(--rarity-uncommon);
+  --color-rarity-uncommon-foreground: var(--rarity-uncommon-foreground);
+  --color-rarity-uncommon-soft: var(--rarity-uncommon-soft);
+  --color-rarity-rare: var(--rarity-rare);
+  --color-rarity-rare-foreground: var(--rarity-rare-foreground);
+  --color-rarity-rare-soft: var(--rarity-rare-soft);
+  --color-rarity-epic: var(--rarity-epic);
+  --color-rarity-epic-foreground: var(--rarity-epic-foreground);
+  --color-rarity-epic-soft: var(--rarity-epic-soft);
+  --color-rarity-legendary: var(--rarity-legendary);
+  --color-rarity-legendary-foreground: var(--rarity-legendary-foreground);
+  --color-rarity-legendary-soft: var(--rarity-legendary-soft);
+  --color-sd-brand-amber: var(--sd-brand-amber);
+  --color-sd-brand-amber-strong: var(--sd-brand-amber-strong);
+  --color-sd-brand-orange: var(--sd-brand-orange);
+  --color-sd-brand-orange-strong: var(--sd-brand-orange-strong);
+  --color-sd-brand-wood: var(--sd-brand-wood);
+  --color-sd-brand-cream: var(--sd-brand-cream);
+  --color-sd-brand-gem: var(--sd-brand-gem);
+  --color-sd-success: var(--sd-success);
+  --color-sd-success-soft: var(--sd-success-soft);
+  --color-sd-warning: var(--sd-warning);
+  --color-sd-warning-soft: var(--sd-warning-soft);
+  --color-sd-danger: var(--sd-danger);
+  --color-sd-danger-soft: var(--sd-danger-soft);
+  --color-sd-info: var(--sd-info);
+  --color-sd-info-soft: var(--sd-info-soft);
+  --color-sd-local: var(--sd-local);
+  --color-sd-local-soft: var(--sd-local-soft);
 }
 
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+:root,
+.light {
+  --radius: 0.75rem;
+  --background: #FBF8F3;
+  --foreground: #1C1714;
+  --card: #FFFFFF;
+  --card-foreground: #1C1714;
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1714;
+  --primary: #FBBF24;
+  --primary-foreground: #1C1408;
+  --secondary: #F3EEE6;
+  --secondary-foreground: #1C1714;
+  --muted: #F3EEE6;
+  --muted-foreground: #6B625A;
+  --accent: #FEF3C7;
+  --accent-foreground: #78350F;
+  --destructive: #DC2626;
+  --border: #E7E0D5;
+  --input: #DDD4C7;
+  --ring: #D97706;
+  --chart-1: #D97706;
+  --chart-2: #0284C7;
+  --chart-3: #DB2777;
+  --chart-4: #0D9488;
+  --chart-5: #EA580C;
+  --sidebar: #F6F1E9;
+  --sidebar-foreground: #1C1714;
+  --sidebar-primary: #FBBF24;
+  --sidebar-primary-foreground: #1C1408;
+  --sidebar-accent: #EFE7DA;
+  --sidebar-accent-foreground: #1C1714;
+  --sidebar-border: #E7E0D5;
+  --sidebar-ring: #D97706;
+
+  --sd-brand-amber: #FBBF24;
+  --sd-brand-amber-strong: #B45309;
+  --sd-brand-orange: #FB923C;
+  --sd-brand-orange-strong: #EA580C;
+  --sd-brand-wood: #92400E;
+  --sd-brand-cream: #FDE68A;
+  --sd-brand-gem: #38BDF8;
+
+  --sd-surface-2: #FFFFFF;
+  --sd-surface-3: #F3EEE6;
+  --sd-border-strong: #CFC5B6;
+  --sd-overlay: rgba(28, 23, 20, 0.45);
+
+  --sd-success: #0D9488;
+  --sd-success-soft: #CCFBF1;
+  --sd-warning: #C2410C;
+  --sd-warning-soft: #FFEDD5;
+  --sd-danger: #DC2626;
+  --sd-danger-soft: #FEE2E2;
+  --sd-info: #0284C7;
+  --sd-info-soft: #E0F2FE;
+  --sd-local: #92400E;
+  --sd-local-soft: #FEF3C7;
+
+  --sd-rarity-common: #78716C;
+  --sd-rarity-uncommon: #16A34A;
+  --sd-rarity-rare: #0284C7;
+  --sd-rarity-epic: #DB2777;
+  --sd-rarity-legendary: #D97706;
+  --sd-rarity-common-soft: #F0EDEA;
+  --sd-rarity-uncommon-soft: #DCFCE7;
+  --sd-rarity-rare-soft: #E0F2FE;
+  --sd-rarity-epic-soft: #FCE7F3;
+  --sd-rarity-legendary-soft: #FEF3C7;
+  --sd-rarity-common-fg: #57534E;
+  --sd-rarity-uncommon-fg: #166534;
+  --sd-rarity-rare-fg: #075985;
+  --sd-rarity-epic-fg: #9D174D;
+  --sd-rarity-legendary-fg: #92400E;
+
+  --rarity-common: var(--sd-rarity-common);
+  --rarity-uncommon: var(--sd-rarity-uncommon);
+  --rarity-rare: var(--sd-rarity-rare);
+  --rarity-epic: var(--sd-rarity-epic);
+  --rarity-legendary: var(--sd-rarity-legendary);
+  --rarity-common-foreground: var(--sd-rarity-common-fg);
+  --rarity-uncommon-foreground: var(--sd-rarity-uncommon-fg);
+  --rarity-rare-foreground: var(--sd-rarity-rare-fg);
+  --rarity-epic-foreground: var(--sd-rarity-epic-fg);
+  --rarity-legendary-foreground: var(--sd-rarity-legendary-fg);
+  --rarity-common-soft: var(--sd-rarity-common-soft);
+  --rarity-uncommon-soft: var(--sd-rarity-uncommon-soft);
+  --rarity-rare-soft: var(--sd-rarity-rare-soft);
+  --rarity-epic-soft: var(--sd-rarity-epic-soft);
+  --rarity-legendary-soft: var(--sd-rarity-legendary-soft);
+
+  --sd-shadow-1: 0 1px 2px rgba(60, 40, 20, 0.08);
+  --sd-shadow-2: 0 6px 20px -6px rgba(60, 40, 20, 0.18);
+  --sd-shadow-3: 0 24px 60px -16px rgba(60, 40, 20, 0.28);
+  --sd-glow-legendary: 0 0 0 1.5px rgba(217, 119, 6, 0.6), 0 6px 24px -6px rgba(217, 119, 6, 0.45);
+  --sd-glow-epic: 0 0 0 1.5px rgba(219, 39, 119, 0.5), 0 6px 22px -8px rgba(219, 39, 119, 0.4);
+  --sd-glow-rare: 0 0 0 1.5px rgba(2, 132, 199, 0.5), 0 6px 22px -8px rgba(2, 132, 199, 0.4);
+  --sd-glow-uncommon: 0 0 0 1.5px rgba(22, 163, 74, 0.45);
+  --sd-glow-common: 0 0 0 1px rgba(120, 113, 108, 0.35);
+  --rarity-common-glow: var(--sd-glow-common);
+  --rarity-uncommon-glow: var(--sd-glow-uncommon);
+  --rarity-rare-glow: var(--sd-glow-rare);
+  --rarity-epic-glow: var(--sd-glow-epic);
+  --rarity-legendary-glow: var(--sd-glow-legendary);
+  --sd-focus: 0 0 0 3px rgba(217, 119, 6, 0.35);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0B0908;
+  --foreground: #FAF7F2;
+  --card: #15110E;
+  --card-foreground: #FAF7F2;
+  --popover: #1E1914;
+  --popover-foreground: #FAF7F2;
+  --primary: #FBBF24;
+  --primary-foreground: #1C1408;
+  --secondary: #29221B;
+  --secondary-foreground: #FAF7F2;
+  --muted: #29221B;
+  --muted-foreground: #A8A29E;
+  --accent: #2E2419;
+  --accent-foreground: #FDE68A;
+  --destructive: #E5484D;
+  --border: rgba(255, 237, 213, 0.09);
+  --input: rgba(255, 237, 213, 0.14);
+  --ring: #FBBF24;
+  --chart-1: #FBBF24;
+  --chart-2: #38BDF8;
+  --chart-3: #F472B6;
+  --chart-4: #2DD4BF;
+  --chart-5: #FB923C;
+  --sidebar: #110E0B;
+  --sidebar-foreground: #E7E1D8;
+  --sidebar-primary: #FBBF24;
+  --sidebar-primary-foreground: #1C1408;
+  --sidebar-accent: #221C16;
+  --sidebar-accent-foreground: #FAF7F2;
+  --sidebar-border: rgba(255, 237, 213, 0.07);
+  --sidebar-ring: #FBBF24;
+
+  --sd-brand-amber-strong: #FCD34D;
+  --sd-surface-2: #1E1914;
+  --sd-surface-3: #29221B;
+  --sd-border-strong: rgba(255, 237, 213, 0.18);
+  --sd-overlay: rgba(5, 4, 3, 0.72);
+
+  --sd-success: #2DD4BF;
+  --sd-success-soft: rgba(45, 212, 191, 0.12);
+  --sd-warning: #FB923C;
+  --sd-warning-soft: rgba(251, 146, 60, 0.12);
+  --sd-danger: #F87171;
+  --sd-danger-soft: rgba(248, 113, 113, 0.12);
+  --sd-info: #38BDF8;
+  --sd-info-soft: rgba(56, 189, 248, 0.12);
+  --sd-local: #FCD34D;
+  --sd-local-soft: rgba(251, 191, 36, 0.10);
+
+  --sd-rarity-common: #A8A29E;
+  --sd-rarity-uncommon: #4ADE80;
+  --sd-rarity-rare: #38BDF8;
+  --sd-rarity-epic: #F472B6;
+  --sd-rarity-legendary: #FBBF24;
+  --sd-rarity-common-soft: rgba(168, 162, 158, 0.12);
+  --sd-rarity-uncommon-soft: rgba(74, 222, 128, 0.12);
+  --sd-rarity-rare-soft: rgba(56, 189, 248, 0.12);
+  --sd-rarity-epic-soft: rgba(244, 114, 182, 0.12);
+  --sd-rarity-legendary-soft: rgba(251, 191, 36, 0.12);
+  --sd-rarity-common-fg: #D6D3D1;
+  --sd-rarity-uncommon-fg: #86EFAC;
+  --sd-rarity-rare-fg: #7DD3FC;
+  --sd-rarity-epic-fg: #F9A8D4;
+  --sd-rarity-legendary-fg: #FCD34D;
+
+  --sd-shadow-1: inset 0 1px 0 rgba(255, 237, 213, 0.04), 0 1px 2px rgba(0, 0, 0, 0.5);
+  --sd-shadow-2: inset 0 1px 0 rgba(255, 237, 213, 0.05), 0 10px 28px -10px rgba(0, 0, 0, 0.7);
+  --sd-shadow-3: 0 30px 80px -20px rgba(0, 0, 0, 0.85);
+  --sd-glow-legendary: 0 0 0 1.5px rgba(251, 191, 36, 0.7), 0 0 32px -6px rgba(251, 191, 36, 0.55);
+  --sd-glow-epic: 0 0 0 1.5px rgba(244, 114, 182, 0.6), 0 0 28px -8px rgba(244, 114, 182, 0.5);
+  --sd-glow-rare: 0 0 0 1.5px rgba(56, 189, 248, 0.6), 0 0 28px -8px rgba(56, 189, 248, 0.5);
+  --sd-glow-uncommon: 0 0 0 1.5px rgba(74, 222, 128, 0.5);
+  --sd-glow-common: 0 0 0 1px rgba(168, 162, 158, 0.35);
+  --sd-focus: 0 0 0 3px rgba(251, 191, 36, 0.35);
+}
+
+:root {
+  --sd-font-display: "Baloo 2", "Baloo 2 Fallback", "Nunito", system-ui, sans-serif;
+  --sd-font-sans: "Inter", "Inter Fallback", -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --sd-font-mono: "JetBrains Mono", "JetBrains Mono Fallback", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --sd-text-stage: 64px;
+  --sd-lh-stage: 1;
+  --sd-text-display: 40px;
+  --sd-lh-display: 1.1;
+  --sd-text-h1: 30px;
+  --sd-lh-h1: 1.15;
+  --sd-text-h2: 22px;
+  --sd-lh-h2: 1.25;
+  --sd-text-h3: 17px;
+  --sd-lh-h3: 1.4;
+  --sd-text-body-lg: 16px;
+  --sd-lh-body-lg: 1.5;
+  --sd-text-body: 14px;
+  --sd-lh-body: 1.45;
+  --sd-text-small: 13px;
+  --sd-lh-small: 1.4;
+  --sd-text-caption: 12px;
+  --sd-lh-caption: 1.35;
+  --sd-text-overline: 11px;
+  --sd-lh-overline: 1.3;
+
+  --sd-space-0: 0;
+  --sd-space-0_5: 2px;
+  --sd-space-1: 4px;
+  --sd-space-2: 8px;
+  --sd-space-3: 12px;
+  --sd-space-4: 16px;
+  --sd-space-5: 20px;
+  --sd-space-6: 24px;
+  --sd-space-8: 32px;
+  --sd-space-10: 40px;
+  --sd-space-12: 48px;
+  --sd-space-16: 64px;
+
+  --sd-radius-xs: 6px;
+  --sd-radius-sm: 8px;
+  --sd-radius-md: 10px;
+  --sd-radius-lg: 12px;
+  --sd-radius-xl: 16px;
+  --sd-radius-2xl: 22px;
+  --sd-radius-pill: 999px;
+
+  --sd-dur-instant: 80ms;
+  --sd-dur-fast: 120ms;
+  --sd-dur-base: 200ms;
+  --sd-dur-slow: 320ms;
+  --sd-dur-reveal: 700ms;
+  --sd-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --sd-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --sd-ease-drop: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sd-dur-fast: 0ms;
+    --sd-dur-base: 0ms;
+    --sd-dur-slow: 0ms;
+    --sd-dur-reveal: 0ms;
+  }
 }
 
 @layer base {
@@ -116,6 +346,66 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--sd-font-sans);
+    font-size: var(--sd-text-body);
+    line-height: var(--sd-lh-body);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1,
+  h2 {
+    font-family: var(--sd-font-display);
+    letter-spacing: -0.005em;
+  }
+  code,
+  kbd,
+  samp {
+    font-family: var(--sd-font-mono);
+  }
+}
+
+@layer components {
+  .sd-btn-primary {
+    box-shadow: inset 0 -2px 0 rgba(146, 64, 14, 0.35), var(--sd-shadow-1);
+  }
+  .sd-btn-primary:hover {
+    background-color: #FCD34D;
+  }
+  .sd-btn-primary:active {
+    background-color: #F59E0B;
+    box-shadow: inset 0 1px 2px rgba(146, 64, 14, 0.4);
+  }
+  .sd-btn-primary:disabled {
+    box-shadow: none;
+  }
+  .sd-field {
+    background: color-mix(in srgb, var(--card) 70%, var(--background));
+  }
+  .sd-rarity-rays {
+    transform-box: view-box;
+    transform-origin: 24px 24px;
+    animation: sd-rarity-rays 2.4s linear 1;
+  }
+  .sd-rarity-glow {
+    filter: drop-shadow(
+      0 0 max(2px, calc(var(--rarity-badge-size, 48px) / 7))
+      color-mix(in srgb, var(--rarity-legendary) 67%, transparent)
+    );
+  }
+}
+
+@keyframes sd-rarity-rays {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-rarity-rays {
+    animation: none;
   }
 }
 
@@ -165,8 +455,8 @@
     from 0deg,
     #fb923c,
     #fbbf24,
-    #a78bfa,
-    #22d3ee,
+    #38bdf8,
+    #f472b6,
     #fb923c
   );
   animation: winner-conic-spin 5s linear infinite;
