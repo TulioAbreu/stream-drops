@@ -28,11 +28,39 @@ import { Button } from "@/components/ui/button";
 import type { BroadcasterSubscriber } from "@/service/twitch/types";
 import { reverseWinnersForDisplay } from "@/lib/giveaway-winner-rank";
 import { cn } from "@/lib/utils";
+import { confirmedWin } from "@/components/giveaway/winner-badge-win";
+import { WinnerBadgeSurface } from "@/components/giveaway/winner-badge-surface";
 
 interface Props {
   /** Ordem salva (prepend: mais novo primeiro). Só a exibição é invertida. */
   winners: BroadcasterSubscriber[];
+  /** Sem id, a tabela não calcula selos. */
+  giveawayId?: string;
   onRemove: (userId: string) => void;
+}
+
+function SubscriberLogBadge({
+  giveawayId,
+  winners,
+  userId,
+  savedIndex,
+}: {
+  giveawayId: string;
+  winners: BroadcasterSubscriber[];
+  userId: string;
+  savedIndex: number;
+}) {
+  const win = useMemo(
+    () =>
+      confirmedWin(
+        "subscribers",
+        { id: giveawayId, winners },
+        userId,
+        savedIndex,
+      ),
+    [giveawayId, winners, userId, savedIndex],
+  );
+  return <WinnerBadgeSurface surface="log" win={win} />;
 }
 
 function scrollerOf(root: HTMLElement | null): HTMLElement | null {
@@ -121,7 +149,11 @@ const VirtuosoTable = forwardRef<
   );
 });
 
-export function SubscriberWinnersTable({ winners, onRemove }: Props) {
+export function SubscriberWinnersTable({
+  winners,
+  giveawayId,
+  onRemove,
+}: Props) {
   const { t } = useTranslation();
   const display = useMemo(() => reverseWinnersForDisplay(winners), [winners]);
   const ref = useRef<TableVirtuosoHandle>(null);
@@ -256,7 +288,17 @@ export function SubscriberWinnersTable({ winners, onRemove }: Props) {
             #{index + 1}
           </TableCell>,
           <TableCell key="name" className="font-semibold">
-            {user.user_name}
+            <span className="inline-flex items-center gap-2">
+              <span>{user.user_name}</span>
+              {giveawayId ? (
+                <SubscriberLogBadge
+                  giveawayId={giveawayId}
+                  winners={winners}
+                  userId={user.user_id}
+                  savedIndex={winners.length - 1 - index}
+                />
+              ) : null}
+            </span>
           </TableCell>,
           <TableCell key="tier">{t(`TIER_${user.tier}`)}</TableCell>,
           <TableCell key="actions">

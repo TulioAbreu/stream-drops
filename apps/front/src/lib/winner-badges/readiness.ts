@@ -32,7 +32,22 @@ type WinnerIndexState = {
   index: WinnerIndex | null;
   error: unknown;
   provider: WinnerHistoryProvider;
+  /** Sobe quando a memória muda, para a UI recalcular sem persistir. */
+  revision: number;
 };
+
+type MemoryNote =
+  | {
+      kind: "replace";
+      op: "confirm" | "remove" | "soft";
+      giveawayType: GiveawayType;
+      record: unknown;
+    }
+  | {
+      kind: "hard";
+      giveawayType: GiveawayType;
+      giveawayId: string;
+    };
 
 const EMPTY_WINS: readonly WinEvent[] = Object.freeze([]);
 
@@ -56,7 +71,45 @@ const initialState: WinnerIndexState = {
   index: null,
   error: null,
   provider: EMPTY_PROVIDER,
+  revision: 0,
 };
+
+let pendingNotes: MemoryNote[] = [];
+
+function applyMemoryNote(index: WinnerIndex, note: MemoryNote): void {
+  if (note.kind === "hard") {
+    index.applyHardDelete(note.giveawayType, note.giveawayId);
+    return;
+  }
+  if (note.op === "confirm") {
+    index.confirmGiveaway(note.giveawayType, note.record);
+    return;
+  }
+  if (note.op === "remove") {
+    index.removeGiveawayWinner(note.giveawayType, note.record);
+    return;
+  }
+  index.applySoftDelete(note.giveawayType, note.record);
+}
+
+function drainMemoryNotes(index: WinnerIndex): void {
+  while (pendingNotes.length > 0) {
+    const note = pendingNotes.shift();
+    if (note) applyMemoryNote(index, note);
+  }
+}
+
+function remember(note: MemoryNote): void {
+  const { status, index } = useWinnerIndexStore.getState();
+  if (status !== "ready" || !index) {
+    pendingNotes.push(note);
+    return;
+  }
+  applyMemoryNote(index, note);
+  useWinnerIndexStore.setState((state) => ({
+    revision: state.revision + 1,
+  }));
+}
 
 export const useWinnerIndexStore = create<WinnerIndexState>()(() => initialState);
 
@@ -82,12 +135,14 @@ export function resetWinnerIndexSession(): void {
   inFlight = false;
   optionsCaptured = false;
   sessionOptions = undefined;
+  pendingNotes = [];
   clearRetryTimer();
   useWinnerIndexStore.setState({
     status: "loading",
     index: null,
     error: null,
     provider: EMPTY_PROVIDER,
+    revision: 0,
   });
 }
 
@@ -123,12 +178,20 @@ function beginLoad(): void {
       if (token !== generation) return;
       inFlight = false;
       clearRetryTimer();
-      useWinnerIndexStore.setState({
+      drainMemoryNotes(index);
+      useWinnerIndexStore.setState((state) => ({
         status: "ready",
         index,
         error: null,
         provider: index,
-      });
+        revision: state.revision + 1,
+      }));
+      if (pendingNotes.length > 0) {
+        drainMemoryNotes(index);
+        useWinnerIndexStore.setState((state) => ({
+          revision: state.revision + 1,
+        }));
+      }
     },
     (error: unknown) => {
       if (token !== generation) return;
@@ -159,7 +222,7 @@ export function noteGiveawaySoftDeleted(
   giveawayType: GiveawayType,
   record: unknown,
 ): void {
-  useWinnerIndexStore.getState().index?.applySoftDelete(giveawayType, record);
+  remember({ kind: "replace", op: "soft", giveawayType, record });
 }
 
 /** Hard delete já gravado. Tira as vitórias desse sorteio da memória. */
@@ -167,7 +230,26 @@ export function noteGiveawayHardDeleted(
   giveawayType: GiveawayType,
   giveawayId: string,
 ): void {
-  useWinnerIndexStore.getState().index?.applyHardDelete(giveawayType, giveawayId);
+  remember({ kind: "hard", giveawayType, giveawayId });
+}
+
+/**
+ * Confirmação já gravada. Atualiza só a memória.
+ * Não abre transação e não altera o registro.
+ */
+export function noteGiveawayConfirmed(
+  giveawayType: GiveawayType,
+  record: unknown,
+): void {
+  remember({ kind: "replace", op: "confirm", giveawayType, record });
+}
+
+/** Remoção já gravada. Atualiza só a memória. */
+export function noteGiveawayWinnerRemoved(
+  giveawayType: GiveawayType,
+  record: unknown,
+): void {
+  remember({ kind: "replace", op: "remove", giveawayType, record });
 }
 
 /**
@@ -202,19 +284,53 @@ export function readCardBadges(
   return selectForDisplay(collectWinAwards(provider, win, clock, { preview: win }));
 }
 
+/** Selos da vitória já confirmada. Sem índice pronto, vazio na hora. */
+export function readConfirmedBadges(
+  status: WinnerIndexStatus,
+  provider: WinnerHistoryProvider,
+  win: WinEvent,
+  clock: EngineClock,
+): DisplaySelection {
+  if (status !== "ready") return EMPTY_CARD_SELECTION;
+  return selectForDisplay(collectWinAwards(provider, win, clock));
+}
+
+function useBadgeRevision(): number {
+  return useWinnerIndexStore((state) => state.revision);
+}
+
 export function useCardBadges(
   win: WinEvent,
   clock: EngineClock,
 ): { status: WinnerIndexStatus; selection: DisplaySelection } {
   const status = useWinnerIndexStore((state) => state.status);
   const provider = useWinnerIndexStore((state) => state.provider);
+  const revision = useBadgeRevision();
   useEffect(() => {
     if (status !== "error") return;
     retryWinnerIndexFromCard();
   }, [status]);
-  const selection = useMemo(
-    () => readCardBadges(status, provider, win, clock),
-    [status, provider, win, clock],
-  );
+  const selection = useMemo(() => {
+    void revision;
+    return readCardBadges(status, provider, win, clock);
+  }, [status, provider, win, clock, revision]);
+  return { status, selection };
+}
+
+export function useConfirmedBadges(
+  win: WinEvent,
+  clock: EngineClock,
+): { status: WinnerIndexStatus; selection: DisplaySelection } {
+  const status = useWinnerIndexStore((state) => state.status);
+  const provider = useWinnerIndexStore((state) => state.provider);
+  const revision = useBadgeRevision();
+  useEffect(() => {
+    if (status !== "error") return;
+    retryWinnerIndexFromCard();
+  }, [status]);
+  const selection = useMemo(() => {
+    void revision;
+    return readConfirmedBadges(status, provider, win, clock);
+  }, [status, provider, win, clock, revision]);
   return { status, selection };
 }

@@ -2,6 +2,12 @@ import { Layout } from "@/components/layout";
 import { InventoryPanel } from "@/components/shell/inventory-panel";
 import { ShellHeader } from "@/components/shell/shell-header";
 import { WinnerMoment } from "@/components/giveaway/winner-moment";
+import { WinnerBadgeSurface } from "@/components/giveaway/winner-badge-surface";
+import { confirmedWin } from "@/components/giveaway/winner-badge-win";
+import {
+    noteGiveawayConfirmed,
+    noteGiveawayWinnerRemoved,
+} from "@/lib/winner-badges/readiness";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
@@ -13,7 +19,7 @@ import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets, overrideGiveawayResultToSheets } from "@/service/google-drive";
 import { ArrowLeftIcon, BanIcon, Edit3Icon, EllipsisIcon, FileSpreadsheetIcon, HardDrive, PartyPopperIcon, SaveIcon, SearchIcon, XIcon } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { TableVirtuoso } from "react-virtuoso";
@@ -46,17 +52,18 @@ export function FollowerGiveawayId() {
 
     const fetchGiveaway = async () => {
         if (!id) {
-            return;
+            return undefined;
         }
 
         const giveawayData = await getGiveaway(id);
         if (giveawayData) {
             setMissing(false);
             setGiveaway(giveawayData);
-        } else {
-            setGiveaway(null);
-            setMissing(true);
+            return giveawayData;
         }
+        setGiveaway(null);
+        setMissing(true);
+        return undefined;
     };
 
     useEffect(() => {
@@ -174,8 +181,11 @@ export function FollowerGiveawayId() {
             }
         }
 
-        await fetchGiveaway();
-        setRevealedWinner(newWinners[0] ?? null);
+        const fresh = await fetchGiveaway();
+        if (fresh) noteGiveawayConfirmed("subscribers", fresh);
+        const drawnId = newWinners[0]?.user_id;
+        const stamped = fresh?.winners.find((winner) => winner.user_id === drawnId);
+        setRevealedWinner(stamped ?? newWinners[0] ?? null);
     };
 
     const onClickExportWinners = async () => {
@@ -263,7 +273,8 @@ export function FollowerGiveawayId() {
         if (redirectIfGiveawayDeleted(savedWinners, navigate, "/dashboard/follower-giveaway")) {
             return;
         }
-        await fetchGiveaway();
+        const fresh = await fetchGiveaway();
+        if (fresh) noteGiveawayWinnerRemoved("subscribers", fresh);
     };
 
     const onClickExcludeUser = async (user: BroadcasterSubscriber) => {
@@ -304,6 +315,19 @@ export function FollowerGiveawayId() {
         revealedWinner?.tier === "3000"
             ? (Number(revealedWinner.tier) as 1000 | 2000 | 3000)
             : null;
+    const revealedWin = useMemo(() => {
+        if (!giveaway || !revealedWinner) return null;
+        const index = giveaway.winners.findIndex(
+            (winner) => winner.user_id === revealedWinner.user_id,
+        );
+        if (index < 0) return null;
+        return confirmedWin(
+            "subscribers",
+            giveaway,
+            revealedWinner.user_id,
+            index,
+        );
+    }, [giveaway, revealedWinner]);
 
     return (
         <Layout>
@@ -479,6 +503,7 @@ export function FollowerGiveawayId() {
                         ) : (
                             <SubscriberWinnersTable
                                 winners={giveaway?.winners ?? []}
+                                giveawayId={giveaway?.id}
                                 onRemove={onClickRemoveWinner}
                             />
                         )}
@@ -508,6 +533,12 @@ export function FollowerGiveawayId() {
                     onCancel={() => setRevealedWinner(null)}
                     onRedraw={() => undefined}
                     isRedrawing={false}
+                    badges={
+                        <WinnerBadgeSurface
+                            surface="reveal"
+                            win={revealedWin}
+                        />
+                    }
                 />
             ) : null}
             <Dialog open={isFetchingParticipants}>
