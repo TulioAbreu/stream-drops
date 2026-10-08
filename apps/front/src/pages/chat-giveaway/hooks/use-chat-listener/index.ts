@@ -3,11 +3,14 @@ import tmi from "tmi.js";
 import type { ChatMessage, ChatParticipant } from "../../types";
 import { convertTmiMessage, convertMessageToParticipant } from "./utils";
 import { canCollectChatParticipant } from "./guards";
+import { createChatParticipantPersistScheduler } from "../../persist-chat-participants";
+import type { ChatParticipantPersistScheduler } from "../../persist-chat-participants";
 import type { makeTwitchApiClient } from "@/service/twitch";
 
 // Configurable constant for batch processing max wait time
 const BATCH_MAX_WAIT_MS = 1500; // 2 seconds
 const BATCH_MAX_SIZE = 100; // Twitch API limit
+const PARTICIPANT_PERSIST_INTERVAL_MS = 1500;
 const EMPTY_EXCLUDED_USER_IDS: ReadonlySet<string> = new Set();
 
 export interface ChatListenerClient {
@@ -19,6 +22,8 @@ export interface ChatListenerClient {
 export interface ChatListenerTestOverrides {
     createClient?: (channel: string) => ChatListenerClient;
     batchMaxWaitMs?: number;
+    /** Intervalo entre gravações automáticas de participação. Produção: 1,5 s. */
+    persistIntervalMs?: number;
 }
 
 let chatListenerTestOverrides: ChatListenerTestOverrides | null = null;
@@ -51,6 +56,8 @@ interface UseChatListenerOptions {
     broadcasterId?: string;
     /** Lido por ref: mudar a exclusão não recreia o lote nem zera a coleta. */
     excludedUserIds?: ReadonlySet<string>;
+    /** Quando presente, cada lote elegível é gravado em `chat-participants`. */
+    giveawayId?: string;
 }
 
 interface UseChatListenerReturn {
@@ -64,6 +71,8 @@ interface UseChatListenerReturn {
     clearParticipants: () => void;
     filterParticipants: (nameFilter: string) => void;
     nameFilter: string;
+    /** Grava na hora quem ainda está só na memória. Não rejeita. */
+    flushParticipants: () => Promise<void>;
 }
 
 export function useChatListener({
@@ -74,6 +83,7 @@ export function useChatListener({
     twitchApiClient,
     broadcasterId,
     excludedUserIds = EMPTY_EXCLUDED_USER_IDS,
+    giveawayId,
 }: UseChatListenerOptions): UseChatListenerReturn {
     const [allParticipants, setAllParticipants] = useState<ChatParticipant[]>([]);
     const [participants, setParticipants] = useState<ChatParticipant[]>([]);
@@ -98,11 +108,25 @@ export function useChatListener({
         channel: channelRef.current,
     }), []);
 
+    const giveawayIdRef = useRef(giveawayId);
+    giveawayIdRef.current = giveawayId;
+    const schedulerRef = useRef<ChatParticipantPersistScheduler | null>(null);
+    if (schedulerRef.current == null) {
+        schedulerRef.current = createChatParticipantPersistScheduler({
+            getGiveawayId: () => giveawayIdRef.current,
+            getContext: () => collectionContext(),
+            intervalMs: () =>
+                chatListenerTestOverrides?.persistIntervalMs ??
+                PARTICIPANT_PERSIST_INTERVAL_MS,
+        });
+    }
+
     // Queue system refs
     const pendingUserIdsRef = useRef<Set<string>>(new Set());
     const pendingMessagesRef = useRef<Map<string, ChatMessage>>(new Map());
     const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
     const isFetchingRef = useRef(false);
+    const processBatchRef = useRef<() => Promise<void>>(async () => undefined);
 
     // Process batch of pending user IDs to fetch their subscription tiers
     const processBatch = useCallback(async () => {
@@ -135,6 +159,7 @@ export function useChatListener({
 
             if (newParticipants.length > 0) {
                 setAllParticipants(prev => [...prev, ...newParticipants]);
+                schedulerRef.current?.note(newParticipants);
             }
 
             pendingUserIdsRef.current.clear();
@@ -193,6 +218,7 @@ export function useChatListener({
 
             if (newParticipants.length > 0) {
                 setAllParticipants(prev => [...prev, ...newParticipants]);
+                schedulerRef.current?.note(newParticipants);
             }
         } catch (error) {
             console.error("Unexpected error processing batch:", error);
@@ -203,8 +229,13 @@ export function useChatListener({
                 pendingMessagesRef.current.delete(userId);
             });
             isFetchingRef.current = false;
+            // Um burst acima de 100 deixa o resto na fila enquanto o Helix responde.
+            if (pendingUserIdsRef.current.size > 0) {
+                void processBatchRef.current();
+            }
         }
     }, [twitchApiClient, broadcasterId, keyword, minimumSuscriptionTimeInMonths, subscribersOnly, collectionContext]);
+    processBatchRef.current = processBatch;
 
     // Queue a user for batch processing
     const queueUserForProcessing = useCallback((message: ChatMessage) => {
@@ -311,11 +342,15 @@ export function useChatListener({
         disconnect().then(() => connect());
     }, [disconnect, connect]);
 
-    // Clear participants function
+    // Limpar a lista só esvazia a memória. As linhas já gravadas ficam.
     const clearParticipants = useCallback(() => {
         setAllParticipants([]);
         setParticipants([]);
         seenUserIdsRef.current.clear();
+    }, []);
+
+    const flushParticipants = useCallback(() => {
+        return schedulerRef.current?.flush() ?? Promise.resolve();
     }, []);
 
     // Filter participants by name/display name
@@ -356,6 +391,18 @@ export function useChatListener({
         };
     }, [channel, connect, disconnect]);
 
+    // Flush de melhor esforço: a gravação por lote é a garantia principal.
+    useEffect(() => {
+        const onPageHide = () => {
+            void flushParticipants();
+        };
+        window.addEventListener("pagehide", onPageHide);
+        return () => {
+            window.removeEventListener("pagehide", onPageHide);
+            void flushParticipants();
+        };
+    }, [flushParticipants]);
+
     // Effect to update participants when new messages arrive
     useEffect(() => {
         if (messages.length === 0) return;
@@ -387,7 +434,8 @@ export function useChatListener({
             queueUserForProcessing(message);
         });
 
-        // Clear participants - they will be re-added through batch processing
+        // Clear participants - they will be re-added through batch processing.
+        // Não apaga chat-participants: quem já entrou mantém o primeiro joinedAt.
         setAllParticipants([]);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [keyword, minimumSuscriptionTimeInMonths, subscribersOnly]);
@@ -403,5 +451,6 @@ export function useChatListener({
         clearParticipants,
         filterParticipants,
         nameFilter,
+        flushParticipants,
     };
 }
