@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { create } from "zustand";
 import type { WinnerHistoryProvider } from "./history";
 import { buildWinnerIndexFromDatabase } from "./indexed-db-source";
@@ -60,12 +60,29 @@ const initialState: WinnerIndexState = {
 
 export const useWinnerIndexStore = create<WinnerIndexState>()(() => initialState);
 
+const MAX_LOAD_ATTEMPTS = 3;
+const RETRY_BACKOFF_MS = [200, 600];
+
 let generation = 0;
-let started = false;
+let attempt = 0;
+let inFlight = false;
+let optionsCaptured = false;
+let sessionOptions: WinnerIndexLoadOptions | undefined;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearRetryTimer(): void {
+  if (retryTimer === null) return;
+  clearTimeout(retryTimer);
+  retryTimer = null;
+}
 
 export function resetWinnerIndexSession(): void {
   generation += 1;
-  started = false;
+  attempt = 0;
+  inFlight = false;
+  optionsCaptured = false;
+  sessionOptions = undefined;
+  clearRetryTimer();
   useWinnerIndexStore.setState({
     status: "loading",
     index: null,
@@ -86,20 +103,26 @@ async function loadFrom(options?: WinnerIndexLoadOptions): Promise<WinnerIndex> 
   return createWinnerIndexFromSource(source);
 }
 
-/** Uma carga por sessão. A segunda chamada não relê o banco. */
-export function startWinnerIndex(options?: WinnerIndexLoadOptions): void {
-  if (started) return;
-  started = true;
+function beginLoad(): void {
+  if (inFlight) return;
+  if (attempt >= MAX_LOAD_ATTEMPTS) return;
+  if (useWinnerIndexStore.getState().status === "ready") return;
+  clearRetryTimer();
+  inFlight = true;
+  attempt += 1;
   const token = generation;
+  const currentAttempt = attempt;
   useWinnerIndexStore.setState({
     status: "loading",
     index: null,
     error: null,
     provider: EMPTY_PROVIDER,
   });
-  void loadFrom(options).then(
+  void loadFrom(sessionOptions).then(
     (index) => {
       if (token !== generation) return;
+      inFlight = false;
+      clearRetryTimer();
       useWinnerIndexStore.setState({
         status: "ready",
         index,
@@ -109,14 +132,40 @@ export function startWinnerIndex(options?: WinnerIndexLoadOptions): void {
     },
     (error: unknown) => {
       if (token !== generation) return;
+      inFlight = false;
       useWinnerIndexStore.setState({
         status: "error",
         index: null,
         error,
         provider: EMPTY_PROVIDER,
       });
+      if (currentAttempt >= MAX_LOAD_ATTEMPTS) return;
+      const delay = RETRY_BACKOFF_MS[currentAttempt - 1] ?? 600;
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        if (token !== generation) return;
+        beginLoad();
+      }, delay);
     },
   );
+}
+
+/**
+ * Uma carga bem-sucedida por sessão. A segunda chamada não relê.
+ * Falha tenta de novo, com backoff curto e no máximo 3 vezes.
+ */
+export function startWinnerIndex(options?: WinnerIndexLoadOptions): void {
+  if (optionsCaptured) return;
+  optionsCaptured = true;
+  sessionOptions = options;
+  beginLoad();
+}
+
+/** O card puxa a próxima tentativa sem esperar o backoff. */
+function retryWinnerIndexFromCard(): void {
+  if (useWinnerIndexStore.getState().status !== "error") return;
+  if (inFlight || attempt >= MAX_LOAD_ATTEMPTS) return;
+  beginLoad();
 }
 
 /**
@@ -139,6 +188,10 @@ export function useCardBadges(
 ): { status: WinnerIndexStatus; selection: DisplaySelection } {
   const status = useWinnerIndexStore((state) => state.status);
   const provider = useWinnerIndexStore((state) => state.provider);
+  useEffect(() => {
+    if (status !== "error") return;
+    retryWinnerIndexFromCard();
+  }, [status]);
   const selection = useMemo(
     () => readCardBadges(status, provider, win, clock),
     [status, provider, win, clock],

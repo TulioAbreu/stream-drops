@@ -883,6 +883,59 @@ describe("prontidão do índice", () => {
     expect(useWinnerIndexStore.getState().index).toBeNull();
   });
 
+  it("falha na carga, o card tenta de novo e os selos entram sem lançar", async () => {
+    let reads = 0;
+    startWinnerIndex({
+      read: async () => {
+        reads += 1;
+        if (reads === 1) throw new Error("indisponível");
+        return {};
+      },
+    });
+    const { result } = renderHook(() => useCardBadges(pending, CLOCK));
+    expect(result.current.selection.card).toEqual([]);
+    expect(result.current.selection.tooltip).toEqual([]);
+
+    await waitFor(
+      () => {
+        expect(result.current.status).toBe("ready");
+      },
+      { timeout: 2_000 },
+    );
+    expect(reads).toBe(2);
+    expect(result.current.selection.tooltip.map((badge) => badge.id)).toContain(
+      "first_drop",
+    );
+    expect(useWinnerIndexStore.getState().error).toBeNull();
+  });
+
+  it("esgota as tentativas e não relê o banco", async () => {
+    let reads = 0;
+    startWinnerIndex({
+      read: async () => {
+        reads += 1;
+        throw new Error("indisponível");
+      },
+    });
+    const { result } = renderHook(() => useCardBadges(pending, CLOCK));
+    await waitFor(
+      () => {
+        expect(reads).toBe(3);
+        expect(result.current.status).toBe("error");
+      },
+      { timeout: 2_000 },
+    );
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 700);
+    });
+    expect(reads).toBe(3);
+    expect(result.current.status).toBe("error");
+    expect(result.current.selection.card).toEqual([]);
+    expect(result.current.selection.tooltip).toEqual([]);
+    expect(result.current.selection.highlight).toBeNull();
+    expect(useWinnerIndexStore.getState().index).toBeNull();
+  });
+
   it("a sessão monta o índice uma vez", async () => {
     let reads = 0;
     startWinnerIndex({
