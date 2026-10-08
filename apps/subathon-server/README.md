@@ -99,4 +99,4 @@ git push origin subathon-server/v0.1.0
 | `subathon-server-X.Y.Z-darwin-x64.zip` | macOS Intel |
 | `subathon-server-X.Y.Z-linux-x64.zip` | Linux x64 |
 
-Cada zip contém o executável, `public/` (overlay) e `.env.example`.
+Cada zip contém o executável, `public/` (overlay) e `.env.example`. No Windows, `subathon-server.exe` usa o ícone `assets/subathon-server.ico`. O caminho, o nome e o schema do SQLite não mudam.
