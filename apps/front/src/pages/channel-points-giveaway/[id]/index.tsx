@@ -6,17 +6,8 @@ import {
   type ChannelPointsParticipant,
   type ChannelPointsWinner,
 } from "@/database/ChannelPointsGiveaway";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -46,13 +37,18 @@ import {
   Edit,
   Pause,
   Lock,
-  Coins,
+  HardDrive,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
-import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
+import { cn, composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
 import { rankWinnersByDrawOrder, sortWinnersByDrawOrder } from "@/lib/giveaway-winner-rank";
 import { WinnersList } from "@/components/giveaway/winners-list";
+import { WinnerMoment } from "@/components/giveaway/winner-moment";
+import { WinnerLogRow } from "@/components/giveaway/winner-log-row";
+import { ParticipantInventory } from "@/components/giveaway/participant-inventory";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { useTranslation } from "@/i18n";
 import { v7 } from "uuid";
 import { useExclusionListDb } from "@/database/ExclusionListItem";
@@ -76,11 +72,50 @@ import {
   classifyChannelPointsApiError,
   getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
-import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
-import { WinnerConfirmationInline } from "@/components/giveaway/winner-confirmation-inline";
-import { ParticipantTag } from "@/pages/chat-giveaway/[id]/components/participant-tag";
 import { ChannelPointsAccessBanner } from "../components/channel-points-access-banner";
 import { useChatMessages } from "../hooks/use-chat-messages";
+
+function statusSoft(status: ChannelPointsGiveawayFormData["status"]): string {
+  if (status === "ready") return "bg-[var(--sd-warning-soft)]";
+  if (status === "closed") return "bg-muted";
+  if (status === "collecting") return "bg-[var(--sd-local-soft)]";
+  return "bg-[var(--sd-success-soft)]";
+}
+
+function statusDot(status: ChannelPointsGiveawayFormData["status"]): string {
+  if (status === "ready") return "bg-[var(--sd-warning)]";
+  if (status === "closed") return "bg-muted-foreground";
+  if (status === "collecting") return "bg-[var(--sd-local)]";
+  return "bg-[var(--sd-success)]";
+}
+
+function HudChip({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <span className="inline-flex h-[30px] items-center gap-2 rounded-[8px] border border-border bg-[var(--sd-surface-2)] px-2.5 text-[12.5px] font-semibold">
+      <span className="font-medium text-muted-foreground">{label}</span>
+      <span className="font-mono">{value}</span>
+    </span>
+  );
+}
+
+function Stat({ value, label }: { value: ReactNode; label: string }) {
+  return (
+    <div className="flex min-w-[140px] flex-1 flex-col rounded-[14px] border border-border bg-card px-4 py-3 shadow-[var(--sd-shadow-1)]">
+      <span className="font-display text-[28px] leading-none font-extrabold tabular-nums">
+        {value}
+      </span>
+      <span className="mt-1.5 text-xs font-semibold text-muted-foreground">
+        {label}
+      </span>
+    </div>
+  );
+}
 
 interface PendingChannelPointsWinner {
   participant: ChannelPointsParticipant;
@@ -117,12 +152,13 @@ export function ChannelPointsGiveawayDetail() {
   const [redrawExcludedRedemptionIds, setRedrawExcludedRedemptionIds] =
     useState<string[]>([]);
   const [isRedrawing, setIsRedrawing] = useState(false);
+  const [nameFilter, setNameFilter] = useState("");
 
   const chatEnabled =
     !!userData?.login &&
     (giveaway?.status === "ready" || giveaway?.status === "closed");
 
-  const { messages } = useChatMessages({
+  const { messages, connectionStatus } = useChatMessages({
     channel: userData?.login || "",
     enabled: chatEnabled,
   });
@@ -177,26 +213,32 @@ export function ChannelPointsGiveawayDetail() {
     });
   }, [giveaway, subscriberMultiplier, redrawExcludedRedemptionIds]);
 
-  const participantTicketTags = useMemo(
-    () =>
-      [...(giveaway?.participants ?? [])]
-        .sort((a, b) => b.tickets.length - a.tickets.length)
-        .flatMap((participant) => {
-          const weight = resolveChannelPointsMultiplier(
-            participant,
-            subscriberMultiplier
-          );
-          return participant.tickets.flatMap((ticket) =>
-            Array.from({ length: weight }, (_, index) => ({
-              key: `${ticket.redemptionId}-${index}`,
-              displayName: participant.displayName,
-              subscriber: participant.subscriber,
-              tier: participant.tier,
-            }))
-          );
-        }),
-    [giveaway?.participants, subscriberMultiplier]
-  );
+  const inventoryParticipants = useMemo(() => {
+    const query = nameFilter.trim().toLowerCase();
+    return [...(giveaway?.participants ?? [])]
+      .filter((participant) => {
+        if (!query) return true;
+        return (
+          participant.displayName.toLowerCase().includes(query) ||
+          participant.name.toLowerCase().includes(query)
+        );
+      })
+      .sort((a, b) => b.tickets.length - a.tickets.length)
+      .map((participant) => {
+        const weight = resolveChannelPointsMultiplier(
+          participant,
+          subscriberMultiplier
+        );
+        return {
+          id: participant.userId,
+          displayName: participant.displayName,
+          avatar: participant.avatar,
+          subscriber: participant.subscriber,
+          tier: participant.tier,
+          mark: `×${participant.tickets.length * weight}`,
+        };
+      });
+  }, [giveaway?.participants, nameFilter, subscriberMultiplier]);
 
   const sortedWinners = useMemo(
     () => sortWinnersByDrawOrder(giveaway?.winners ?? []),
@@ -552,327 +594,364 @@ export function ChannelPointsGiveawayDetail() {
   return (
     <Layout>
       <div className="flex flex-col gap-4">
-        <div className="flex flex-row justify-between items-start flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{giveaway.title}</h1>
-            {giveaway.description && (
-              <p className="text-muted-foreground">{giveaway.description}</p>
+        <ShellHeader
+          section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+          page={t("DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY")}
+          title={giveaway.title}
+          description={giveaway.description || undefined}
+          actions={
+            <>
+              <Button variant="ghost" size="lg" onClick={onClickBack}>
+                <ArrowLeftIcon />
+                {t("NAVIGATE_BACK")}
+              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() =>
+                          navigate(
+                            `/dashboard/channel-points-giveaway/${giveaway.id}/edit`
+                          )
+                        }
+                        disabled={!canEdit}
+                      >
+                        <Edit />
+                        {t("CHANNEL_POINTS_GIVEAWAY_EDIT_BUTTON")}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!canEdit && (
+                    <TooltipContent>
+                      <p>{t("CHANNEL_POINTS_GIVEAWAY_EDIT_BLOCKED")}</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+              {giveaway.status === "ready" && (
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setCloseDialogOpen(true)}
+                  disabled={!canUseChannelPoints || !!pendingWinner}
+                  className="border-[color-mix(in_srgb,var(--sd-danger)_45%,transparent)] bg-[var(--sd-danger-soft)] text-foreground hover:bg-[var(--sd-danger-soft)]"
+                >
+                  <Lock />
+                  {t("CHANNEL_POINTS_GIVEAWAY_CLOSE")}
+                </Button>
+              )}
+              {giveaway.status === "open" && (
+                <Button
+                  variant="drop"
+                  onClick={handleCollect}
+                  disabled={isCollecting || !canUseChannelPoints}
+                >
+                  <Pause />
+                  {t("CHANNEL_POINTS_GIVEAWAY_PAUSE_COLLECT")}
+                </Button>
+              )}
+              {giveaway.status === "ready" && (
+                <Button
+                  variant="drop"
+                  onClick={handleDraw}
+                  disabled={isDrawing || !!pendingWinner || availableTickets === 0}
+                >
+                  {isDrawing ? (
+                    <>
+                      <Sparkles className="animate-spin motion-reduce:animate-none" />
+                      {t("CHANNEL_POINTS_GIVEAWAY_DRAWING")}
+                    </>
+                  ) : (
+                    <>
+                      <Trophy />
+                      {t("CHANNEL_POINTS_GIVEAWAY_DRAW")}
+                    </>
+                  )}
+                </Button>
+              )}
+            </>
+          }
+        >
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex h-[26px] items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold text-foreground",
+                statusSoft(giveaway.status),
+              )}
+            >
+              <span
+                className={cn("size-1.5 rounded-full", statusDot(giveaway.status))}
+                aria-hidden
+              />
+              {t(
+                "CHANNEL_POINTS_GIVEAWAY_STATUS_" + giveaway.status.toUpperCase(),
+              )}
+            </span>
+            <HudChip
+              label={t("CHANNEL_POINTS_GIVEAWAY_HUD_COST")}
+              value={t("CHANNEL_POINTS_GIVEAWAY_COST_BADGE", {
+                cost: giveaway.cost,
+              })}
+            />
+            {giveaway.maxPerStream != null && giveaway.maxPerStream >= 1 && (
+              <HudChip
+                label={t("CHANNEL_POINTS_GIVEAWAY_FORM_MAX_PER_STREAM_VALUE")}
+                value={giveaway.maxPerStream}
+              />
             )}
-            <div className="flex gap-2 mt-3 flex-wrap">
-              <Badge variant="outline">
-                {t(
-                  "CHANNEL_POINTS_GIVEAWAY_STATUS_" +
-                    giveaway.status.toUpperCase()
-                )}
-              </Badge>
-              <Badge variant="secondary">
-                {t("CHANNEL_POINTS_GIVEAWAY_COST_BADGE", {
-                  cost: giveaway.cost,
+            {giveaway.subscribersOnly && (
+              <span className="inline-flex h-[26px] items-center rounded-full border border-border bg-[var(--sd-surface-2)] px-2.5 text-xs font-semibold text-foreground">
+                {t("CHANNEL_POINTS_GIVEAWAY_SUBS_ONLY_BADGE", {
+                  tier:
+                    SubscriberTierLabels[
+                      giveaway.subscriptionRequirement as SubscriberTier
+                    ] ?? giveaway.subscriptionRequirement,
                 })}
-              </Badge>
-              {giveaway.maxPerStream != null && giveaway.maxPerStream >= 1 && (
-                <Badge variant="outline">
-                  {t("CHANNEL_POINTS_GIVEAWAY_MAX_PER_STREAM_BADGE", {
-                    count: giveaway.maxPerStream,
-                  })}
-                </Badge>
-              )}
-              {giveaway.subscribersOnly && (
-                <Badge variant="secondary">
-                  {t("CHANNEL_POINTS_GIVEAWAY_SUBS_ONLY_BADGE", {
-                    tier:
-                      SubscriberTierLabels[
-                        giveaway.subscriptionRequirement as SubscriberTier
-                      ] ?? giveaway.subscriptionRequirement,
-                  })}
-                </Badge>
-              )}
-              {giveaway.allowMultipleWins && (
-                <Badge variant="outline">
-                  {t("CHANNEL_POINTS_GIVEAWAY_MULTI_WINS_BADGE")}
-                </Badge>
-              )}
-              {Object.entries(subscriberMultiplier)
-                .filter(([, multiplier]) => multiplier > 1)
-                .map(([tier, multiplier]) => (
-                  <Badge key={tier} variant="secondary">
-                    {t("CHANNEL_POINTS_GIVEAWAY_MULTIPLIER_BADGE", {
-                      tier:
-                        SubscriberTierLabels[Number(tier) as SubscriberTier] ??
-                        tier,
-                      multiplier,
-                    })}
-                  </Badge>
-                ))}
-              {giveaway.refundIneligible && (
-                <Badge variant="outline">
-                  {t("CHANNEL_POINTS_GIVEAWAY_REFUND_BADGE")}
-                </Badge>
-              )}
-            </div>
+              </span>
+            )}
+            {Object.entries(subscriberMultiplier)
+              .filter(([, multiplier]) => multiplier > 1)
+              .map(([tier, multiplier]) => (
+                <HudChip
+                  key={tier}
+                  label={
+                    SubscriberTierLabels[Number(tier) as SubscriberTier] ?? tier
+                  }
+                  value={`${multiplier}×`}
+                />
+              ))}
+            {giveaway.allowMultipleWins && (
+              <span className="inline-flex h-[26px] items-center rounded-full border border-border bg-[var(--sd-surface-2)] px-2.5 text-xs font-semibold text-foreground">
+                {t("CHANNEL_POINTS_GIVEAWAY_MULTI_WINS_BADGE")}
+              </span>
+            )}
+            {giveaway.refundIneligible && (
+              <span className="inline-flex h-[26px] items-center rounded-full border border-border bg-[var(--sd-surface-2)] px-2.5 text-xs font-semibold text-foreground">
+                {t("CHANNEL_POINTS_GIVEAWAY_REFUND_BADGE")}
+              </span>
+            )}
+            <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-2.5 text-xs font-semibold text-[var(--sd-local)]">
+              <HardDrive className="size-3.5" />
+              {t("CHANNEL_POINTS_GIVEAWAY_LOCAL")}
+            </span>
           </div>
-
-          <div className="flex flex-row gap-2 flex-wrap">
-            <Button variant="ghost" size="lg" onClick={onClickBack}>
-              <ArrowLeftIcon className="w-4 h-4 mr-2" />
-              {t("NAVIGATE_BACK")}
-            </Button>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() =>
-                        navigate(
-                          `/dashboard/channel-points-giveaway/${giveaway.id}/edit`
-                        )
-                      }
-                      disabled={!canEdit}
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      {t("CHANNEL_POINTS_GIVEAWAY_EDIT_BUTTON")}
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {!canEdit && (
-                  <TooltipContent>
-                    <p>{t("CHANNEL_POINTS_GIVEAWAY_EDIT_BLOCKED")}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-
-            {giveaway.status === "open" && (
-              <Button
-                size="lg"
-                onClick={handleCollect}
-                disabled={isCollecting || !canUseChannelPoints}
-              >
-                <Pause className="w-4 h-4 mr-2" />
-                {t("CHANNEL_POINTS_GIVEAWAY_PAUSE_COLLECT")}
-              </Button>
-            )}
-
-            {giveaway.status === "ready" && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={handleDraw}
-                disabled={
-                  isDrawing ||
-                  !!pendingWinner ||
-                  availableTickets === 0
-                }
-              >
-                {isDrawing ? (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                    {t("CHANNEL_POINTS_GIVEAWAY_DRAWING")}
-                  </>
-                ) : (
-                  <>
-                    <Trophy className="w-4 h-4 mr-2" />
-                    {t("CHANNEL_POINTS_GIVEAWAY_DRAW")}
-                  </>
-                )}
-              </Button>
-            )}
-
-            {giveaway.status === "ready" && (
-              <Button
-                variant="destructive"
-                size="lg"
-                onClick={() => setCloseDialogOpen(true)}
-                disabled={!canUseChannelPoints || !!pendingWinner}
-              >
-                <Lock className="w-4 h-4 mr-2" />
-                {t("CHANNEL_POINTS_GIVEAWAY_CLOSE")}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {giveaway.status === "open" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("CHANNEL_POINTS_GIVEAWAY_OPEN_TITLE")}</CardTitle>
-              <CardDescription>
-                {t("CHANNEL_POINTS_GIVEAWAY_OPEN_DESCRIPTION")}
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
+        </ShellHeader>
 
         {accessBlock && giveaway.status !== "closed" && (
           <ChannelPointsAccessBanner reason={accessBlock} />
         )}
 
+        {giveaway.status === "open" && (
+          <InventoryPanel title={t("CHANNEL_POINTS_GIVEAWAY_OPEN_TITLE")}>
+            <p className="text-sm text-muted-foreground">
+              {t("CHANNEL_POINTS_GIVEAWAY_OPEN_DESCRIPTION")}
+            </p>
+          </InventoryPanel>
+        )}
+
         {(giveaway.status === "ready" || giveaway.status === "closed") && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="flex flex-col">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {t("CHANNEL_POINTS_GIVEAWAY_PARTICIPANTS")}
-                  <Badge variant="secondary">
-                    {giveaway.participants.length}
-                  </Badge>
-                  <Badge variant="outline">
-                    {t("CHANNEL_POINTS_GIVEAWAY_TICKETS_COUNT", {
-                      count: totalParticipantTickets,
-                    })}
-                  </Badge>
-                </CardTitle>
-                <CardDescription>
-                  {t("CHANNEL_POINTS_GIVEAWAY_AVAILABLE_TICKETS", {
-                    count: availableTickets,
-                  })}
-                  {weightedEntries !== availableTickets && (
-                    <>
-                      {" · "}
-                      {t("CHANNEL_POINTS_GIVEAWAY_WEIGHTED_ENTRIES", {
-                        count: weightedEntries,
-                      })}
-                    </>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                {participantTicketTags.length === 0 ? (
+          <>
+            <div className="flex flex-wrap gap-3">
+              <Stat
+                value={giveaway.participants.length}
+                label={t("CHANNEL_POINTS_GIVEAWAY_STAT_PARTICIPANTS")}
+              />
+              <Stat
+                value={availableTickets}
+                label={t("CHANNEL_POINTS_GIVEAWAY_STAT_TICKETS")}
+              />
+              <Stat
+                value={weightedEntries}
+                label={t("CHANNEL_POINTS_GIVEAWAY_STAT_WEIGHTED")}
+              />
+              <Stat
+                value={giveaway.winners.length}
+                label={t("CHANNEL_POINTS_GIVEAWAY_STAT_WINNERS")}
+              />
+            </div>
+            <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
+              <ParticipantInventory
+                title={t("CHANNEL_POINTS_GIVEAWAY_INVENTORY_TITLE")}
+                status={t("CHANNEL_POINTS_GIVEAWAY_INVENTORY_META")}
+                filter={nameFilter}
+                onFilterChange={setNameFilter}
+                filterLabel={t("CHANNEL_POINTS_GIVEAWAY_FILTER_PLACEHOLDER")}
+                participants={inventoryParticipants}
+                summary={
+                  <>
+                    {nameFilter.trim() ? (
+                      <>
+                        <p>
+                          {t("CHANNEL_POINTS_GIVEAWAY_FILTERED_COUNT", {
+                            found: inventoryParticipants.length,
+                            total: giveaway.participants.length,
+                          })}
+                        </p>
+                        <p>{t("CHANNEL_POINTS_GIVEAWAY_FILTER_DRAW_HINT")}</p>
+                      </>
+                    ) : (
+                      <p>
+                        {t("CHANNEL_POINTS_GIVEAWAY_TICKETS_COUNT", {
+                          count: totalParticipantTickets,
+                        })}
+                        {weightedEntries !== availableTickets
+                          ? ` · ${t("CHANNEL_POINTS_GIVEAWAY_WEIGHTED_ENTRIES", {
+                              count: weightedEntries,
+                            })}`
+                          : ` · ${t("CHANNEL_POINTS_GIVEAWAY_AVAILABLE_TICKETS", {
+                              count: availableTickets,
+                            })}`}
+                      </p>
+                    )}
+                  </>
+                }
+                empty={
                   <Empty>
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
-                        <Coins />
+                        <Trophy />
                       </EmptyMedia>
                       <EmptyTitle>
-                        {t("CHANNEL_POINTS_GIVEAWAY_NO_PARTICIPANTS")}
+                        {nameFilter.trim()
+                          ? t("CHANNEL_POINTS_GIVEAWAY_FILTER_EMPTY", {
+                              filter: nameFilter.trim(),
+                            })
+                          : t("CHANNEL_POINTS_GIVEAWAY_NO_PARTICIPANTS")}
                       </EmptyTitle>
-                      <EmptyDescription>
-                        {t("CHANNEL_POINTS_GIVEAWAY_NO_PARTICIPANTS_HINT")}
-                      </EmptyDescription>
+                      {!nameFilter.trim() ? (
+                        <EmptyDescription>
+                          {t("CHANNEL_POINTS_GIVEAWAY_NO_PARTICIPANTS_HINT")}
+                        </EmptyDescription>
+                      ) : null}
                     </EmptyHeader>
                   </Empty>
-                ) : (
-                  <ScrollArea className="h-[420px] pr-4">
-                    <div className="flex flex-wrap gap-2 p-1 content-start">
-                      {participantTicketTags.map((tag) => (
-                        <ParticipantTag
-                          key={tag.key}
-                          participant={{
-                            displayName: tag.displayName,
-                            subscriber: tag.subscriber,
-                            tier: tag.tier,
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="flex flex-col gap-4">
-              <Card className="flex flex-col">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {t("CHANNEL_POINTS_GIVEAWAY_WINNERS")}
-                    <Badge variant="secondary">{giveaway.winners.length}</Badge>
-                    {pendingWinner && (
-                      <span className="text-sm font-normal text-muted-foreground">
-                        · {t("CHANNEL_POINTS_GIVEAWAY_AWAITING_CONFIRMATION")}
-                      </span>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex min-h-0 flex-1 flex-col">
+                }
+              />
+              <div className="flex min-h-0 flex-col gap-4">
+                <InventoryPanel
+                  title={t("CHANNEL_POINTS_GIVEAWAY_LOG_TITLE")}
+                  meta={
+                    pendingWinner
+                      ? t("CHANNEL_POINTS_GIVEAWAY_LOG_META_PENDING", {
+                          count: giveaway.winners.length,
+                          rank: pendingWinnerRank,
+                        })
+                      : t("CHANNEL_POINTS_GIVEAWAY_LOG_META", {
+                          count: giveaway.winners.length,
+                        })
+                  }
+                  bodyClassName="pt-3"
+                >
                   <WinnersList
-                    className="h-[280px] pr-4"
+                    className="h-[360px] pr-3"
                     triggerKey={pendingWinner?.redemptionId ?? null}
                     pendingRank={pendingWinnerRank}
                     pending={
                       pendingWinner ? (
-                        <WinnerConfirmationInline
-                          key={pendingWinner.redemptionId}
-                          pendingWinner={{
-                            id: pendingWinner.participant.userId,
-                            displayName: pendingWinner.participant.displayName,
-                            avatar: pendingWinner.participant.avatar,
-                            subscriber: pendingWinner.participant.subscriber,
-                            tier: pendingWinner.participant.tier,
-                          }}
-                          messages={messages}
-                          rank={pendingWinnerRank}
-                          onConfirm={handleConfirmWinner}
-                          onDismiss={() => setPendingWinner(null)}
-                          onCancel={() => setPendingWinner(null)}
-                          onRedraw={handleRedraw}
-                          isRedrawing={isRedrawing}
-                        />
+                        <div
+                          data-pending-card
+                          className="rounded-[14px] border border-dashed border-[var(--sd-border-strong)] bg-card px-3 py-3"
+                        >
+                          <p className="text-sm font-semibold">
+                            {pendingWinner.participant.displayName}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t("CHANNEL_POINTS_GIVEAWAY_PENDING_WAIT")}
+                          </p>
+                        </div>
                       ) : undefined
                     }
                   >
-                      {sortedWinners.length === 0 && !pendingWinner ? (
-                        <div className="flex items-center justify-center min-h-[200px]">
-                          <Empty>
-                            <EmptyHeader>
-                              <EmptyMedia variant="icon">
-                                <Trophy />
-                              </EmptyMedia>
-                              <EmptyTitle>
-                                {t("CHANNEL_POINTS_GIVEAWAY_NO_WINNERS")}
-                              </EmptyTitle>
-                            </EmptyHeader>
-                          </Empty>
-                        </div>
-                      ) : (
-                        sortedWinners.map((winner) => {
-                          const participant = giveaway.participants.find(
-                            (p) => p.userId === winner.userId
-                          );
-                          const rank = winnerRanks.get(winner.id) ?? 0;
-
-                          return (
-                            <GiveawayWinnerRow
-                              key={winner.id}
-                              rank={rank}
-                              name={winner.name}
-                              avatar={winner.avatar}
-                              drawnAt={winner.drawnAt}
-                              tier={participant?.tier}
-                              onRemove={
-                                giveaway.status !== "closed"
-                                  ? () => onClickRemoveWinner(winner.id)
-                                  : undefined
-                              }
-                              className={pendingWinner ? "opacity-55" : undefined}
-                            />
-                          );
-                        })
-                      )}
+                    {sortedWinners.length === 0 && !pendingWinner ? (
+                      <div className="flex min-h-[280px] items-center justify-center">
+                        <Empty>
+                          <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                              <Trophy />
+                            </EmptyMedia>
+                            <EmptyTitle>
+                              {t("CHANNEL_POINTS_GIVEAWAY_NO_WINNERS")}
+                            </EmptyTitle>
+                          </EmptyHeader>
+                        </Empty>
+                      </div>
+                    ) : (
+                      sortedWinners.map((winner) => {
+                        const participant = giveaway.participants.find(
+                          (item) => item.userId === winner.userId,
+                        );
+                        const rank = winnerRanks.get(winner.id) ?? 0;
+                        return (
+                          <WinnerLogRow
+                            key={winner.id}
+                            rank={rank}
+                            name={winner.name}
+                            avatar={winner.avatar}
+                            drawnAt={winner.drawnAt}
+                            tier={participant?.tier}
+                            onRemove={
+                              giveaway.status !== "closed"
+                                ? () => onClickRemoveWinner(winner.id)
+                                : undefined
+                            }
+                            removeLabel={t("CHANNEL_POINTS_GIVEAWAY_REMOVE_WINNER")}
+                            dimmed={!!pendingWinner}
+                          />
+                        );
+                      })
+                    )}
                   </WinnersList>
-                </CardContent>
-              </Card>
-
-              {userData?.login && (
-                <Card className="flex flex-col overflow-hidden">
-                  <CardHeader className="pb-2">
-                    <CardTitle>{t("CHANNEL_POINTS_GIVEAWAY_CHAT")}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
+                </InventoryPanel>
+                {userData?.login && (
+                  <InventoryPanel
+                    title={t("CHANNEL_POINTS_GIVEAWAY_CHAT_TITLE")}
+                    meta={
+                      connectionStatus === "connected" ? (
+                        <span className="inline-flex items-center gap-1.5 text-foreground">
+                          <span className="size-1.5 rounded-full bg-[var(--sd-success)]" />
+                          {t("CHANNEL_POINTS_GIVEAWAY_LIVE")}
+                        </span>
+                      ) : null
+                    }
+                    className="overflow-hidden"
+                    bodyClassName="p-0"
+                  >
                     <iframe
                       title="Twitch Chat"
                       src={composeTwitchChatEmbedUrl(userData.login)}
-                      className="h-[320px] w-full border-0"
+                      className="h-[220px] w-full border-0"
                     />
-                  </CardContent>
-                </Card>
-              )}
+                  </InventoryPanel>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
+
+      {pendingWinner ? (
+        <WinnerMoment
+          key={pendingWinner.redemptionId}
+          pendingWinner={{
+            id: pendingWinner.participant.userId,
+            displayName: pendingWinner.participant.displayName,
+            avatar: pendingWinner.participant.avatar,
+            subscriber: pendingWinner.participant.subscriber,
+            tier: pendingWinner.participant.tier,
+          }}
+          messages={messages}
+          rank={pendingWinnerRank}
+          giveawayTitle={giveaway.title}
+          onConfirm={handleConfirmWinner}
+          onDismiss={() => setPendingWinner(null)}
+          onCancel={() => setPendingWinner(null)}
+          onRedraw={handleRedraw}
+          isRedrawing={isRedrawing}
+        />
+      ) : null}
 
       <Dialog open={isCollecting} onOpenChange={() => {}}>
         <DialogContent

@@ -9,6 +9,8 @@ export interface ParticipantInventoryItem {
   subscriber?: boolean;
   tier?: null | 1000 | 2000 | 3000;
   subscriptionMonths?: number;
+  /** Corner mark already derived for display, such as a luck weight. */
+  mark?: string;
 }
 
 interface ParticipantInventoryProps {
@@ -78,6 +80,7 @@ export function ParticipantInventory({
               participant.subscriptionMonths && participant.subscriptionMonths > 0
                 ? participant.subscriptionMonths
                 : null;
+            const corner = months ? `${months}M` : participant.mark;
             return (
               <li
                 key={participant.id}
@@ -93,12 +96,12 @@ export function ParticipantInventory({
                     : undefined
                 }
               >
-                {months ? (
+                {corner ? (
                   <span
                     className="absolute top-1 left-1.5 font-mono text-[9px] font-bold"
                     style={{ color: ink ?? "var(--muted-foreground)" }}
                   >
-                    {months}M
+                    {corner}
                   </span>
                 ) : null}
                 <Avatar className="size-[30px]">
