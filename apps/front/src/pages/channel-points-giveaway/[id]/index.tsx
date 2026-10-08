@@ -273,10 +273,11 @@ export function ChannelPointsGiveawayDetail() {
         : null,
     [giveaway, pendingWinner],
   );
-  const previewClock = useMemo(
-    () => browserClock(),
-    [pendingWinner?.redemptionId],
-  );
+  const pendingRedemptionId = pendingWinner?.redemptionId ?? "";
+  const previewClock = useMemo(() => {
+    void pendingRedemptionId;
+    return browserClock();
+  }, [pendingRedemptionId]);
 
   const progressValue = useMemo(() => {
     if (!collectionProgress) return 0;

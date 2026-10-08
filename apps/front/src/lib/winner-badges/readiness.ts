@@ -310,10 +310,10 @@ export function useCardBadges(
     if (status !== "error") return;
     retryWinnerIndexFromCard();
   }, [status]);
-  const selection = useMemo(
-    () => readCardBadges(status, provider, win, clock),
-    [status, provider, win, clock, revision],
-  );
+  const selection = useMemo(() => {
+    void revision;
+    return readCardBadges(status, provider, win, clock);
+  }, [status, provider, win, clock, revision]);
   return { status, selection };
 }
 
@@ -328,9 +328,9 @@ export function useConfirmedBadges(
     if (status !== "error") return;
     retryWinnerIndexFromCard();
   }, [status]);
-  const selection = useMemo(
-    () => readConfirmedBadges(status, provider, win, clock),
-    [status, provider, win, clock, revision],
-  );
+  const selection = useMemo(() => {
+    void revision;
+    return readConfirmedBadges(status, provider, win, clock);
+  }, [status, provider, win, clock, revision]);
   return { status, selection };
 }

@@ -140,10 +140,11 @@ export function ChatGiveawayDetail() {
     () => (giveaway && pendingWinner ? chatPreviewWin(giveaway, pendingWinner) : null),
     [giveaway, pendingWinner],
   );
-  const previewClock = useMemo(
-    () => browserClock(),
-    [pendingWinner?.id],
-  );
+  const pendingId = pendingWinner?.id ?? "";
+  const previewClock = useMemo(() => {
+    void pendingId;
+    return browserClock();
+  }, [pendingId]);
 
   useEffect(() => {
     if (!id) return;

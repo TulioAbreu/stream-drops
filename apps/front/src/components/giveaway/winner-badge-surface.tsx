@@ -69,7 +69,10 @@ function useSurfaceClock(
   const key = win
     ? `${win.giveawayType}:${win.giveawayId}:${win.index}:${win.userId}:${win.preview ? "p" : "c"}`
     : "none";
-  const frozen = useMemo(() => injected ?? browserClock(), [injected, key]);
+  const frozen = useMemo(() => {
+    void key;
+    return injected ?? browserClock();
+  }, [injected, key]);
   return injected ?? frozen;
 }
 

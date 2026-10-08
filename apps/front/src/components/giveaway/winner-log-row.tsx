@@ -6,7 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { WinEvent } from "@/lib/winner-badges/types";
+import type { EngineClock, WinEvent } from "@/lib/winner-badges/types";
 import { cn } from "@/lib/utils";
 import { XIcon } from "lucide-react";
 import { WinnerBadgeSurface } from "./winner-badge-surface";
@@ -23,6 +23,8 @@ export interface WinnerLogRowProps {
   dimmed?: boolean;
   /** Vitória confirmada. Sem ela, a linha não mostra selos. */
   badgeWin?: WinEvent | null;
+  /** Fuso do cálculo. Sem ele, usa o fuso do navegador. */
+  badgeClock?: EngineClock;
 }
 
 function tierAccent(tier: WinnerLogRowProps["tier"]): string | undefined {
@@ -43,6 +45,7 @@ export function WinnerLogRow({
   className,
   dimmed = false,
   badgeWin = null,
+  badgeClock,
 }: WinnerLogRowProps) {
   const accent = tierAccent(tier) ?? "var(--border)";
   const drawnLabel = new Date(drawnAt).toLocaleTimeString("pt-BR");
@@ -77,7 +80,7 @@ export function WinnerLogRow({
           >
             {name}
           </p>
-          <WinnerBadgeSurface surface="log" win={badgeWin} />
+          <WinnerBadgeSurface surface="log" win={badgeWin} clock={badgeClock} />
         </div>
         <p className="mt-0.5 font-mono text-[11.5px] text-muted-foreground">
           {drawnLabel}

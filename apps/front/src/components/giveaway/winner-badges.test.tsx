@@ -186,6 +186,7 @@ describe("selos no card e no log", () => {
         avatar=""
         drawnAt={confirmedAt}
         badgeWin={confirmedEvent("pendente", confirmedAt)}
+        badgeClock={clock(confirmedAt)}
       />,
     );
 
@@ -229,6 +230,7 @@ describe("selos no card e no log", () => {
           avatar=""
           drawnAt={target.wonAt ?? ""}
           badgeWin={target}
+          badgeClock={when}
         />
       </div>,
     );
@@ -303,7 +305,9 @@ describe("selos no card e no log", () => {
       </div>,
     );
 
-    expect(screen.getByText("Ana")).toBeTruthy();
+    expect(document.querySelector("[data-pending-card]")?.textContent).toContain(
+      "Ana",
+    );
     expect(screen.getByRole("button", { name: "Confirmar" })).toBeTruthy();
     expect(document.querySelector("[data-winner-badges]")).toBeNull();
     expect(document.querySelector("[data-winner-badge]")).toBeNull();
