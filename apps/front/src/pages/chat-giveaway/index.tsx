@@ -8,7 +8,7 @@ import { useChatGiveawayDb } from "@/database/ChatGiveaway";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { useNavigate } from "react-router";
-import { ArrowRight, Copy, MessageSquare, Plus, TrashIcon, MoreHorizontal, FilePlus, Edit } from "lucide-react";
+import { ArrowRight, Copy, Plus, TrashIcon, MoreHorizontal, FilePlus, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { v7 } from "uuid";
 import { DialogTitle } from "@radix-ui/react-dialog";
@@ -393,8 +393,8 @@ export function ChatGiveaway() {
       ) : giveaways.length === 0 ? (
         <Empty>
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <MessageSquare />
+            <EmptyMedia variant="illustration">
+              <img src="/brand/empty-state-ilustracao.svg" alt="Baúzinho aguardando" />
             </EmptyMedia>
             <EmptyTitle>
               {t("CHAT_GIVEAWAY_EMPTY_TITLE", "Nenhum sorteio de chat criado ainda")}

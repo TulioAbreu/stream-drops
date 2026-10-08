@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/database/SubscriptionGiveaway";
 import { DialogTitle } from "@radix-ui/react-dialog";
-import { ArrowRight, Edit2Icon, Gift, PlusIcon, TrashIcon } from "lucide-react";
+import { ArrowRight, Edit2Icon, PlusIcon, TrashIcon } from "lucide-react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -66,8 +66,8 @@ export function FollowerGiveaway() {
             ) : giveaways.length === 0 ? (
                 <Empty>
                     <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                            <Gift />
+                        <EmptyMedia variant="illustration">
+                            <img src="/brand/empty-state-ilustracao.svg" alt="Baúzinho aguardando" />
                         </EmptyMedia>
                         <EmptyTitle>
                             {t("FOLLOWER_GIVEAWAY_EMPTY_TITLE", "Nenhum sorteio criado ainda")}
