@@ -216,12 +216,7 @@ function playReduced(
   fade(q("back"), 0, 200);
   fade(q("avatar"), 0, 200);
   fade(q("slot"), 0, 200);
-  const bottom = stage.querySelector("[data-winner-bottom]");
-  if (!bottom) return;
-  const pill = bottom.querySelector(":scope > p.border-dashed");
-  const buttons = bottom.querySelector(":scope > div.flex-wrap");
-  const local = bottom.querySelector(":scope > p.text-xs");
-  for (const el of [pill, buttons, local]) fade(el, 120, 120);
+  for (const name of ["notice", "actions", "hint"]) fade(q(name), 120, 120);
 }
 
 function playFull(
@@ -400,14 +395,7 @@ function playFull(
     [landAt + 320, { opacity: 1, transform: "none" }, "drop"],
   ]);
 
-  const bottom = stage.querySelector("[data-winner-bottom]");
-  const controls = bottom
-    ? [
-        bottom.querySelector(":scope > p.border-dashed"),
-        bottom.querySelector(":scope > div.flex-wrap"),
-        bottom.querySelector(":scope > p.text-xs"),
-      ]
-    : [];
+  const controls = [q("notice"), q("actions"), q("hint")];
   controls.forEach((el, index) => {
     const at = landAt + 120 + index * 40;
     track(el, [

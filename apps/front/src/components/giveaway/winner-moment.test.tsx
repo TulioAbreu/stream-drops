@@ -7,12 +7,6 @@ import { WinnerMoment } from "./winner-moment";
 import { nameAt } from "./winner-reveal";
 import type { PendingWinnerInfo } from "./types";
 
-const confetti = vi.hoisted(() => vi.fn());
-
-vi.mock("canvas-confetti", () => ({
-  default: confetti,
-}));
-
 const winner: PendingWinnerInfo = {
   id: "flavia",
   displayName: "FlaviaQueen",
@@ -48,7 +42,6 @@ function renderMoment(
 
 describe("WinnerMoment", () => {
   afterEach(async () => {
-    confetti.mockClear();
     const client = cdp();
     await client.send("Emulation.setEmulatedMedia", { features: [] });
   });
@@ -80,7 +73,9 @@ describe("WinnerMoment", () => {
   it("celebra com confete quando o movimento é permitido", async () => {
     renderMoment();
     await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(confetti).toHaveBeenCalled();
+    const pieces = document.querySelectorAll("[data-winner-confetti]");
+    expect(pieces.length).toBeGreaterThan(0);
+    expect(pieces.length).toBeLessThanOrEqual(56);
     const beam = document.querySelector("[data-winner-beam]");
     expect(beam).toBeTruthy();
     expect(getComputedStyle(beam!).animationName).toBe("sd-winner-beam");
@@ -104,7 +99,7 @@ describe("WinnerMoment", () => {
     });
     renderMoment();
     await new Promise((resolve) => setTimeout(resolve, 40));
-    expect(confetti).not.toHaveBeenCalled();
+    expect(document.querySelectorAll("[data-winner-confetti]")).toHaveLength(0);
     const stage = document.querySelector("[data-winner-moment]");
     expect(stage?.getAttribute("data-motion")).toBe("reduced");
     const beam = document.querySelector("[data-winner-beam]");
@@ -163,7 +158,6 @@ describe("WinnerMoment", () => {
       pendingWinner: { ...winner, tier: 3000, displayName: "Mari_Plays" },
     });
     await new Promise((resolve) => setTimeout(resolve, 40));
-    expect(confetti).not.toHaveBeenCalled();
     expect(document.querySelectorAll("[data-winner-confetti]")).toHaveLength(0);
     expect(document.querySelector("[data-reveal='rays']")).toBeNull();
     const stage = document.querySelector("[data-winner-moment]");

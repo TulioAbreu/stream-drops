@@ -642,32 +642,6 @@
   text-overflow: ellipsis;
 }
 
-.sd-winner-mascot {
-  animation: sd-winner-pop var(--sd-dur-reveal) var(--sd-ease-drop) both;
-}
-
-@keyframes sd-winner-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes sd-winner-pop {
-  from {
-    opacity: 0;
-    transform: translateY(24px) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 @keyframes sd-winner-beam {
   from {
     opacity: 0.5;
@@ -680,8 +654,7 @@
 @media (prefers-reduced-motion: reduce) {
   .sd-winner-beam,
   .sd-winner-beam--soft,
-  .sd-winner-name,
-  .sd-winner-mascot {
+  .sd-winner-name {
     animation: none;
   }
 }
@@ -832,8 +805,9 @@
 [data-motion="full"] .sd-winner-halo,
 [data-motion="full"] .sd-winner-rays,
 [data-motion="full"] .sd-winner-spark,
-[data-motion="full"] [data-winner-bottom] > p,
-[data-motion="full"] [data-winner-bottom] > div.flex-wrap {
+[data-motion="full"] [data-reveal="notice"],
+[data-motion="full"] [data-reveal="actions"],
+[data-motion="full"] [data-reveal="hint"] {
   opacity: 0;
 }
 

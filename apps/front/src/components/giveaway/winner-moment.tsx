@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import confetti from "canvas-confetti";
 import { CheckIcon, HardDrive, RotateCcw } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -141,12 +140,6 @@ export function WinnerMoment({
 
     const frame = requestAnimationFrame(() => setPhase("expanded"));
     dialogRef.current?.focus();
-
-    if (!prefersReducedMotion()) {
-      // O confete visível sai da boca do baú (DOM, no máximo 56 peças).
-      // A chamada mantém o contrato de celebração sem o burst antigo.
-      confetti({ particleCount: 0, disableForReducedMotion: true });
-    }
 
     return () => cancelAnimationFrame(frame);
   }, [pendingWinner.id]);
@@ -374,7 +367,10 @@ export function WinnerMoment({
           </div>
         </div>
 
-        <p className="inline-flex max-w-[560px] items-center justify-center rounded-full border border-dashed border-[var(--sd-border-strong)] bg-card/80 px-4 py-2 text-center text-sm text-foreground">
+        <p
+          data-reveal="notice"
+          className="inline-flex max-w-[560px] items-center justify-center rounded-full border border-dashed border-[var(--sd-border-strong)] bg-card/80 px-4 py-2 text-center text-sm text-foreground"
+        >
           {withEllipsisName(waiting, pendingWinner.displayName)}
           {isPaused ? (
             <span className="ml-2 font-semibold text-[var(--sd-warning)]">
@@ -383,7 +379,7 @@ export function WinnerMoment({
           ) : null}
         </p>
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
+        <div data-reveal="actions" className="flex flex-wrap items-center justify-center gap-2">
           <Button
             variant="ghost"
             size="lg"
@@ -414,7 +410,10 @@ export function WinnerMoment({
           </Button>
         </div>
 
-        <p className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-3 py-1 text-xs font-semibold text-[var(--sd-local)]">
+        <p
+          data-reveal="hint"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-3 py-1 text-xs font-semibold text-[var(--sd-local)]"
+        >
           <HardDrive className="size-3.5" />
           {t("WINNER_MOMENT_LOCAL")}
         </p>
