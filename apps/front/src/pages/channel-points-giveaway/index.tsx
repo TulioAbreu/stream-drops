@@ -1,4 +1,6 @@
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { DeleteGiveawayDialog } from "@/components/delete-giveaway-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -320,33 +322,36 @@ export function ChannelPointsGiveawayPage() {
 
   return (
     <Layout>
-      <div className="flex flex-row justify-between items-center mb-6 gap-4 flex-wrap">
-        <h1 className="text-2xl font-bold">
-          {t("CHANNEL_POINTS_GIVEAWAY_TITLE")}
-        </h1>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  onClick={() =>
-                    navigate("/dashboard/channel-points-giveaway/create")
-                  }
-                  disabled={!canUseChannelPoints}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {t("CHANNEL_POINTS_GIVEAWAY_CREATE_BUTTON")}
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!canUseChannelPoints && accessBlock && (
-              <TooltipContent>
-                <p>{t(channelPointsAccessBlockI18nKeys(accessBlock).toast)}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY")}
+        title={t("CHANNEL_POINTS_GIVEAWAY_TITLE")}
+        actions={
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    onClick={() =>
+                      navigate("/dashboard/channel-points-giveaway/create")
+                    }
+                    disabled={!canUseChannelPoints}
+                    size="lg"
+                  >
+                    <Plus />
+                    {t("CHANNEL_POINTS_GIVEAWAY_CREATE_BUTTON")}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!canUseChannelPoints && accessBlock && (
+                <TooltipContent>
+                  <p>{t(channelPointsAccessBlockI18nKeys(accessBlock).toast)}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        }
+      />
 
       {accessBlock && (
         <ChannelPointsAccessBanner reason={accessBlock} className="mb-6" />
@@ -383,7 +388,11 @@ export function ChannelPointsGiveawayPage() {
           )}
         </Empty>
       ) : (
-        <>
+        <InventoryPanel
+          title={t("CHANNEL_POINTS_GIVEAWAY_LIST_PANEL")}
+          meta={String(giveaways.length)}
+          bodyClassName="flex flex-col gap-4 px-2"
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -407,7 +416,14 @@ export function ChannelPointsGiveawayPage() {
             <TableBody>
               {currentGiveaways.map((giveaway) => (
                 <TableRow key={giveaway.id}>
-                  <TableCell className="font-medium">{giveaway.title}</TableCell>
+                  <TableCell>
+                    <a
+                      href={`/dashboard/channel-points-giveaway/${giveaway.id}`}
+                      className="font-semibold text-[var(--sd-brand-amber-strong)] hover:underline"
+                    >
+                      {giveaway.title}
+                    </a>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[giveaway.status]}>
                       {t(`CHANNEL_POINTS_GIVEAWAY_STATUS_${giveaway.status.toUpperCase()}`)}
@@ -533,7 +549,7 @@ export function ChannelPointsGiveawayPage() {
               </PaginationContent>
             </Pagination>
           )}
-        </>
+        </InventoryPanel>
       )}
 
     </Layout>

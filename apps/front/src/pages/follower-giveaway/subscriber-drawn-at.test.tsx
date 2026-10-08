@@ -451,9 +451,11 @@ describe("S3 no IndexedDB v12", () => {
       expect(
         await screen.findByRole("heading", { name: "Sorteio legado" }),
       ).toBeTruthy();
-      expect(await screen.findByText("Total de Vencedores")).toBeTruthy();
-      expect(screen.getByText("Lista de Participantes")).toBeTruthy();
-      expect(screen.getByText("Lista de Vencedores")).toBeTruthy();
+      expect(await screen.findByText("Total de participantes")).toBeTruthy();
+      expect(
+        screen.getByRole("heading", { name: "Lista de participantes" }),
+      ).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "Log de drops" })).toBeTruthy();
       detail.unmount();
 
       const chat = renderAt(
@@ -533,8 +535,8 @@ describe("S3 no IndexedDB v12", () => {
     expect((stored as { note?: string } | undefined)?.note).toBe("nao-apagar");
 
     const winnersCard = screen
-      .getByText("Lista de Vencedores")
-      .closest("[data-slot=card]");
+      .getByRole("heading", { name: "Log de drops" })
+      .closest("section");
     expect(winnersCard).toBeTruthy();
     await waitFor(() => {
       const rows = [...(winnersCard?.querySelectorAll("tbody tr") ?? [])];

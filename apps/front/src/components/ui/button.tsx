@@ -21,6 +21,8 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-muted hover:text-foreground",
         link: "text-[var(--sd-brand-amber-strong)] underline-offset-4 hover:underline shadow-none",
+        drop:
+          "sd-btn-drop h-12 rounded-[var(--sd-radius-lg)] px-[22px] font-display text-[18px] font-extrabold text-primary-foreground",
       },
       size: {
         default: "h-9 px-3.5 has-[>svg]:px-3",

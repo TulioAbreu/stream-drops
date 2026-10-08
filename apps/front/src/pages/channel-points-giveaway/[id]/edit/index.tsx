@@ -5,6 +5,8 @@ import {
   type ChannelPointsGiveawayFormData,
 } from "@/database/ChannelPointsGiveaway";
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { ChannelPointsGiveawayFormComponent } from "../../components/channel-points-giveaway-form";
 import { type ChannelPointsGiveawayForm } from "../../types";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
@@ -156,12 +158,18 @@ export function ChannelPointsGiveawayEdit() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-6">
-        {t("CHANNEL_POINTS_GIVEAWAY_EDIT_TITLE")}
-      </h1>
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY")}
+        title={t("CHANNEL_POINTS_GIVEAWAY_EDIT_TITLE")}
+      />
       {!canUseChannelPoints && accessBlock && (
         <ChannelPointsAccessBanner reason={accessBlock} className="mb-6" />
       )}
+      <InventoryPanel
+        title={t("CHANNEL_POINTS_GIVEAWAY_FORM_PANEL")}
+        className="max-w-3xl"
+      >
       <ChannelPointsGiveawayFormComponent
         defaultValues={{
           title: giveaway.title,
@@ -183,6 +191,7 @@ export function ChannelPointsGiveawayEdit() {
         isLoading={isSaving}
         disabled={!canUseChannelPoints}
       />
+      </InventoryPanel>
     </Layout>
   );
 }

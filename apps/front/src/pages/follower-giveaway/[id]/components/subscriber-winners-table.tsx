@@ -194,11 +194,23 @@ export function SubscriberWinnersTable({ winners, onRemove }: Props) {
         const user =
           typeof idx === "number" ? displayRef.current[idx] : undefined;
         const flashing = !!user && user.user_id === flashUserIdRef.current;
+        const accent =
+          user?.tier === "3000"
+            ? "var(--rarity-legendary)"
+            : user?.tier === "2000"
+              ? "var(--rarity-epic)"
+              : user?.tier === "1000"
+                ? "var(--rarity-rare)"
+                : "var(--border)";
         return (
           <TableRow
             {...props}
             ref={rowRef}
             className={cn(props.className, flashing && "winner-flash")}
+            style={{
+              ...(typeof props.style === "object" ? props.style : undefined),
+              boxShadow: `inset 3px 0 0 ${accent}`,
+            }}
           />
         );
       }),
@@ -243,7 +255,9 @@ export function SubscriberWinnersTable({ winners, onRemove }: Props) {
           <TableCell key="rank" className="w-12 font-mono text-xs text-muted-foreground">
             #{index + 1}
           </TableCell>,
-          <TableCell key="name">{user.user_name}</TableCell>,
+          <TableCell key="name" className="font-semibold">
+            {user.user_name}
+          </TableCell>,
           <TableCell key="tier">{t(`TIER_${user.tier}`)}</TableCell>,
           <TableCell key="actions">
             <TooltipProvider>

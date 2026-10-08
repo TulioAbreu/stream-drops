@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout";
-import { PageHeader } from "@/components/page-header/page-header";
-import { PageHeaderTitle } from "@/components/page-header/page-header-title";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { type FollowerGiveawayFormData, useSubscriptionGiveawayDb } from "@/database/SubscriptionGiveaway";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -79,9 +79,12 @@ export function EditFollowerGiveawayPage() {
 
     return (
         <Layout>
-            <PageHeader>
-                <PageHeaderTitle>{t("FOLLOWER_GIVEAWAY_EDIT_TITLE", { title: giveaway.title })}</PageHeaderTitle>
-            </PageHeader>
+            <ShellHeader
+                section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+                page={t("DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY")}
+                title={t("FOLLOWER_GIVEAWAY_EDIT_TITLE", { title: giveaway.title })}
+            />
+            <InventoryPanel title={t("FOLLOWER_GIVEAWAY_FORM_PANEL")} className="max-w-3xl">
             <Form {...form}>
                 <div className="flex flex-col gap-4">
                     <div className={FIELD_CONTAINER}>
@@ -163,6 +166,7 @@ export function EditFollowerGiveawayPage() {
                     </div>
                 </div>
             </Form>
+            </InventoryPanel>
         </Layout>
     );
 }

@@ -2,11 +2,16 @@ import { type ChatGiveawayForm } from "../types";
 import { v7 } from "uuid";
 import { useChatGiveawayDb } from "@/database/ChatGiveaway";
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { useNavigate } from "react-router";
 import { ChatGiveawayFormComponent } from "../components/chat-giveaway-form";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import "@/i18n";
 
 export function ChatGiveawayCreate() {
+  const { t } = useTranslation();
   const { addChatGiveaway } = useChatGiveawayDb();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -40,12 +45,21 @@ export function ChatGiveawayCreate() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-6">Criar Chat Giveaway</h1>
-      <ChatGiveawayFormComponent
-        onSubmit={onClickSubmit}
-        submitLabel="Criar Sorteio"
-        isLoading={isLoading}
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY")}
+        title={t("CHAT_GIVEAWAY_CREATE_TITLE")}
       />
+      <InventoryPanel
+        title={t("CHAT_GIVEAWAY_FORM_PANEL")}
+        className="max-w-3xl"
+      >
+        <ChatGiveawayFormComponent
+          onSubmit={onClickSubmit}
+          submitLabel="Criar Sorteio"
+          isLoading={isLoading}
+        />
+      </InventoryPanel>
     </Layout>
   );
 }
