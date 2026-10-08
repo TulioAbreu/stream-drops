@@ -110,6 +110,9 @@ describe("apagar dados e logout", () => {
   afterEach(async () => {
     cleanup();
     localStorage.clear();
+    sessionStorage.clear();
+    document.cookie = "sidebar_state=; path=/; max-age=0";
+    document.cookie = "sd_keep=; path=/; max-age=0";
     useLoginStore.setState({
       twitchAccessToken: null,
       driveCode: null,
@@ -201,6 +204,8 @@ describe("apagar dados e logout", () => {
       "false",
     );
 
+    sessionStorage.setItem("sd-logout", "fica");
+    document.cookie = "sidebar_state=true; path=/";
     fireEvent.click(screen.getByRole("button", { name: /sair da conta/i }));
 
     expect(left).toBe(true);
@@ -211,12 +216,17 @@ describe("apagar dados e logout", () => {
     expect(stored.version).toBe(12);
     expect(stored.record).toEqual(EXCLUSION);
     expect(localStorage.getItem(SENTINEL_KEY)).toBe(SENTINEL_VALUE);
+    expect(sessionStorage.getItem("sd-logout")).toBe("fica");
+    expect(document.cookie).toContain("sidebar_state=true");
     expect(useLoginStore.getState().twitchAccessToken).toBeNull();
     expect(useLoginStore.getState().driveCode).toBe("drive-secreto");
   });
 
   it("apaga só depois de digitar APAGAR", async () => {
     await seedBrowser();
+    sessionStorage.setItem("sd-wipe", "some");
+    document.cookie = "sidebar_state=false; path=/";
+    document.cookie = "sd_keep=1; path=/";
     let left = false;
     render(
       <DeleteLocalDataDialog
@@ -243,5 +253,8 @@ describe("apagar dados e logout", () => {
       databases.some((database) => database.name === DATABASE_NAME),
     ).toBe(false);
     expect(localStorage.getItem("login-storage")).toBeNull();
+    expect(sessionStorage.getItem("sd-wipe")).toBeNull();
+    expect(document.cookie).not.toContain("sidebar_state");
+    expect(document.cookie).toContain("sd_keep=1");
   });
 });

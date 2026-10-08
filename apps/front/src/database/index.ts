@@ -4,6 +4,11 @@ export const DATABASE_VERSION = 12;
 // Singleton cache for database connection
 let dbInstance: IDBDatabase | null = null;
 let dbPromise: Promise<IDBDatabase> | null = null;
+/**
+ * Sobe no closeDb(). Um open que termina depois disso fecha a
+ * conexão e não vira o singleton — senão o wipe recriaria o banco.
+ */
+let connectionEpoch = 0;
 
 interface DatabaseTable {
     name: string;
@@ -101,11 +106,16 @@ export function openDb(): Promise<IDBDatabase> {
     }
 
     // Create new connection
+    const epoch = connectionEpoch;
     dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
         console.log(`🗄️ Abrindo banco de dados: ${DATABASE_NAME} v${DATABASE_VERSION}`);
         const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
 
         request.onupgradeneeded = () => {
+            if (epoch !== connectionEpoch) {
+                request.transaction?.abort();
+                return;
+            }
             console.log(`🔧 Atualizando banco de dados para versão ${DATABASE_VERSION}`);
             const db = request.result;
 
@@ -128,8 +138,14 @@ export function openDb(): Promise<IDBDatabase> {
         };
 
         request.onsuccess = () => {
+            const db = request.result;
+            if (epoch !== connectionEpoch) {
+                db.close();
+                reject(new DOMException("Conexão do banco fechada", "AbortError"));
+                return;
+            }
             console.log(`✅ Banco de dados aberto com sucesso`);
-            dbInstance = request.result;
+            dbInstance = db;
             dbInstance.onversionchange = () => {
                 dbInstance?.close();
                 dbInstance = null;
@@ -139,10 +155,14 @@ export function openDb(): Promise<IDBDatabase> {
             // Clear promise cache after successful connection
             dbPromise = null;
 
-            resolve(request.result);
+            resolve(db);
         };
 
         request.onerror = () => {
+            if (epoch !== connectionEpoch) {
+                reject(request.error);
+                return;
+            }
             console.error(`❌ Erro ao abrir banco de dados:`, request.error);
 
             // Clear caches on error
@@ -162,6 +182,7 @@ export function openDb(): Promise<IDBDatabase> {
 
 /** Fecha a conexão em cache. Não apaga dados. */
 export function closeDb(): void {
+    connectionEpoch += 1;
     if (dbInstance) {
         dbInstance.close();
         dbInstance = null;
@@ -169,12 +190,26 @@ export function closeDb(): void {
     dbPromise = null;
 }
 
-// Função utilitária para limpar o banco em caso de problemas de versão
-export function clearDatabase(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-        console.log(`🧹 Limpando banco de dados: ${DATABASE_NAME}`);
-        closeDb();
+/**
+ * closeDb() e, se um open ainda estava em voo, espera ele fechar.
+ * Não apaga registros.
+ */
+export async function releaseLocalDatabase(): Promise<void> {
+    const pending = dbPromise;
+    closeDb();
+    if (!pending) return;
+    await pending.then(
+        () => undefined,
+        () => undefined,
+    );
+}
 
+// Função utilitária para limpar o banco em caso de problemas de versão
+export async function clearDatabase(): Promise<void> {
+    console.log(`🧹 Limpando banco de dados: ${DATABASE_NAME}`);
+    await releaseLocalDatabase();
+
+    return new Promise<void>((resolve, reject) => {
         const deleteRequest = indexedDB.deleteDatabase(DATABASE_NAME);
 
         deleteRequest.onsuccess = () => {
