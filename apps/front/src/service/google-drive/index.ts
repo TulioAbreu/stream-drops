@@ -51,6 +51,54 @@ const tierMapper: Record<TwitchSubscriptionTier, string> = {
     "3000": "Tier 3"
 };
 
+export const GIVEAWAY_SHEET_WINNER_HEADERS = ["Nome", "Tier", "Multiplicador"] as const;
+
+function sheetPersonRow(
+    person: BroadcasterSubscriber,
+    subscriberMultiplier: Record<string, number>,
+): string[] {
+    return [
+        person.user_name,
+        tierMapper[person.tier],
+        String(subscriberMultiplier[person.tier] || 1),
+    ];
+}
+
+/** Colunas explícitas. `drawnAt` e o resto do registro não entram na planilha. */
+export function buildGiveawaySheetValues({
+    participants,
+    winners,
+    requiredSubscriber,
+    subscriberMultiplier,
+    title,
+    description,
+}: CreateGiveawayResultSheets): {
+    participants: string[][];
+    winners: string[][];
+    details: string[][];
+} {
+    return {
+        participants: [
+            [...GIVEAWAY_SHEET_WINNER_HEADERS],
+            ...participants.map((person) => sheetPersonRow(person, subscriberMultiplier)),
+        ],
+        winners: [
+            [...GIVEAWAY_SHEET_WINNER_HEADERS],
+            ...winners.map((person) => sheetPersonRow(person, subscriberMultiplier)),
+        ],
+        details: [
+            ["Título", title],
+            ["Descrição", description],
+            ["Critério de Participação", `Tier ${Number(requiredSubscriber) / 1000}`],
+            ["Ganhadores", String(winners.length)],
+            ["Multiplicadores de Sub"],
+            ["Tier 1", String(subscriberMultiplier["1000"] || 1)],
+            ["Tier 2", String(subscriberMultiplier["2000"] || 1)],
+            ["Tier 3", String(subscriberMultiplier["3000"] || 1)],
+        ],
+    };
+}
+
 export async function exportGiveawayResultToSheets({
     participants,
     winners,
@@ -100,26 +148,14 @@ export async function exportGiveawayResultToSheets({
         })
     });
 
-    const participantValues = [
-        ["Nome", "Tier", "Multiplicador"],
-        ...participants.map(p => [p.user_name, tierMapper[p.tier], String(subscriberMultiplier[p.tier] || 1)])
-    ];
-
-    const winnerValues = [
-        ["Nome", "Tier", "Multiplicador"],
-        ...winners.map(w => [w.user_name, tierMapper[w.tier], String(subscriberMultiplier[w.tier] || 1)])
-    ];
-
-    const detailsValues = [
-        ["Título", title],
-        ["Descrição", description],
-        ["Critério de Participação", `Tier ${Number(requiredSubscriber) / 1000}`],
-        ["Ganhadores", String(winners.length)],
-        ["Multiplicadores de Sub"],
-        ["Tier 1", String(subscriberMultiplier["1000"] || 1)],
-        ["Tier 2", String(subscriberMultiplier["2000"] || 1)],
-        ["Tier 3", String(subscriberMultiplier["3000"] || 1)],
-    ];
+    const sheetValues = buildGiveawaySheetValues({
+        participants,
+        winners,
+        requiredSubscriber,
+        subscriberMultiplier,
+        title,
+        description,
+    });
 
     const valuesUpdateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
     await fetch(valuesUpdateUrl, {
@@ -131,9 +167,9 @@ export async function exportGiveawayResultToSheets({
         body: JSON.stringify({
             valueInputOption: "RAW",
             data: [
-                { range: "Ganhadores!A1", values: winnerValues },
-                { range: "Participantes!A1", values: participantValues },
-                { range: "Detalhes!A1", values: detailsValues }
+                { range: "Ganhadores!A1", values: sheetValues.winners },
+                { range: "Participantes!A1", values: sheetValues.participants },
+                { range: "Detalhes!A1", values: sheetValues.details }
             ]
         })
     });
@@ -230,27 +266,14 @@ export async function overrideGiveawayResultToSheets({
         })
     });
 
-    // 5. Prepara os dados
-    const participantValues = [
-        ["Nome", "Tier", "Multiplicador"],
-        ...participants.map(p => [p.user_name, tierMapper[p.tier], String(subscriberMultiplier[p.tier] || 1)])
-    ];
-
-    const winnerValues = [
-        ["Nome", "Tier", "Multiplicador"],
-        ...winners.map(w => [w.user_name, tierMapper[w.tier], String(subscriberMultiplier[w.tier] || 1)])
-    ];
-
-    const detailsValues = [
-        ["Título", title],
-        ["Descrição", description],
-        ["Critério de Participação", `Tier ${Number(requiredSubscriber) / 1000}`],
-        ["Ganhadores", String(winners.length)],
-        ["Multiplicadores de Sub"],
-        ["Tier 1", String(subscriberMultiplier["1000"] || 1)],
-        ["Tier 2", String(subscriberMultiplier["2000"] || 1)],
-        ["Tier 3", String(subscriberMultiplier["3000"] || 1)],
-    ];
+    const sheetValues = buildGiveawaySheetValues({
+        participants,
+        winners,
+        requiredSubscriber,
+        subscriberMultiplier,
+        title,
+        description,
+    });
 
     // 6. Escreve os dados nas abas
     const valuesUpdateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
@@ -263,9 +286,9 @@ export async function overrideGiveawayResultToSheets({
         body: JSON.stringify({
             valueInputOption: "RAW",
             data: [
-                { range: "Ganhadores!A1", values: winnerValues },
-                { range: "Participantes!A1", values: participantValues },
-                { range: "Detalhes!A1", values: detailsValues }
+                { range: "Ganhadores!A1", values: sheetValues.winners },
+                { range: "Participantes!A1", values: sheetValues.participants },
+                { range: "Detalhes!A1", values: sheetValues.details }
             ]
         })
     });

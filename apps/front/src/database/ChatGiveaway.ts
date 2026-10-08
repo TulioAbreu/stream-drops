@@ -1,12 +1,20 @@
 import { openDb } from ".";
 import type { ChatParticipant } from "@/pages/chat-giveaway/types";
 
+/** Copiado do participante na confirmação. Só os campos que existiam. */
+export interface ChatGiveawayWinnerContext {
+    subscriptionMonths?: number;
+    tier?: 1000 | 2000 | 3000;
+}
+
 export interface ChatGiveawayWinner {
     id: string;
     name: string;
     twitchId: string;
     avatar: string;
     drawnAt: string;
+    /** Ausente nos vencedores confirmados antes da S3. */
+    context?: ChatGiveawayWinnerContext;
 }
 
 export interface ChatGiveawayFormData {
