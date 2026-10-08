@@ -391,5 +391,10 @@
     "SUBATHON_ONBOARDING_DESCRIPTION": "Fluxo local entre dashboard, servidor e OBS.",
     "SUBATHON_ONBOARDING_STEP_1": "Execute o binário/server local (portas 8080–8090).",
     "SUBATHON_ONBOARDING_STEP_2": "Aguarde a conexão automática nesta página.",
-    "SUBATHON_ONBOARDING_STEP_3": "Copie a URL do overlay e cole no OBS Browser Source."
+    "SUBATHON_ONBOARDING_STEP_3": "Copie a URL do overlay e cole no OBS Browser Source.",
+    "BADGES_RARITY_COMMON": "Comum",
+    "BADGES_RARITY_UNCOMMON": "Incomum",
+    "BADGES_RARITY_RARE": "Raro",
+    "BADGES_RARITY_EPIC": "Épico",
+    "BADGES_RARITY_LEGENDARY": "Lendário"
 }

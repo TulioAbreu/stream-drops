@@ -1,0 +1,75 @@
+/*
+  Fontes self-hosted do Design System 1.1 (subsets OFL).
+  Inter = texto, Baloo 2 = display, JetBrains Mono = código e dígitos.
+  font-display: swap + fallbacks com métricas próximas para reduzir layout shift.
+*/
+
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial");
+  size-adjust: 107.64%;
+  ascent-override: 90.49%;
+  descent-override: 22.56%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Baloo 2 Fallback";
+  src: local("Arial");
+  size-adjust: 110%;
+  ascent-override: 98%;
+  descent-override: 47.6%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "JetBrains Mono Fallback";
+  src: local("Courier New");
+  size-adjust: 100.3%;
+  ascent-override: 101.7%;
+  descent-override: 29.9%;
+  line-gap-override: 0%;
+}
+
+/* Dígitos em Inter e Baloo saem em JetBrains Mono (unicode-range). */
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/fonts/jetbrains-mono-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/fonts/inter-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Baloo 2";
+  src: url("./assets/fonts/jetbrains-mono-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
+
+@font-face {
+  font-family: "Baloo 2";
+  src: url("./assets/fonts/baloo2-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./assets/fonts/jetbrains-mono-var.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

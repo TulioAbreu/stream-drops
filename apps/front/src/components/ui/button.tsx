@@ -6,26 +6,26 @@ import { cn } from "@/lib/utils"
 import { LoaderCircleIcon } from "lucide-react";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:cursor-pointer disabled:cursor-not-allowed",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--sd-radius-md)] text-sm font-semibold transition-[background,box-shadow] duration-[var(--sd-dur-fast)] ease-[var(--sd-ease-standard)] disabled:pointer-events-none disabled:opacity-[0.45] disabled:shadow-none [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:shadow-[var(--sd-focus)] aria-invalid:border-destructive aria-invalid:shadow-[0_0_0_3px_var(--sd-danger-soft)] hover:cursor-pointer disabled:cursor-not-allowed",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+          "sd-btn-primary bg-primary text-primary-foreground",
         destructive:
-          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "bg-[#DC2626] text-white shadow-xs hover:bg-[#B91C1C]",
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          "border border-[var(--sd-border-strong)] bg-transparent text-foreground shadow-none hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+          "border border-border bg-secondary text-secondary-foreground shadow-none hover:border-[var(--sd-border-strong)] hover:bg-[var(--sd-surface-3)]",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+          "hover:bg-muted hover:text-foreground",
+        link: "text-[var(--sd-brand-amber-strong)] underline-offset-4 hover:underline shadow-none",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        default: "h-9 px-3.5 has-[>svg]:px-3",
+        sm: "h-[30px] rounded-[var(--sd-radius-sm)] gap-1.5 px-2.5 text-[13px] has-[>svg]:px-2",
+        lg: "h-[42px] px-[18px] text-[15px] has-[>svg]:px-4",
         icon: "size-9",
       },
     },

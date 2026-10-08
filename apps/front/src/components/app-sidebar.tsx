@@ -119,7 +119,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className={location.pathname === item.url ? "bg-neutral-800" : ""}>
+                  <SidebarMenuButton asChild isActive={location.pathname === item.url}>
                     <Link to={item.url}>
                       {item.icon}
                       <span>{t(item.title)}</span>
