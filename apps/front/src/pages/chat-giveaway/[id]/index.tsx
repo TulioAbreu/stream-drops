@@ -1,7 +1,8 @@
 import { Layout } from "@/components/layout";
 import { useParams, useNavigate } from "react-router";
 import { useChatGiveawayDb, type ChatGiveawayWinner } from "@/database/ChatGiveaway";
-import { useEffect, useState, useMemo } from "react";
+import { useExclusionListDb } from "@/database/ExclusionListItem";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import type { ChatGiveawayFormData } from "@/database/ChatGiveaway";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +12,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Trophy, Sparkles, ArrowLeftIcon, Edit, AlertCircle } from "lucide-react";
 import { useChatListener } from "../hooks/use-chat-listener";
-import { drawWinner } from "@/service/chat-giveaway";
+import {
+  buildChatGiveawayPools,
+  sameStringSet,
+  unionChatParticipants,
+} from "../eligible-participants";
+import { drawWinner, summarizeChatDrawChance } from "@/service/chat-giveaway";
 import { toast } from "sonner";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { composeTwitchChatEmbedUrl, formatChancePercentage } from "@/lib/utils";
 import { rankWinnersByDrawOrder, sortWinnersByDrawOrder } from "@/lib/giveaway-winner-rank";
 import { WinnersList } from "@/components/giveaway/winners-list";
 import { useTranslation } from "react-i18next";
+import "@/i18n";
 import type { ChatParticipant } from "../types";
 import { WinnerConfirmationInline } from "./components/winner-confirmation-inline";
 import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
@@ -28,22 +35,29 @@ export function ChatGiveawayDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { getChatGiveaway, updateChatGiveaway } = useChatGiveawayDb();
+  const { getExclusions } = useExclusionListDb();
   const { userData, twitchApiClient } = useTwitchApi();
   const [giveaway, setGiveaway] = useState<ChatGiveawayFormData | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [nameFilter, setNameFilter] = useState("");
+  const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  const getChatGiveawayRef = useRef(getChatGiveaway);
+  const getExclusionsRef = useRef(getExclusions);
+  getChatGiveawayRef.current = getChatGiveaway;
+  getExclusionsRef.current = getExclusions;
 
   // Winner confirmation modal state
   const [pendingWinner, setPendingWinner] = useState<ChatParticipant | null>(null);
 
   // Use chat listener when we have user data and giveaway data
   const {
-    participants: liveParticipants,
     allParticipants,
     messages,
     connectionStatus,
     error: chatError,
-    filterParticipants,
-    nameFilter
   } = useChatListener({
     channel: userData?.login || "",
     keyword: giveaway?.keyword || "",
@@ -51,26 +65,46 @@ export function ChatGiveawayDetail() {
     subscribersOnly: giveaway?.subscribersOnly || false,
     twitchApiClient: twitchApiClient || undefined,
     broadcasterId: userData?.id,
+    excludedUserIds,
   });
 
-  // Merge saved participants with live participants (deduplicate by id)
-  const participants = useMemo(() => {
-    const savedParticipants = giveaway?.participants || [];
-    const participantsMap = new Map<string, ChatParticipant>();
+  const liveParticipantsRef = useRef(allParticipants);
+  const giveawayRef = useRef(giveaway);
+  const broadcasterIdRef = useRef(userData?.id);
+  liveParticipantsRef.current = allParticipants;
+  giveawayRef.current = giveaway;
+  broadcasterIdRef.current = userData?.id;
 
-    // Add saved participants first
-    savedParticipants.forEach(p => participantsMap.set(p.id, p));
+  const refreshExclusions = useCallback(async () => {
+    const exclusions = await getExclusionsRef.current();
+    const next = new Set(exclusions.map((item) => item.twitchUserId));
+    setExcludedUserIds((current) => (sameStringSet(current, next) ? current : next));
+  }, []);
 
-    // Add/update with live participants
-    liveParticipants.forEach(p => participantsMap.set(p.id, p));
-
-    return Array.from(participantsMap.values());
-  }, [giveaway?.participants, liveParticipants]);
+  // Filtro por nome é só exibição. O sorteio usa a união menos exclusão e broadcaster.
+  const pools = useMemo(
+    () =>
+      buildChatGiveawayPools({
+        saved: giveaway?.participants ?? [],
+        live: allParticipants,
+        excludedUserIds,
+        broadcasterId: userData?.id,
+        nameFilter,
+      }),
+    [
+      giveaway?.participants,
+      allParticipants,
+      excludedUserIds,
+      userData?.id,
+      nameFilter,
+    ],
+  );
+  const { persisted: knownParticipants, eligible, displayed } = pools;
 
   // Sort participants by joinedAt (newest first) for display only
   const sortedParticipants = useMemo(
-    () => [...participants].sort((a, b) => b.joinedAt - a.joinedAt),
-    [participants]
+    () => [...displayed].sort((a, b) => b.joinedAt - a.joinedAt),
+    [displayed],
   );
 
   // Ordem cronológica: 1º em cima, último embaixo
@@ -87,9 +121,11 @@ export function ChatGiveawayDetail() {
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
 
     const loadGiveaway = async () => {
-      const data = await getChatGiveaway(id);
+      const data = await getChatGiveawayRef.current(id);
+      if (cancelled) return;
       if (!data) {
         navigate("/dashboard");
         return;
@@ -98,7 +134,26 @@ export function ChatGiveawayDetail() {
     };
 
     loadGiveaway();
-  }, [id, getChatGiveaway, navigate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    refreshExclusions();
+  }, [refreshExclusions]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshExclusions();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [refreshExclusions]);
 
   const onClickBack = () => {
     navigate("/dashboard/chat-giveaway");
@@ -115,11 +170,26 @@ export function ChatGiveawayDetail() {
   }, [pendingWinner]);
 
   const executeDraw = async (excludeIds: string[]) => {
-    if (!giveaway) return;
+    const currentGiveaway = giveawayRef.current;
+    if (!currentGiveaway) return;
+
+    const exclusions = await getExclusionsRef.current();
+    const latestExcluded = new Set(exclusions.map((item) => item.twitchUserId));
+    setExcludedUserIds((current) =>
+      sameStringSet(current, latestExcluded) ? current : latestExcluded,
+    );
+
+    const drawPools = buildChatGiveawayPools({
+      saved: currentGiveaway.participants ?? [],
+      live: liveParticipantsRef.current,
+      excludedUserIds: latestExcluded,
+      broadcasterId: broadcasterIdRef.current,
+      nameFilter: "",
+    });
 
     const winner = drawWinner({
-      participants,
-      subscriberMultiplier: giveaway.subscriberMultiplier,
+      participants: drawPools.eligible,
+      subscriberMultiplier: currentGiveaway.subscriberMultiplier,
       excludeIds,
     });
 
@@ -130,20 +200,12 @@ export function ChatGiveawayDetail() {
       return;
     }
 
-    // Calculate chance and send chat message
-    const eligibleParticipants = participants.filter(p => !excludeIds.includes(p.id));
-
-    const participantsWithTickets = eligibleParticipants.map(participant => {
-      const multiplier = participant.subscriber ? giveaway.subscriberMultiplier : 1;
-      return {
-        participant,
-        tickets: multiplier
-      };
+    const { winChance, winnerTickets } = summarizeChatDrawChance({
+      participants: drawPools.eligible,
+      winner,
+      subscriberMultiplier: currentGiveaway.subscriberMultiplier,
+      excludeIds,
     });
-
-    const totalTickets = participantsWithTickets.reduce((sum, p) => sum + p.tickets, 0);
-    const winnerTickets = winner.subscriber ? giveaway.subscriberMultiplier : 1;
-    const winChance = (winnerTickets / totalTickets) * 100;
     const winChanceFormatted = formatChancePercentage(winChance);
 
     if (userData?.id && twitchApiClient) {
@@ -161,7 +223,7 @@ export function ChatGiveawayDetail() {
   }
 
   const handleDraw = async () => {
-    if (!giveaway || participants.length === 0) {
+    if (!giveaway || eligible.length === 0) {
       toast.error("Não há participantes elegíveis para sortear!");
       return;
     }
@@ -210,7 +272,10 @@ export function ChatGiveawayDetail() {
     const updatedGiveaway = {
       ...giveaway,
       winners: [...giveaway.winners, newWinner],
-      participants: participants,
+      participants: unionChatParticipants(
+        giveaway.participants ?? [],
+        liveParticipantsRef.current,
+      ),
       updatedAt: new Date().toISOString(),
     };
 
@@ -326,7 +391,7 @@ export function ChatGiveawayDetail() {
               variant="outline"
               size="lg"
               onClick={handleDraw}
-              disabled={isDrawing || !!pendingWinner || participants.length === 0}
+              disabled={isDrawing || !!pendingWinner || eligible.length === 0}
             >
               {isDrawing ? (
                 <>
@@ -369,13 +434,26 @@ export function ChatGiveawayDetail() {
               <CardDescription>
                 {nameFilter.trim() ? (
                   <>
-                    {participants.length} participantes encontrados
-                    <span className="text-muted-foreground">
-                      {" "}(de {allParticipants.length} total)
-                    </span>
+                    {t("CHAT_GIVEAWAY_FILTERED_COUNT", {
+                      found: displayed.length,
+                      eligible: eligible.length,
+                      defaultValue:
+                        "{{found}} encontrados (de {{eligible}} elegíveis)",
+                    })}
+                    <p className="mt-1">
+                      {t(
+                        "CHAT_GIVEAWAY_FILTER_DRAW_HINT",
+                        "O sorteio considera todos os elegíveis, não só os filtrados",
+                      )}
+                    </p>
                   </>
                 ) : (
-                  <>{participants.length} participantes elegíveis</>
+                  <>
+                    {t("CHAT_GIVEAWAY_ELIGIBLE_COUNT", {
+                      total: eligible.length,
+                      defaultValue: "{{total}} participantes elegíveis",
+                    })}
+                  </>
                 )}
                 {chatError && (
                   <p className="text-destructive text-sm mt-1">
@@ -387,20 +465,38 @@ export function ChatGiveawayDetail() {
             <CardContent className="flex flex-1 flex-col">
               <div className="space-y-3">
                 <Input
-                  placeholder="Filtrar por nome..."
+                  placeholder={t(
+                    "CHAT_GIVEAWAY_FILTER_PLACEHOLDER",
+                    "Filtrar por nome...",
+                  )}
+                  aria-label={t(
+                    "CHAT_GIVEAWAY_FILTER_PLACEHOLDER",
+                    "Filtrar por nome...",
+                  )}
                   value={nameFilter}
-                  onChange={(e) => filterParticipants(e.target.value)}
+                  onChange={(e) => setNameFilter(e.target.value)}
                   className="h-8"
                 />
               </div>
-              {participants.length === 0 ? (
+              {displayed.length === 0 ? (
                 <div className="flex flex-1 items-center justify-center min-h-[620px] mt-3">
                   <Empty>
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
                         <Sparkles />
                       </EmptyMedia>
-                      <EmptyTitle>Nenhum participante</EmptyTitle>
+                      <EmptyTitle>
+                        {nameFilter.trim()
+                          ? t("CHAT_GIVEAWAY_FILTER_EMPTY", {
+                              filter: nameFilter.trim(),
+                              defaultValue:
+                                "Nenhum participante encontrado para '{{filter}}'",
+                            })
+                          : t(
+                              "CHAT_GIVEAWAY_NO_PARTICIPANTS",
+                              "Nenhum participante",
+                            )}
+                      </EmptyTitle>
                     </EmptyHeader>
                   </Empty>
                 </div>
@@ -467,7 +563,7 @@ export function ChatGiveawayDetail() {
                       sortedWinners
                         .filter((winner) => winner.id !== pendingWinner?.id)
                         .map((winner) => {
-                          const participantData = participants.find(
+                          const participantData = knownParticipants.find(
                             (p) => p.id === winner.twitchId
                           );
                           const rank = winnerRanks.get(winner.id) ?? 0;
