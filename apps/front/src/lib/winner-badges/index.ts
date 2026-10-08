@@ -1,13 +1,15 @@
 /**
- * Motor puro de selos, conquistas e estatísticas dos vencedores (S1).
+ * Selos, conquistas e estatísticas dos vencedores.
  *
- * Não lê nem grava IndexedDB, localStorage, sessionStorage ou rede.
+ * O motor (`compute*`, `selectForDisplay`) continua puro:
+ * não lê nem grava IndexedDB, localStorage ou rede.
  * `now` e `timeZone` são sempre injetados.
  *
- * A S2 implementa `WinnerHistoryProvider` sobre o IndexedDB.
- * A S11 pode trocar a origem para `winner-events`.
+ * A S2 acrescenta o provider IndexedDB, o índice em memória
+ * e o estado de prontidão. A S11 troca só a origem da leitura
+ * (`winner-events`), sem mudar a assinatura de `compute*`.
  * Azarão, Fim da seca, Última hora e Carrasco entram por
- * `ComputeOptions.rules`, sem mudar a assinatura de `compute*`.
+ * `ComputeOptions.rules`.
  */
 
 export type {
@@ -48,6 +50,31 @@ export {
 
 export type { CatalogItem, CatalogPhase } from "./catalog";
 export { BADGE_CATALOG, getCatalogItem, rarityRank } from "./catalog";
+
+export type { WinnerIndex } from "./win-index";
+export {
+  createWinnerIndex,
+  createWinnerIndexFromSource,
+} from "./win-index";
+
+export {
+  buildWinnerIndexFromDatabase,
+  readWinnerHistorySource,
+  WINNER_HISTORY_STORES,
+} from "./indexed-db-source";
+
+export type {
+  WinnerIndexLoadOptions,
+  WinnerIndexStatus,
+} from "./readiness";
+export {
+  EMPTY_CARD_SELECTION,
+  readCardBadges,
+  resetWinnerIndexSession,
+  startWinnerIndex,
+  useCardBadges,
+  useWinnerIndexStore,
+} from "./readiness";
 
 export type { WinnerHistoryProvider } from "./history";
 export {
