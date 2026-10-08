@@ -47,6 +47,7 @@ const FIXTURE: Record<string, Record<string, unknown>[]> = {
 };
 
 function deleteDatabase(): Promise<void> {
+  closeDb();
   return new Promise((resolve, reject) => {
     const request = indexedDB.deleteDatabase(DATABASE_NAME);
     request.onsuccess = () => resolve();
@@ -85,7 +86,13 @@ function createFixture(): Promise<void> {
       }
     };
     request.onsuccess = () => {
-      request.result.close();
+      const db = request.result;
+      const created = db.objectStoreNames.contains(PROBE_STORE);
+      db.close();
+      if (!created) {
+        reject(new Error("fixture do baú não foi criada"));
+        return;
+      }
       resolve();
     };
   });
@@ -125,12 +132,10 @@ function snapshotDatabase(): Promise<{
 
 describe("baú deste navegador", () => {
   beforeEach(async () => {
-    closeDb();
     await deleteDatabase();
   });
 
   afterEach(async () => {
-    closeDb();
     await deleteDatabase();
   });
 

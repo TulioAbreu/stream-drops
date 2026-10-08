@@ -104,9 +104,8 @@ describe("chat-participants", () => {
     await clearDatabase();
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     vi.restoreAllMocks();
-    await clearDatabase();
   });
 
   it("CA-D3: o primeiro joinedAt vale em outro lote e em outra conexão", async () => {
