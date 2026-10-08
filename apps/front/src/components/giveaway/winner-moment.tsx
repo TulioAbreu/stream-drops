@@ -27,6 +27,9 @@ export interface WinnerMomentProps {
   showChatWait?: boolean;
   confirmLabel?: string;
   localHint?: string;
+  /** Texto do topo e da linha de contexto. Sem eles, fica o palco do Chat. */
+  eyebrow?: string;
+  subtitle?: string;
 }
 
 function formatElapsedTime(seconds: number): string {
@@ -82,6 +85,8 @@ export function WinnerMoment({
   showChatWait = true,
   confirmLabel,
   localHint,
+  eyebrow: eyebrowOverride,
+  subtitle: subtitleOverride,
 }: WinnerMomentProps) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -232,23 +237,27 @@ export function WinnerMoment({
     }
   };
 
-  const eyebrow = pendingWinner.tier
-    ? t("WINNER_MOMENT_TIER", { tier: pendingWinner.tier / 1000 })
-    : pendingWinner.subscriber
-      ? t("WINNER_MOMENT_SUB")
-      : t("WINNER_MOMENT_DROP");
+  const eyebrow =
+    eyebrowOverride ??
+    (pendingWinner.tier
+      ? t("WINNER_MOMENT_TIER", { tier: pendingWinner.tier / 1000 })
+      : pendingWinner.subscriber
+        ? t("WINNER_MOMENT_SUB")
+        : t("WINNER_MOMENT_DROP"));
 
-  const subtitle = [
-    t("WINNER_MOMENT_RANK", { rank }),
-    pendingWinner.subscriptionMonths && pendingWinner.subscriptionMonths > 0
-      ? t("WINNER_MOMENT_SUB_MONTHS", {
-          count: pendingWinner.subscriptionMonths,
-        })
-      : null,
-    giveawayTitle,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const subtitle =
+    subtitleOverride ??
+    [
+      t("WINNER_MOMENT_RANK", { rank }),
+      pendingWinner.subscriptionMonths && pendingWinner.subscriptionMonths > 0
+        ? t("WINNER_MOMENT_SUB_MONTHS", {
+            count: pendingWinner.subscriptionMonths,
+          })
+        : null,
+      giveawayTitle,
+    ]
+      .filter(Boolean)
+      .join(" · ");
 
   const elapsed = formatElapsedTime(elapsedSeconds);
   const waiting =

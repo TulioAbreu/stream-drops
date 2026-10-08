@@ -540,6 +540,16 @@
   max-height: 100% !important;
 }
 
+.sd-roulette-stage {
+  background:
+    radial-gradient(
+      ellipse at 50% 58%,
+      color-mix(in srgb, var(--primary) 18%, transparent),
+      transparent 68%
+    ),
+    var(--card);
+}
+
 @keyframes winner-flash {
   0% {
     background-color: color-mix(in oklab, var(--primary) 30%, transparent);

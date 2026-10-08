@@ -1,6 +1,5 @@
 import { useMemo, useState, useTransition } from "react";
-import confetti from "canvas-confetti";
-import { Save, Dices, Trophy } from "lucide-react";
+import { ArrowLeft, Dices, HardDrive, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { v7 } from "uuid";
@@ -9,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { WinnerMoment } from "@/components/giveaway/winner-moment";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { useRouletteDb, type RouletteData } from "@/database/Roulette";
 import {
   optionsEqual,
@@ -23,26 +24,6 @@ export const DEFAULT_ROULETTE_TITLE = "Nova Roleta";
 interface RouletteEditorProps {
   mode: "new" | "edit";
   initialData?: RouletteData;
-}
-
-function fireWinnerConfetti() {
-  const count = 180;
-  const defaults = { origin: { y: 0.65 } };
-
-  function fire(particleRatio: number, opts: confetti.Options) {
-    confetti({
-      ...defaults,
-      ...opts,
-      colors: ["#fb923c", "#fbbf24", "#a78bfa", "#22d3ee", "#f472b6"],
-      particleCount: Math.floor(count * particleRatio),
-    });
-  }
-
-  fire(0.25, { spread: 26, startVelocity: 55 });
-  fire(0.2, { spread: 60 });
-  fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
-  fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-  fire(0.1, { spread: 120, startVelocity: 45 });
 }
 
 export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
@@ -66,6 +47,7 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
   const [mustSpin, setMustSpin] = useState(false);
   const [prizeIndex, setPrizeIndex] = useState(0);
   const [winner, setWinner] = useState<string | null>(null);
+  const [resultOpen, setResultOpen] = useState(false);
   const [isSaving, startSaveTransition] = useTransition();
 
   const options = useMemo(
@@ -140,7 +122,7 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
   };
 
   const handleSpin = () => {
-    if (mustSpin || options.length === 0) return;
+    if (mustSpin || resultOpen || options.length === 0) return;
     setWinner(null);
     const index = pickWinnerIndex(options);
     setPrizeIndex(index);
@@ -152,123 +134,181 @@ export function RouletteEditor({ mode, initialData }: RouletteEditorProps) {
     const name = options[prizeIndex];
     if (name) {
       setWinner(name);
-      fireWinnerConfetti();
+      setResultOpen(true);
     }
   };
 
-  return (
-    <div className="grid gap-4 lg:h-[calc(100dvh-8.5rem)] lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)] lg:items-stretch lg:overflow-hidden">
-      <aside className="order-2 flex min-h-0 flex-col gap-3 overflow-y-auto pr-1 lg:order-1">
-        <div className="shrink-0 space-y-1.5">
-          <Label htmlFor="roulette-title">
-            {t("ROULETTE_TITLE_FIELD", "Título")}
-          </Label>
-          <Input
-            id="roulette-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={DEFAULT_ROULETTE_TITLE}
-            disabled={mustSpin}
-          />
-        </div>
+  const heading =
+    title.trim() ||
+    (mode === "new"
+      ? t("ROULETTE_CREATE_TITLE", "Nova Roleta")
+      : t("ROULETTE_TITLE", "Roleta"));
 
-        <div className="flex min-h-0 flex-1 flex-col space-y-1.5">
-          <div className="flex shrink-0 items-center justify-between gap-2">
+  return (
+    <div className="flex flex-col gap-4">
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_ROULETTE")}
+        title={heading}
+        description={t("ROULETTE_HEADER_DESCRIPTION")}
+        actions={
+          <>
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => navigate("/dashboard/roulette")}
+            >
+              <ArrowLeft />
+              <span>{t("NAVIGATE_BACK", "Voltar")}</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleSave}
+              disabled={!isDirty || isSaving || mustSpin}
+              loading={isSaving}
+            >
+              <Save />
+              {t("ROULETTE_SAVE_BUTTON", "Salvar")}
+            </Button>
+          </>
+        }
+      >
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="inline-flex h-[30px] items-center gap-2 rounded-[8px] border border-border bg-[var(--sd-surface-2)] px-2.5 text-[12.5px] font-semibold">
+            <span className="font-medium text-muted-foreground">
+              {t("ROULETTE_HUD_SLICES")}
+            </span>
+            <span className="font-mono">{options.length}</span>
+          </span>
+          <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-2.5 text-xs font-semibold text-[var(--sd-local)]">
+            <HardDrive className="size-3.5" />
+            {t("ROULETTE_LOCAL")}
+          </span>
+        </div>
+      </ShellHeader>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(240px,320px)_minmax(0,1fr)]">
+        <InventoryPanel
+          title={t("ROULETTE_ITEMS_PANEL")}
+          meta={`${options.length} ${t("ROULETTE_OPTIONS_COUNT", "fatias")}`}
+          className="min-h-0"
+          bodyClassName="flex flex-col gap-4"
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="roulette-title">
+              {t("ROULETTE_TITLE_FIELD", "Título")}
+            </Label>
+            <Input
+              id="roulette-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={DEFAULT_ROULETTE_TITLE}
+              disabled={mustSpin}
+            />
+          </div>
+
+          <div className="flex flex-col space-y-1.5">
             <Label htmlFor="roulette-options">
               {t("ROULETTE_OPTIONS_FIELD", "Opções")}
             </Label>
-            <Badge variant="outline" className="font-mono tabular-nums">
-              {options.length}{" "}
-              {t("ROULETTE_OPTIONS_COUNT", "fatias")}
-            </Badge>
+            <Textarea
+              id="roulette-options"
+              value={optionsText}
+              onChange={(e) => setOptionsText(e.target.value)}
+              placeholder={t(
+                "ROULETTE_OPTIONS_PLACEHOLDER",
+                "Uma opção por linha\nExemplo:\nAlice\nBob\nCarol"
+              )}
+              className="min-h-[220px] resize-none font-mono text-sm leading-relaxed"
+              disabled={mustSpin}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t(
+                "ROULETTE_OPTIONS_HINT",
+                "Cada linha vira uma fatia. Remover a linha remove a fatia."
+              )}
+            </p>
           </div>
-          <Textarea
-            id="roulette-options"
-            value={optionsText}
-            onChange={(e) => setOptionsText(e.target.value)}
-            placeholder={t(
-              "ROULETTE_OPTIONS_PLACEHOLDER",
-              "Uma opção por linha\nExemplo:\nAlice\nBob\nCarol"
-            )}
-            className="min-h-[140px] flex-1 resize-none font-mono text-sm leading-relaxed"
-            disabled={mustSpin}
-          />
-          <p className="shrink-0 text-xs text-muted-foreground">
-            {t(
-              "ROULETTE_OPTIONS_HINT",
-              "Cada linha vira uma fatia. Remover a linha remove a fatia."
-            )}
-          </p>
-        </div>
+        </InventoryPanel>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button
-            onClick={handleSave}
-            disabled={!isDirty || isSaving || mustSpin}
-            loading={isSaving}
-          >
-            <Save className="h-4 w-4" />
-            {t("ROULETTE_SAVE_BUTTON", "Salvar")}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleSpin}
-            disabled={options.length === 0 || mustSpin}
-            className="lg:hidden"
-          >
-            <Dices className="h-4 w-4" />
-            {mustSpin
-              ? t("ROULETTE_SPINNING", "Girando...")
-              : t("ROULETTE_SPIN_BUTTON", "Girar")}
-          </Button>
-        </div>
-      </aside>
+        <section
+          data-roulette-stage
+          className="sd-roulette-stage flex min-h-[520px] flex-col rounded-[14px] border border-border p-4 shadow-[var(--sd-shadow-1)] sm:p-6"
+        >
+          <div className="grid flex-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(200px,240px)]">
+            <RouletteWheel
+              options={options}
+              mustSpin={mustSpin}
+              prizeIndex={prizeIndex}
+              onStopSpinning={handleStopSpinning}
+            />
 
-      <section className="order-1 flex min-h-0 min-w-0 flex-col items-center lg:order-2">
-        <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden">
-          <RouletteWheel
-            options={options}
-            mustSpin={mustSpin}
-            prizeIndex={prizeIndex}
-            onStopSpinning={handleStopSpinning}
-          />
-        </div>
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-[13px] font-bold tracking-[0.22em] text-muted-foreground uppercase">
+                {mustSpin
+                  ? t("ROULETTE_STAGE_SPINNING")
+                  : t("ROULETTE_STAGE_READY")}
+              </p>
+              <p className="font-display text-[40px] leading-none font-extrabold text-foreground">
+                {options.length === 1
+                  ? t("ROULETTE_STAGE_PRIZES_one", { count: options.length })
+                  : t("ROULETTE_STAGE_PRIZES_other", { count: options.length })}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t("ROULETTE_STAGE_HINT")}
+              </p>
 
-        <div className="relative z-20 flex w-full max-w-lg shrink-0 flex-col items-center gap-2 bg-background/80 pb-1 pt-2 backdrop-blur-sm">
-          <Button
-            size="lg"
-            onClick={handleSpin}
-            disabled={options.length === 0 || mustSpin}
-            className="hidden min-w-[180px] lg:inline-flex"
-          >
-            <Dices className="h-4 w-4" />
-            {mustSpin
-              ? t("ROULETTE_SPINNING", "Girando...")
-              : t("ROULETTE_SPIN_BUTTON", "Girar")}
-          </Button>
-
-          {/* Slot reservado: vencedor não empurra o layout / scroll */}
-          <div className="flex h-[4.25rem] w-full items-center">
-            {winner ? (
-              <div className="winner-conic-frame w-full">
-                <div className="relative z-10 flex items-center gap-3 rounded-[calc(var(--radius)+1px)] bg-card px-4 py-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-300">
-                    <Trophy className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {t("ROULETTE_WINNER_LABEL", "Vencedor")}
-                    </p>
-                    <p className="truncate text-base font-bold text-foreground">
-                      {winner}
-                    </p>
-                  </div>
+              {winner && !resultOpen ? (
+                <div data-roulette-last-result className="w-full">
+                  <p className="text-[11px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+                    {t("ROULETTE_LAST_RESULT")}
+                  </p>
+                  <p className="mt-1 truncate font-display text-2xl font-extrabold text-foreground">
+                    {winner}
+                  </p>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+
+              <Button
+                variant="drop"
+                onClick={handleSpin}
+                disabled={options.length === 0 || mustSpin || resultOpen}
+              >
+                <Dices />
+                {mustSpin
+                  ? t("ROULETTE_SPINNING", "Girando...")
+                  : t("ROULETTE_SPIN_BUTTON", "Girar")}
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
+
+      {resultOpen && winner ? (
+        <WinnerMoment
+          pendingWinner={{
+            id: winner,
+            displayName: winner,
+            avatar: "",
+            subscriber: false,
+          }}
+          messages={[]}
+          giveawayTitle={heading}
+          showCancel={false}
+          showRedraw={false}
+          showChatWait={false}
+          confirmLabel={t("ROULETTE_RESULT_CONTINUE")}
+          localHint={t("ROULETTE_LOCAL")}
+          eyebrow={t("ROULETTE_RESULT_EYEBROW")}
+          subtitle={heading}
+          onConfirm={() => undefined}
+          onDismiss={() => setResultOpen(false)}
+          onCancel={() => undefined}
+          onRedraw={() => undefined}
+          isRedrawing={false}
+        />
+      ) : null}
     </div>
   );
 }
