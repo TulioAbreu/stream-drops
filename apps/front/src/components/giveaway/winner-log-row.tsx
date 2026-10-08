@@ -6,8 +6,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { WinEvent } from "@/lib/winner-badges/types";
 import { cn } from "@/lib/utils";
 import { XIcon } from "lucide-react";
+import { WinnerBadgeSurface } from "./winner-badge-surface";
 
 export interface WinnerLogRowProps {
   rank: number;
@@ -19,6 +21,8 @@ export interface WinnerLogRowProps {
   removeLabel?: string;
   className?: string;
   dimmed?: boolean;
+  /** Vitória confirmada. Sem ela, a linha não mostra selos. */
+  badgeWin?: WinEvent | null;
 }
 
 function tierAccent(tier: WinnerLogRowProps["tier"]): string | undefined {
@@ -38,6 +42,7 @@ export function WinnerLogRow({
   removeLabel = "Remover vencedor",
   className,
   dimmed = false,
+  badgeWin = null,
 }: WinnerLogRowProps) {
   const accent = tierAccent(tier) ?? "var(--border)";
   const drawnLabel = new Date(drawnAt).toLocaleTimeString("pt-BR");
@@ -63,14 +68,17 @@ export function WinnerLogRow({
         <AvatarFallback>{name[0]?.toUpperCase()}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "truncate text-[15px] font-bold",
-            dimmed ? "text-muted-foreground" : "text-foreground",
-          )}
-        >
-          {name}
-        </p>
+        <div className="flex min-w-0 items-center gap-2">
+          <p
+            className={cn(
+              "truncate text-[15px] font-bold",
+              dimmed ? "text-muted-foreground" : "text-foreground",
+            )}
+          >
+            {name}
+          </p>
+          <WinnerBadgeSurface surface="log" win={badgeWin} />
+        </div>
         <p className="mt-0.5 font-mono text-[11.5px] text-muted-foreground">
           {drawnLabel}
         </p>

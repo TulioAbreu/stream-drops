@@ -551,5 +551,10 @@
     "BADGES_RARITY_UNCOMMON": "Incomum",
     "BADGES_RARITY_RARE": "Raro",
     "BADGES_RARITY_EPIC": "Épico",
-    "BADGES_RARITY_LEGENDARY": "Lendário"
+    "BADGES_RARITY_LEGENDARY": "Lendário",
+    "BADGES_PREVIEW": "prévia",
+    "BADGES_IF_CONFIRMED": "se confirmar",
+    "BADGES_UNLOCKED": "Conquista desbloqueada!",
+    "BADGES_LIST_LABEL": "Selos desta vitória",
+    "BADGES_LIST_PREVIEW_LABEL": "Selos desta vitória, prévia"
 }

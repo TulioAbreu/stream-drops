@@ -69,12 +69,16 @@ export type {
 } from "./readiness";
 export {
   EMPTY_CARD_SELECTION,
-  readCardBadges,
+  noteGiveawayConfirmed,
   noteGiveawayHardDeleted,
   noteGiveawaySoftDeleted,
+  noteGiveawayWinnerRemoved,
+  readCardBadges,
+  readConfirmedBadges,
   resetWinnerIndexSession,
   startWinnerIndex,
   useCardBadges,
+  useConfirmedBadges,
   useWinnerIndexStore,
 } from "./readiness";
 

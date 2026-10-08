@@ -46,6 +46,17 @@ import { rankWinnersByDrawOrder, sortWinnersByDrawOrder } from "@/lib/giveaway-w
 import { WinnersList } from "@/components/giveaway/winners-list";
 import { WinnerMoment } from "@/components/giveaway/winner-moment";
 import { WinnerLogRow } from "@/components/giveaway/winner-log-row";
+import { PendingWinnerCard } from "@/components/giveaway/pending-winner-card";
+import { WinnerBadgeSurface } from "@/components/giveaway/winner-badge-surface";
+import {
+  browserClock,
+  channelPointsPreviewWin,
+  confirmedWin,
+} from "@/components/giveaway/winner-badge-win";
+import {
+  noteGiveawayConfirmed,
+  noteGiveawayWinnerRemoved,
+} from "@/lib/winner-badges/readiness";
 import { ParticipantInventory } from "@/components/giveaway/participant-inventory";
 import { InventoryPanel } from "@/components/shell/inventory-panel";
 import { ShellHeader } from "@/components/shell/shell-header";
@@ -255,6 +266,17 @@ export function ChannelPointsGiveawayDetail() {
     [giveaway?.winners]
   );
   const pendingWinnerRank = (giveaway?.winners.length ?? 0) + 1;
+  const previewWin = useMemo(
+    () =>
+      giveaway && pendingWinner
+        ? channelPointsPreviewWin(giveaway, pendingWinner)
+        : null,
+    [giveaway, pendingWinner],
+  );
+  const previewClock = useMemo(
+    () => browserClock(),
+    [pendingWinner?.redemptionId],
+  );
 
   const progressValue = useMemo(() => {
     if (!collectionProgress) return 0;
@@ -535,6 +557,7 @@ export function ChannelPointsGiveawayDetail() {
         return;
       }
       setGiveaway(updatedGiveaway);
+      noteGiveawayConfirmed("channel-points", updatedGiveaway);
       toast.success(
         t("CHANNEL_POINTS_GIVEAWAY_DRAW_SUCCESS", {
           name: pendingWinner.participant.displayName,
@@ -567,6 +590,7 @@ export function ChannelPointsGiveawayDetail() {
       return;
     }
     setGiveaway(updatedGiveaway);
+    noteGiveawayWinnerRemoved("channel-points", updatedGiveaway);
     toast.success(t("CHANNEL_POINTS_GIVEAWAY_WINNER_REMOVED"));
   };
 
@@ -919,17 +943,12 @@ export function ChannelPointsGiveawayDetail() {
                     pendingRank={pendingWinnerRank}
                     pending={
                       pendingWinner ? (
-                        <div
-                          data-pending-card
-                          className="rounded-[14px] border border-dashed border-[var(--sd-border-strong)] bg-card px-3 py-3"
-                        >
-                          <p className="text-sm font-semibold">
-                            {pendingWinner.participant.displayName}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {t("CHANNEL_POINTS_GIVEAWAY_PENDING_WAIT")}
-                          </p>
-                        </div>
+                        <PendingWinnerCard
+                          name={pendingWinner.participant.displayName}
+                          hint={t("CHANNEL_POINTS_GIVEAWAY_PENDING_WAIT")}
+                          win={previewWin}
+                          clock={previewClock}
+                        />
                       ) : undefined
                     }
                   >
@@ -952,6 +971,9 @@ export function ChannelPointsGiveawayDetail() {
                           (item) => item.userId === winner.userId,
                         );
                         const rank = winnerRanks.get(winner.id) ?? 0;
+                        const badgeIndex = giveaway.winners.findIndex(
+                          (item) => item.id === winner.id,
+                        );
                         return (
                           <WinnerLogRow
                             key={winner.id}
@@ -967,6 +989,12 @@ export function ChannelPointsGiveawayDetail() {
                             }
                             removeLabel={t("CHANNEL_POINTS_GIVEAWAY_REMOVE_WINNER")}
                             dimmed={!!pendingWinner}
+                            badgeWin={confirmedWin(
+                              "channel-points",
+                              giveaway,
+                              winner.userId,
+                              badgeIndex,
+                            )}
                           />
                         );
                       })
@@ -1018,6 +1046,14 @@ export function ChannelPointsGiveawayDetail() {
           onCancel={() => setPendingWinner(null)}
           onRedraw={handleRedraw}
           isRedrawing={isRedrawing}
+          badges={
+            <WinnerBadgeSurface
+              surface="reveal"
+              preview
+              win={previewWin}
+              clock={previewClock}
+            />
+          }
         />
       ) : null}
 

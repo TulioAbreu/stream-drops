@@ -36,6 +36,8 @@ export interface WinnerMomentProps {
   /** Texto do topo e da linha de contexto. Sem eles, fica o palco do Chat. */
   eyebrow?: string;
   subtitle?: string;
+  /** Selos da revelação. Ausente, o palco não reserva espaço. */
+  badges?: ReactNode;
 }
 
 function formatElapsedTime(seconds: number): string {
@@ -98,6 +100,7 @@ export function WinnerMoment({
   localHint,
   eyebrow: eyebrowOverride,
   subtitle: subtitleOverride,
+  badges,
 }: WinnerMomentProps) {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -363,6 +366,7 @@ export function WinnerMoment({
         >
           {subtitle}
         </p>
+        {badges}
       </div>
 
       <div data-winner-bottom className="relative z-10 flex flex-col items-center gap-5">
