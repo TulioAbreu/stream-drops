@@ -1,14 +1,10 @@
 import { useEffect, useState } from "react";
 import { Layout } from "@/components/layout";
-import { Button } from "@/components/ui/button";
 import { useRouletteDb, type RouletteData } from "@/database/Roulette";
-import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft } from "lucide-react";
 import { RouletteEditor } from "../components/roulette-editor";
 
 export function RouletteDetailPage() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { getRoulette } = useRouletteDb();
@@ -55,18 +51,6 @@ export function RouletteDetailPage() {
 
   return (
     <Layout>
-      <div className="mb-3 flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/dashboard/roulette")}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="truncate text-xl font-bold">
-          {roulette.title || t("ROULETTE_TITLE", "Roleta")}
-        </h1>
-      </div>
       <RouletteEditor mode="edit" initialData={roulette} />
     </Layout>
   );

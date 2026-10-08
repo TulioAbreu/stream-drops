@@ -2,6 +2,8 @@ import { type ChannelPointsGiveawayForm } from "../types";
 import { v7 } from "uuid";
 import { useChannelPointsGiveawayDb } from "@/database/ChannelPointsGiveaway";
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { useNavigate } from "react-router";
 import { ChannelPointsGiveawayFormComponent } from "../components/channel-points-giveaway-form";
 import { ChannelPointsAccessBanner } from "../components/channel-points-access-banner";
@@ -113,18 +115,25 @@ export function ChannelPointsGiveawayCreate() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-6">
-        {t("CHANNEL_POINTS_GIVEAWAY_CREATE_TITLE")}
-      </h1>
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY")}
+        title={t("CHANNEL_POINTS_GIVEAWAY_CREATE_TITLE")}
+      />
       {!canUseChannelPoints && accessBlock && (
         <ChannelPointsAccessBanner reason={accessBlock} className="mb-6" />
       )}
-      <ChannelPointsGiveawayFormComponent
-        onSubmit={onClickSubmit}
-        submitLabel={t("CHANNEL_POINTS_GIVEAWAY_FORM_SUBMIT")}
-        isLoading={isLoading}
-        disabled={!canUseChannelPoints}
-      />
+      <InventoryPanel
+        title={t("CHANNEL_POINTS_GIVEAWAY_FORM_PANEL")}
+        className="max-w-3xl"
+      >
+        <ChannelPointsGiveawayFormComponent
+          onSubmit={onClickSubmit}
+          submitLabel={t("CHANNEL_POINTS_GIVEAWAY_FORM_SUBMIT")}
+          isLoading={isLoading}
+          disabled={!canUseChannelPoints}
+        />
+      </InventoryPanel>
     </Layout>
   );
 }

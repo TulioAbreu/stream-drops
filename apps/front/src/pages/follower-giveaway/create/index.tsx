@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { v7 } from "uuid";
 import { useSubscriptionGiveawayDb } from "@/database/SubscriptionGiveaway";
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { useNavigate } from "react-router";
 
 const FIELD_CONTAINER = "flex flex-col gap-2";
@@ -56,7 +58,12 @@ export function FollowerGiveawayCreate() {
 
     return (
         <Layout>
-            <h1 className="text-2xl font-bold mb-6">{t("FOLLOWER_GIVEAWAY_CREATE_TITLE")}</h1>
+            <ShellHeader
+                section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+                page={t("DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY")}
+                title={t("FOLLOWER_GIVEAWAY_CREATE_TITLE")}
+            />
+            <InventoryPanel title={t("FOLLOWER_GIVEAWAY_FORM_PANEL")} className="max-w-3xl">
             <Form {...form}>
                 <div className="flex flex-col gap-4">
                     <div className={FIELD_CONTAINER}>
@@ -134,6 +141,7 @@ export function FollowerGiveawayCreate() {
                     </div>
                 </div>
             </Form>
+            </InventoryPanel>
         </Layout>
     )
 }

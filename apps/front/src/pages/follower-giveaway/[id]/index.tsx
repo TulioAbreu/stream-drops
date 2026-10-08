@@ -1,6 +1,8 @@
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
+import { WinnerMoment } from "@/components/giveaway/winner-moment";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,7 +12,7 @@ import { useSubscriptionGiveawayDb, type FollowerGiveawayFormData } from "@/data
 import { useTwitchApi } from "@/hooks/use-twitch-api";
 import { getGiveawayResult } from "@/service/giveaway";
 import { exportGiveawayResultToSheets, overrideGiveawayResultToSheets } from "@/service/google-drive";
-import { ArrowLeftIcon, BanIcon, CrownIcon, Edit3Icon, EllipsisIcon, FileSpreadsheetIcon, PartyPopperIcon, SaveIcon, SearchIcon, TrophyIcon, UserIcon, XIcon } from "lucide-react";
+import { ArrowLeftIcon, BanIcon, Edit3Icon, EllipsisIcon, FileSpreadsheetIcon, HardDrive, PartyPopperIcon, SaveIcon, SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
@@ -38,6 +40,7 @@ export function FollowerGiveawayId() {
     const [fetchUsersProgress, setFetchUsersProgress] = useState<number>(0);
     const [isFetchingParticipants, startFetchParticipantsTransition] = useTransition();
     const [isExportingResultSheets, startExportingResultSheetsTransition] = useTransition();
+    const [revealedWinner, setRevealedWinner] = useState<BroadcasterSubscriber | null>(null);
     const [missing, setMissing] = useState(false);
     useRedirectWhenMissing(missing, "/dashboard/follower-giveaway");
 
@@ -172,6 +175,7 @@ export function FollowerGiveawayId() {
         }
 
         await fetchGiveaway();
+        setRevealedWinner(newWinners[0] ?? null);
     };
 
     const onClickExportWinners = async () => {
@@ -291,188 +295,221 @@ export function FollowerGiveawayId() {
         }
     };
 
+    const participants = giveaway?.participants ?? [];
+    const tierCount = (tier: "1000" | "2000" | "3000") =>
+        participants.filter((user) => user.tier === tier).length;
+    const revealedTier =
+        revealedWinner?.tier === "1000" ||
+        revealedWinner?.tier === "2000" ||
+        revealedWinner?.tier === "3000"
+            ? (Number(revealedWinner.tier) as 1000 | 2000 | 3000)
+            : null;
+
     return (
         <Layout>
             <div className="flex flex-col gap-4">
-                <div className="flex flex-row justify-between items-center flex-wrap gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold">{giveaway === null ? <Skeleton className="w-1/2 h-8 rounded-md" /> : giveaway.title}</h1>
-                        <p className="text-muted-foreground">{giveaway?.description}</p>
-                    </div>
-                    <div className="flex flex-row gap-4 flex-wrap">
-                        <Button variant="ghost" size="lg" onClick={onClickBack}>
-                            <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                            <span>{t("NAVIGATE_BACK")}</span>
-                        </Button>
-                        <Button variant="outline" size="lg" onClick={onClickEdit}>
-                            <Edit3Icon className="w-4 h-4 mr-2" />
-                            <span>{t("FOLLOWER_GIVEAWAY_FORM_EDIT")}</span>
-                        </Button>
-                        <Button variant="outline" onClick={onClickSearchParticipants} size="lg">
-                            <SearchIcon className="w-4 h-4 mr-2" />
-                            <span>{t("FOLLOWER_GIVEAWAY_FORM_SEARCH_PARTICIPANTS")}</span>
-                        </Button>
-                        <Button variant="outline" size="lg" onClick={onClickDrawWinners} disabled={giveaway?.participants === null || giveaway?.participants.length === 0}>
-                            <PartyPopperIcon className="w-4 h-4 mr-2" />
-                            <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
-                        </Button>
-                    </div>
-                </div>
-                <div className="flex flex-row gap-4 flex-wrap">
-                    <GiveawayInfoCard
-                        className="w-[200px]"
-                        title="Total de Participantes"
-                        icon={UserIcon}
-                    >
-                        {giveaway?.participants.length ?? 0}
-                    </GiveawayInfoCard>
-                    <GiveawayInfoCard
-                        className="w-[260px]"
-                        title="Critério Minimo de Participação"
-                        icon={CrownIcon}
-                    >
-                        {t(`TIER_${giveaway?.subscriptionRequirement ?? 0}`)}
-                    </GiveawayInfoCard>
-                    <GiveawayInfoCard
-                        className="w-[180px]"
-                        title="Total de Vencedores"
-                        icon={TrophyIcon}
-                    >
-                        {giveaway?.winners.length ?? 0}
-                    </GiveawayInfoCard>
-                    <Card>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        {giveaway?.subscriberMultiplier &&
-                                            Object.entries(giveaway.subscriberMultiplier)
-                                                .filter(([tier]) => Number(tier) >= (giveaway?.subscriptionRequirement ?? 0))
-                                                .map(([tier, _multiplier]) => (
-                                                    <TableHead key={tier} className="text-center">
-                                                        {t(`TIER_${tier}`)}
-                                                    </TableHead>
-                                                ))
-                                        }
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    <TableRow>
-                                        {giveaway?.subscriberMultiplier &&
-                                            Object.entries(giveaway.subscriberMultiplier)
-                                                .filter(([tier]) => Number(tier) >= (giveaway?.subscriptionRequirement ?? 0))
-                                                .map(([tier, multiplier]) => (
-                                                    <TableCell key={tier} className="text-center">
-                                                        {multiplier}
-                                                    </TableCell>
-                                                ))
-                                        }
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
-                            <CardDescription>Multiplicadores por Tier</CardDescription>
-                        </CardContent>
-                    </Card>
-                </div>
-                <div className="flex flex-col xl:flex-row flex-wrap xl:flex-nowrap w-full gap-4">
-                    <Card className="w-full">
-                        <CardHeader className="relative">
-                            <CardTitle className="text-2xl font-semibold">Lista de Participantes</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {(giveaway?.participants === null || giveaway?.participants.length === 0) ? (
-                                <div className="flex flex-col h-full">
-                                    <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}</p>
-                                </div>
-                            ) : (
-                                <TableVirtuoso
-                                    style={{ height: "300px" }}
-                                    data={giveaway?.participants}
-                                    components={{
-                                        Table,
-                                        TableBody,
-                                        TableRow,
-                                        TableHead: TableHeader,
-                                    }}
-                                    fixedHeaderContent={() => (
-                                        <TableRow>
-                                            <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
-                                            <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
-                                            <TableHead></TableHead>
-                                        </TableRow>
-                                    )}
-                                    itemContent={(_index, user) => [
-                                        <TableCell>{user.user_name}</TableCell>,
-                                        <TableCell>{t(`TIER_${user.tier}`)}</TableCell>,
-                                        <TableCell>
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger>
-                                                        <Button variant="ghost" size="icon" onClick={() => onClickRemoveParticipant(user.user_id)}>
-                                                            <XIcon />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Remover</TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger>
-                                                    <Button variant="ghost" size="icon">
-                                                        <EllipsisIcon className="w-4 h-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem onClick={() => onClickExcludeUser(user)}>
-                                                        <BanIcon className="w-4 h-4 mr-2" />
-                                                        {t("FOLLOWER_GIVEAWAY_FORM_EXCLUDE_USER")}
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    ]}
-                                />
-                            )}
-                        </CardContent>
-                    </Card>
-                    <Card className="w-full">
-                        <CardHeader className="relative">
-                            <div className="flex flex-row items-center justify-between flex-wrap gap-4">
-                                <CardTitle className="text-2xl font-semibold">Lista de Vencedores</CardTitle>
-                                <div className="flex flex-row flex-wrap justify-end gap-2">
-                                    {giveaway?.spreadsheetUrl && (
-                                        <Button variant="outline" size="lg" disabled={giveaway.winners === null || giveaway.winners.length === 0} onClick={onClickViewSpreadsheet}>
-                                            <FileSpreadsheetIcon className="w-4 h-4 mr-2" />
-                                            Visualizar Planilha
-                                        </Button>
-                                    )}
-                                    <Button
-                                        variant="outline"
-                                        size="lg"
-                                        disabled={giveaway?.participants === null || giveaway?.participants.length === 0}
-                                        onClick={onClickExportWinners}
-                                        loading={isExportingResultSheets}
+                <ShellHeader
+                    section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+                    page={t("DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY")}
+                    title={giveaway === null ? <Skeleton className="h-8 w-64" /> : giveaway.title}
+                    description={giveaway?.description || undefined}
+                    actions={
+                        <>
+                            <Button variant="ghost" size="lg" onClick={onClickBack}>
+                                <ArrowLeftIcon />
+                                <span>{t("NAVIGATE_BACK")}</span>
+                            </Button>
+                            <Button variant="outline" size="lg" onClick={onClickEdit}>
+                                <Edit3Icon />
+                                <span>{t("FOLLOWER_GIVEAWAY_FORM_EDIT")}</span>
+                            </Button>
+                            <Button variant="outline" onClick={onClickSearchParticipants} size="lg">
+                                <SearchIcon />
+                                <span>{t("FOLLOWER_GIVEAWAY_FORM_SEARCH_PARTICIPANTS")}</span>
+                            </Button>
+                            <Button
+                                variant="drop"
+                                onClick={onClickDrawWinners}
+                                disabled={giveaway?.participants === null || giveaway?.participants.length === 0}
+                            >
+                                <PartyPopperIcon />
+                                <span>{t("FOLLOWER_GIVEAWAY_FORM_DRAW_WINNERS")}</span>
+                            </Button>
+                        </>
+                    }
+                >
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex h-[30px] items-center gap-2 rounded-[8px] border border-border bg-[var(--sd-surface-2)] px-2.5 text-[12.5px] font-semibold">
+                            <span className="font-medium text-muted-foreground">
+                                {t("FOLLOWER_GIVEAWAY_HUD_REQUIREMENT")}
+                            </span>
+                            <span className="font-mono">
+                                {t(`TIER_${giveaway?.subscriptionRequirement ?? 0}`)}
+                            </span>
+                        </span>
+                        {giveaway?.subscriberMultiplier &&
+                            Object.entries(giveaway.subscriberMultiplier)
+                                .filter(([tier]) => Number(tier) >= (giveaway?.subscriptionRequirement ?? 0))
+                                .map(([tier, multiplier]) => (
+                                    <span
+                                        key={tier}
+                                        className="inline-flex h-[30px] items-center gap-2 rounded-[8px] border border-border bg-[var(--sd-surface-2)] px-2.5 text-[12.5px] font-semibold"
                                     >
-                                        <SaveIcon className="w-4 h-4 mr-2" />
-                                        Exportar
+                                        <span className="font-medium text-muted-foreground">
+                                            {t(`TIER_${tier}`)}
+                                        </span>
+                                        <span className="font-mono">{multiplier}×</span>
+                                    </span>
+                                ))}
+                        <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--sd-local)_22%,transparent)] bg-[var(--sd-local-soft)] px-2.5 text-xs font-semibold text-[var(--sd-local)]">
+                            <HardDrive className="size-3.5" />
+                            {t("FOLLOWER_GIVEAWAY_LOCAL")}
+                        </span>
+                    </div>
+                </ShellHeader>
+                <div className="flex flex-wrap gap-3">
+                    <GiveawayInfoCard title={t("FOLLOWER_GIVEAWAY_STAT_PARTICIPANTS")}>
+                        {participants.length}
+                    </GiveawayInfoCard>
+                    <GiveawayInfoCard title={t("TIER_1000")}>
+                        {tierCount("1000")}
+                    </GiveawayInfoCard>
+                    <GiveawayInfoCard title={t("TIER_2000")}>
+                        {tierCount("2000")}
+                    </GiveawayInfoCard>
+                    <GiveawayInfoCard title={t("TIER_3000")}>
+                        {tierCount("3000")}
+                    </GiveawayInfoCard>
+                </div>
+                <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+                    <InventoryPanel
+                        title={t("FOLLOWER_GIVEAWAY_PARTICIPANTS_PANEL")}
+                        meta={String(participants.length)}
+                    >
+                        {(giveaway?.participants === null || giveaway?.participants.length === 0) ? (
+                            <p className="text-sm text-muted-foreground">
+                                {t("FOLLOWER_GIVEAWAY_FORM_NO_PARTICIPANTS")}
+                            </p>
+                        ) : (
+                            <TableVirtuoso
+                                style={{ height: "300px" }}
+                                data={giveaway?.participants}
+                                components={{
+                                    Table,
+                                    TableBody,
+                                    TableRow,
+                                    TableHead: TableHeader,
+                                }}
+                                fixedHeaderContent={() => (
+                                    <TableRow>
+                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_TABLE_HEADER")}</TableHead>
+                                        <TableHead>{t("FOLLOWER_GIVEAWAY_FORM_PARTICIPANTS_SUBSCRIPTION_TIER_TABLE_HEADER")}</TableHead>
+                                        <TableHead>{t("FOLLOWER_GIVEAWAY_WEIGHT")}</TableHead>
+                                        <TableHead></TableHead>
+                                    </TableRow>
+                                )}
+                                itemContent={(_index, user) => [
+                                    <TableCell key="name" className="font-semibold">{user.user_name}</TableCell>,
+                                    <TableCell key="tier">{t(`TIER_${user.tier}`)}</TableCell>,
+                                    <TableCell key="weight" className="font-mono">
+                                        {giveaway?.subscriberMultiplier?.[user.tier] ?? 1}×
+                                    </TableCell>,
+                                    <TableCell key="actions">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <Button variant="ghost" size="icon" onClick={() => onClickRemoveParticipant(user.user_id)}>
+                                                        <XIcon />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Remover</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger>
+                                                <Button variant="ghost" size="icon">
+                                                    <EllipsisIcon className="w-4 h-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onClick={() => onClickExcludeUser(user)}>
+                                                    <BanIcon className="w-4 h-4 mr-2" />
+                                                    {t("FOLLOWER_GIVEAWAY_FORM_EXCLUDE_USER")}
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                ]}
+                            />
+                        )}
+                    </InventoryPanel>
+                    <InventoryPanel
+                        title={t("FOLLOWER_GIVEAWAY_LOG_TITLE")}
+                        meta={t("FOLLOWER_GIVEAWAY_LOG_META", {
+                            count: giveaway?.winners.length ?? 0,
+                        })}
+                        actions={
+                            <div className="flex flex-wrap justify-end gap-2">
+                                {giveaway?.spreadsheetUrl && (
+                                    <Button variant="outline" size="sm" disabled={giveaway.winners === null || giveaway.winners.length === 0} onClick={onClickViewSpreadsheet}>
+                                        <FileSpreadsheetIcon />
+                                        Visualizar Planilha
                                     </Button>
-                                </div>
+                                )}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={giveaway?.participants === null || giveaway?.participants.length === 0}
+                                    onClick={onClickExportWinners}
+                                    loading={isExportingResultSheets}
+                                >
+                                    <SaveIcon />
+                                    Exportar
+                                </Button>
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            {(giveaway?.winners === null || giveaway?.winners.length === 0) ? (
-                                <div className="flex flex-col h-full">
-                                    <p>{t("FOLLOWER_GIVEAWAY_FORM_NO_WINNERS")}</p>
-                                </div>
-                            ) : (
-                                <SubscriberWinnersTable
-                                    winners={giveaway?.winners ?? []}
-                                    onRemove={onClickRemoveWinner}
-                                />
-                            )}
-                        </CardContent>
-                    </Card>
+                        }
+                        bodyClassName="pt-3"
+                    >
+                        {(giveaway?.winners === null || giveaway?.winners.length === 0) ? (
+                            <div className="flex min-h-[200px] items-center justify-center">
+                                <p className="text-sm text-muted-foreground">
+                                    {t("FOLLOWER_GIVEAWAY_FORM_NO_WINNERS")}
+                                </p>
+                            </div>
+                        ) : (
+                            <SubscriberWinnersTable
+                                winners={giveaway?.winners ?? []}
+                                onRemove={onClickRemoveWinner}
+                            />
+                        )}
+                    </InventoryPanel>
                 </div>
             </div>
+            {revealedWinner ? (
+                <WinnerMoment
+                    key={revealedWinner.user_id}
+                    pendingWinner={{
+                        id: revealedWinner.user_id,
+                        displayName: revealedWinner.user_name,
+                        avatar: "",
+                        subscriber: true,
+                        tier: revealedTier,
+                    }}
+                    messages={[]}
+                    rank={giveaway?.winners.length ?? 1}
+                    giveawayTitle={giveaway?.title ?? ""}
+                    showCancel={false}
+                    showRedraw={false}
+                    showChatWait={false}
+                    confirmLabel={t("FOLLOWER_GIVEAWAY_REVEAL_DISMISS")}
+                    localHint={t("FOLLOWER_GIVEAWAY_REVEAL_HINT")}
+                    onConfirm={() => undefined}
+                    onDismiss={() => setRevealedWinner(null)}
+                    onCancel={() => setRevealedWinner(null)}
+                    onRedraw={() => undefined}
+                    isRedrawing={false}
+                />
+            ) : null}
             <Dialog open={isFetchingParticipants}>
                 <DialogContent>
                     <DialogHeader>
