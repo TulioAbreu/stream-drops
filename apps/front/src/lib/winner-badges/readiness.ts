@@ -3,7 +3,7 @@ import { create } from "zustand";
 import type { WinnerHistoryProvider } from "./history";
 import { buildWinnerIndexFromDatabase } from "./indexed-db-source";
 import { collectWinAwards, selectForDisplay, type DisplaySelection } from "./select-for-display";
-import type { EngineClock, WinEvent } from "./types";
+import type { EngineClock, GiveawayType, WinEvent } from "./types";
 import type { WinnerHistorySource } from "./normalize";
 import { createWinnerIndexFromSource, type WinnerIndex } from "./win-index";
 
@@ -148,6 +148,26 @@ function beginLoad(): void {
       }, delay);
     },
   );
+}
+
+/**
+ * Soft-delete já gravado. Atualiza só o sorteio afetado.
+ * Sem índice pronto, a próxima carga lê o registro podado.
+ * Não abre transação.
+ */
+export function noteGiveawaySoftDeleted(
+  giveawayType: GiveawayType,
+  record: unknown,
+): void {
+  useWinnerIndexStore.getState().index?.applySoftDelete(giveawayType, record);
+}
+
+/** Hard delete já gravado. Tira as vitórias desse sorteio da memória. */
+export function noteGiveawayHardDeleted(
+  giveawayType: GiveawayType,
+  giveawayId: string,
+): void {
+  useWinnerIndexStore.getState().index?.applyHardDelete(giveawayType, giveawayId);
 }
 
 /**

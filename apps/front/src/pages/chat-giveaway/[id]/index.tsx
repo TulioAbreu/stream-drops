@@ -30,6 +30,8 @@ import { WinnerConfirmationInline } from "./components/winner-confirmation-inlin
 import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
 import { ParticipantTag } from "./components/participant-tag";
 import { chatWinnerContextFromParticipant } from "../winner-context";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChatGiveawayDetail() {
   const { id } = useParams<{ id: string }>();
@@ -44,6 +46,8 @@ export function ChatGiveawayDetail() {
   const [excludedUserIds, setExcludedUserIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [missing, setMissing] = useState(false);
+  useRedirectWhenMissing(missing, "/dashboard");
 
   const getChatGiveawayRef = useRef(getChatGiveaway);
   const getExclusionsRef = useRef(getExclusions);
@@ -130,9 +134,10 @@ export function ChatGiveawayDetail() {
       const data = await getChatGiveawayRef.current(id);
       if (cancelled) return;
       if (!data) {
-        navigate("/dashboard");
+        setMissing(true);
         return;
       }
+      setMissing(false);
       setGiveaway(data);
     };
 
@@ -140,7 +145,7 @@ export function ChatGiveawayDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, navigate]);
+  }, [id]);
 
   useEffect(() => {
     refreshExclusions();
@@ -291,7 +296,8 @@ export function ChatGiveawayDetail() {
     };
 
     try {
-      await updateChatGiveaway(updatedGiveaway);
+      const saved = await updateChatGiveaway(updatedGiveaway);
+      if (redirectIfGiveawayDeleted(saved, navigate, "/dashboard")) return;
       setGiveaway(updatedGiveaway);
       toast.success(`🎉 ${pendingWinner.displayName} foi confirmado como vencedor!`);
     } catch (error) {
@@ -321,7 +327,8 @@ export function ChatGiveawayDetail() {
       updatedAt: new Date().toISOString(),
     };
 
-    await updateChatGiveaway(updatedGiveaway);
+    const saved = await updateChatGiveaway(updatedGiveaway);
+    if (redirectIfGiveawayDeleted(saved, navigate, "/dashboard")) return;
     setGiveaway(updatedGiveaway);
 
     toast.success("Vencedor removido com sucesso!");

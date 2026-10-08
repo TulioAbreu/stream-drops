@@ -1,4 +1,11 @@
 import { openDb } from ".";
+import type { GiveawayParticipation } from "./giveaway-deletion";
+import {
+  hardDeleteChannelPointsGiveaway,
+  isDeletedGiveaway,
+  softDeleteChannelPointsGiveaway,
+  type GiveawayWriteResult,
+} from "./giveaway-deletion";
 
 export type ChannelPointsGiveawayStatus =
   | "open"
@@ -52,6 +59,10 @@ export interface ChannelPointsGiveawayFormData {
   collectionProgress?: { loaded: number; page: number };
   createdAt: string;
   updatedAt: string;
+  /** ISO UTC. Ausente = sorteio ativo. */
+  deletedAt?: string;
+  /** Resumo gravado no soft-delete. Ausente nos sorteios ativos. */
+  participation?: GiveawayParticipation;
 }
 
 const STORE_NAME = "channel-points-giveaways";
@@ -69,19 +80,19 @@ export function useChannelPointsGiveawayDb() {
     });
   };
 
-  const getChannelPointsGiveaways = async (): Promise<
+  const readChannelPointsGiveaways = async (): Promise<
     ChannelPointsGiveawayFormData[]
   > => {
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readonly");
       const req = tx.objectStore(STORE_NAME).getAll();
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => resolve(req.result ?? []);
       req.onerror = () => reject(req.error);
     });
   };
 
-  const getChannelPointsGiveaway = async (
+  const readChannelPointsGiveaway = async (
     id: string
   ): Promise<ChannelPointsGiveawayFormData | undefined> => {
     const db = await openDb();
@@ -93,33 +104,58 @@ export function useChannelPointsGiveawayDb() {
     });
   };
 
-  const updateChannelPointsGiveaway = async (
-    data: ChannelPointsGiveawayFormData
-  ) => {
-    const db = await openDb();
-    return new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put(data);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+  const getChannelPointsGiveaways = async (): Promise<
+    ChannelPointsGiveawayFormData[]
+  > => {
+    const rows = await readChannelPointsGiveaways();
+    return rows.filter((row) => !isDeletedGiveaway(row));
   };
 
-  const deleteChannelPointsGiveaway = async (id: string) => {
+  const getChannelPointsGiveawaysIncludingDeleted = readChannelPointsGiveaways;
+
+  const getChannelPointsGiveaway = async (
+    id: string
+  ): Promise<ChannelPointsGiveawayFormData | undefined> => {
+    const row = await readChannelPointsGiveaway(id);
+    if (!row || isDeletedGiveaway(row)) return undefined;
+    return row;
+  };
+
+  const getChannelPointsGiveawayIncludingDeleted = readChannelPointsGiveaway;
+
+  const updateChannelPointsGiveaway = async (
+    data: ChannelPointsGiveawayFormData
+  ): Promise<GiveawayWriteResult> => {
     const db = await openDb();
-    return new Promise<void>((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).delete(id);
-      tx.oncomplete = () => resolve();
+      const store = tx.objectStore(STORE_NAME);
+      let result: GiveawayWriteResult = "saved";
+      const request = store.get(data.id);
+      request.onsuccess = () => {
+        const previous = request.result as
+          | ChannelPointsGiveawayFormData
+          | undefined;
+        if (isDeletedGiveaway(previous)) {
+          result = "deleted";
+          return;
+        }
+        store.put(data);
+      };
+      tx.oncomplete = () => resolve(result);
       tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
     });
   };
 
   return {
     addChannelPointsGiveaway,
     getChannelPointsGiveaways,
+    getChannelPointsGiveawaysIncludingDeleted,
     getChannelPointsGiveaway,
+    getChannelPointsGiveawayIncludingDeleted,
     updateChannelPointsGiveaway,
-    deleteChannelPointsGiveaway,
+    deleteChannelPointsGiveaway: hardDeleteChannelPointsGiveaway,
+    softDeleteChannelPointsGiveaway,
   };
 }

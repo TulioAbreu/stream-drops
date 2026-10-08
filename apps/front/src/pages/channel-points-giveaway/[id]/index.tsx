@@ -81,6 +81,8 @@ import { WinnerConfirmationInline } from "@/components/giveaway/winner-confirmat
 import { ParticipantTag } from "@/pages/chat-giveaway/[id]/components/participant-tag";
 import { ChannelPointsAccessBanner } from "../components/channel-points-access-banner";
 import { useChatMessages } from "../hooks/use-chat-messages";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 interface PendingChannelPointsWinner {
   participant: ChannelPointsParticipant;
@@ -117,6 +119,8 @@ export function ChannelPointsGiveawayDetail() {
   const [redrawExcludedRedemptionIds, setRedrawExcludedRedemptionIds] =
     useState<string[]>([]);
   const [isRedrawing, setIsRedrawing] = useState(false);
+  const [missing, setMissing] = useState(false);
+  useRedirectWhenMissing(missing, "/dashboard/channel-points-giveaway");
 
   const chatEnabled =
     !!userData?.login &&
@@ -133,9 +137,10 @@ export function ChannelPointsGiveawayDetail() {
     const loadGiveaway = async () => {
       const data = await getChannelPointsGiveaway(id);
       if (!data) {
-        navigate("/dashboard/channel-points-giveaway");
+        setMissing(true);
         return;
       }
+      setMissing(false);
       setGiveaway({
         ...data,
         maxPerStream: data.maxPerStream ?? null,
@@ -143,7 +148,7 @@ export function ChannelPointsGiveawayDetail() {
     };
 
     loadGiveaway();
-  }, [id, getChannelPointsGiveaway, navigate]);
+  }, [id, getChannelPointsGiveaway]);
 
   useEffect(() => {
     if (!pendingWinner) {
@@ -246,7 +251,16 @@ export function ChannelPointsGiveawayDetail() {
         status: "collecting",
         updatedAt: new Date().toISOString(),
       };
-      await updateChannelPointsGiveaway(collectingGiveaway);
+      const savedCollecting = await updateChannelPointsGiveaway(collectingGiveaway);
+      if (
+        redirectIfGiveawayDeleted(
+          savedCollecting,
+          navigate,
+          "/dashboard/channel-points-giveaway",
+        )
+      ) {
+        return;
+      }
       setGiveaway(collectingGiveaway);
 
       const pauseResult = await twitchApiClient.updateCustomReward({
@@ -267,7 +281,16 @@ export function ChannelPointsGiveawayDetail() {
           status: "open",
           updatedAt: new Date().toISOString(),
         };
-        await updateChannelPointsGiveaway(reverted);
+        const savedRevert = await updateChannelPointsGiveaway(reverted);
+        if (
+          redirectIfGiveawayDeleted(
+            savedRevert,
+            navigate,
+            "/dashboard/channel-points-giveaway",
+          )
+        ) {
+          return;
+        }
         setGiveaway(reverted);
         return;
       }
@@ -304,7 +327,16 @@ export function ChannelPointsGiveawayDetail() {
           id: giveaway.rewardId,
           is_paused: false,
         });
-        await updateChannelPointsGiveaway(reverted);
+        const savedRevert = await updateChannelPointsGiveaway(reverted);
+        if (
+          redirectIfGiveawayDeleted(
+            savedRevert,
+            navigate,
+            "/dashboard/channel-points-giveaway",
+          )
+        ) {
+          return;
+        }
         setGiveaway(reverted);
         return;
       }
@@ -320,7 +352,16 @@ export function ChannelPointsGiveawayDetail() {
         updatedAt: new Date().toISOString(),
       };
 
-      await updateChannelPointsGiveaway(readyGiveaway);
+      const savedReady = await updateChannelPointsGiveaway(readyGiveaway);
+      if (
+        redirectIfGiveawayDeleted(
+          savedReady,
+          navigate,
+          "/dashboard/channel-points-giveaway",
+        )
+      ) {
+        return;
+      }
       setGiveaway(readyGiveaway);
 
       toast.success(
@@ -441,7 +482,16 @@ export function ChannelPointsGiveawayDetail() {
     };
 
     try {
-      await updateChannelPointsGiveaway(updatedGiveaway);
+      const saved = await updateChannelPointsGiveaway(updatedGiveaway);
+      if (
+        redirectIfGiveawayDeleted(
+          saved,
+          navigate,
+          "/dashboard/channel-points-giveaway",
+        )
+      ) {
+        return;
+      }
       setGiveaway(updatedGiveaway);
       toast.success(
         t("CHANNEL_POINTS_GIVEAWAY_DRAW_SUCCESS", {
@@ -464,7 +514,16 @@ export function ChannelPointsGiveawayDetail() {
       updatedAt: new Date().toISOString(),
     };
 
-    await updateChannelPointsGiveaway(updatedGiveaway);
+    const saved = await updateChannelPointsGiveaway(updatedGiveaway);
+    if (
+      redirectIfGiveawayDeleted(
+        saved,
+        navigate,
+        "/dashboard/channel-points-giveaway",
+      )
+    ) {
+      return;
+    }
     setGiveaway(updatedGiveaway);
     toast.success(t("CHANNEL_POINTS_GIVEAWAY_WINNER_REMOVED"));
   };
@@ -521,7 +580,16 @@ export function ChannelPointsGiveawayDetail() {
         updatedAt: new Date().toISOString(),
       };
 
-      await updateChannelPointsGiveaway(closedGiveaway);
+      const saved = await updateChannelPointsGiveaway(closedGiveaway);
+      if (
+        redirectIfGiveawayDeleted(
+          saved,
+          navigate,
+          "/dashboard/channel-points-giveaway",
+        )
+      ) {
+        return;
+      }
       setGiveaway(closedGiveaway);
       setPendingWinner(null);
       setCloseDialogOpen(false);
