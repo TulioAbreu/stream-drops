@@ -56,6 +56,8 @@ import { WinnersList } from "@/components/giveaway/winners-list";
 import { useTranslation } from "@/i18n";
 import { v7 } from "uuid";
 import { useExclusionListDb } from "@/database/ExclusionListItem";
+import { useLiveExclusions } from "@/hooks/use-live-exclusions";
+import { filterExcludedByUserId } from "@/lib/filter-excluded-participants";
 import {
   collectChannelPointsRedemptions,
   type CollectionProgress,
@@ -97,6 +99,7 @@ export function ChannelPointsGiveawayDetail() {
     updateChannelPointsGiveaway,
   } = useChannelPointsGiveawayDb();
   const { getExclusions } = useExclusionListDb();
+  const { excludedUserIds, refreshExclusions } = useLiveExclusions();
   const { userData, twitchApiClient } = useTwitchApi();
   const accessBlock = getChannelPointsAccessBlock({
     broadcasterType: userData?.broadcasterType,
@@ -151,15 +154,25 @@ export function ChannelPointsGiveawayDetail() {
     }
   }, [pendingWinner]);
 
+  const eligibleParticipants = useMemo(
+    () =>
+      filterExcludedByUserId(
+        giveaway?.participants ?? [],
+        excludedUserIds,
+        (participant) => participant.userId,
+      ),
+    [giveaway?.participants, excludedUserIds],
+  );
+
   const availableTickets = useMemo(() => {
     if (!giveaway) return 0;
     return getAvailableTicketCount(
-      giveaway.participants,
+      eligibleParticipants,
       giveaway.winners,
       giveaway.allowMultipleWins,
       redrawExcludedRedemptionIds
     );
-  }, [giveaway, redrawExcludedRedemptionIds]);
+  }, [giveaway, eligibleParticipants, redrawExcludedRedemptionIds]);
 
   const subscriberMultiplier = useMemo(
     () => normalizeChannelPointsMultiplier(giveaway?.subscriberMultiplier),
@@ -169,17 +182,22 @@ export function ChannelPointsGiveawayDetail() {
   const weightedEntries = useMemo(() => {
     if (!giveaway) return 0;
     return getWeightedEntryCount({
-      participants: giveaway.participants,
+      participants: eligibleParticipants,
       winners: giveaway.winners,
       allowMultipleWins: giveaway.allowMultipleWins,
       subscriberMultiplier,
       excludeRedemptionIds: redrawExcludedRedemptionIds,
     });
-  }, [giveaway, subscriberMultiplier, redrawExcludedRedemptionIds]);
+  }, [
+    giveaway,
+    eligibleParticipants,
+    subscriberMultiplier,
+    redrawExcludedRedemptionIds,
+  ]);
 
   const participantTicketTags = useMemo(
     () =>
-      [...(giveaway?.participants ?? [])]
+      [...eligibleParticipants]
         .sort((a, b) => b.tickets.length - a.tickets.length)
         .flatMap((participant) => {
           const weight = resolveChannelPointsMultiplier(
@@ -195,7 +213,7 @@ export function ChannelPointsGiveawayDetail() {
             }))
           );
         }),
-    [giveaway?.participants, subscriberMultiplier]
+    [eligibleParticipants, subscriberMultiplier]
   );
 
   const sortedWinners = useMemo(
@@ -341,8 +359,15 @@ export function ChannelPointsGiveawayDetail() {
   const executeDraw = async (excludeRedemptionIds: string[]) => {
     if (!giveaway) return;
 
+    const latestExcluded = await refreshExclusions();
+    const participants = filterExcludedByUserId(
+      giveaway.participants,
+      latestExcluded,
+      (participant) => participant.userId,
+    );
+
     const result = drawChannelPointsWinner({
-      participants: giveaway.participants,
+      participants,
       winners: giveaway.winners,
       allowMultipleWins: giveaway.allowMultipleWins,
       subscriberMultiplier: giveaway.subscriberMultiplier,
@@ -357,7 +382,7 @@ export function ChannelPointsGiveawayDetail() {
     }
 
     const poolSize = getWeightedEntryCount({
-      participants: giveaway.participants,
+      participants,
       winners: giveaway.winners,
       allowMultipleWins: giveaway.allowMultipleWins,
       subscriberMultiplier: giveaway.subscriberMultiplier,
@@ -544,7 +569,7 @@ export function ChannelPointsGiveawayDetail() {
     );
   }
 
-  const totalParticipantTickets = giveaway.participants.reduce(
+  const totalParticipantTickets = eligibleParticipants.reduce(
     (sum, p) => sum + p.tickets.length,
     0
   );
@@ -717,7 +742,7 @@ export function ChannelPointsGiveawayDetail() {
                 <CardTitle className="flex items-center gap-2">
                   {t("CHANNEL_POINTS_GIVEAWAY_PARTICIPANTS")}
                   <Badge variant="secondary">
-                    {giveaway.participants.length}
+                    {eligibleParticipants.length}
                   </Badge>
                   <Badge variant="outline">
                     {t("CHANNEL_POINTS_GIVEAWAY_TICKETS_COUNT", {
