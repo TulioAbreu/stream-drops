@@ -29,6 +29,7 @@ import type { ChatParticipant } from "../types";
 import { WinnerConfirmationInline } from "./components/winner-confirmation-inline";
 import { GiveawayWinnerRow } from "@/components/giveaway/giveaway-winner-row";
 import { ParticipantTag } from "./components/participant-tag";
+import { chatWinnerContextFromParticipant } from "../winner-context";
 
 export function ChatGiveawayDetail() {
   const { id } = useParams<{ id: string }>();
@@ -267,21 +268,25 @@ export function ChatGiveawayDetail() {
   const handleConfirmWinner = async () => {
     if (!giveaway || !pendingWinner) return;
 
+    const participants = unionChatParticipants(
+      giveaway.participants ?? [],
+      liveParticipantsRef.current,
+    );
+    const source = participants.find((item) => item.id === pendingWinner.id)
+      ?? pendingWinner;
     const newWinner: ChatGiveawayWinner = {
       id: pendingWinner.id,
       name: pendingWinner.displayName,
       twitchId: pendingWinner.id,
       avatar: pendingWinner.avatar,
       drawnAt: new Date().toISOString(),
+      context: chatWinnerContextFromParticipant(source),
     };
 
     const updatedGiveaway = {
       ...giveaway,
       winners: [...giveaway.winners, newWinner],
-      participants: unionChatParticipants(
-        giveaway.participants ?? [],
-        liveParticipantsRef.current,
-      ),
+      participants,
       updatedAt: new Date().toISOString(),
     };
 
