@@ -63,6 +63,8 @@ import { ShellHeader } from "@/components/shell/shell-header";
 import { useTranslation } from "@/i18n";
 import { v7 } from "uuid";
 import { useExclusionListDb } from "@/database/ExclusionListItem";
+import { useLiveExclusions } from "@/hooks/use-live-exclusions";
+import { filterExcludedByUserId } from "@/lib/filter-excluded-participants";
 import {
   collectChannelPointsRedemptions,
   type CollectionProgress,
@@ -145,6 +147,7 @@ export function ChannelPointsGiveawayDetail() {
     updateChannelPointsGiveaway,
   } = useChannelPointsGiveawayDb();
   const { getExclusions } = useExclusionListDb();
+  const { excludedUserIds, refreshExclusions } = useLiveExclusions();
   const { userData, twitchApiClient } = useTwitchApi();
   const accessBlock = getChannelPointsAccessBlock({
     broadcasterType: userData?.broadcasterType,
@@ -203,15 +206,25 @@ export function ChannelPointsGiveawayDetail() {
     }
   }, [pendingWinner]);
 
+  const eligibleParticipants = useMemo(
+    () =>
+      filterExcludedByUserId(
+        giveaway?.participants ?? [],
+        excludedUserIds,
+        (participant) => participant.userId,
+      ),
+    [giveaway?.participants, excludedUserIds],
+  );
+
   const availableTickets = useMemo(() => {
     if (!giveaway) return 0;
     return getAvailableTicketCount(
-      giveaway.participants,
+      eligibleParticipants,
       giveaway.winners,
       giveaway.allowMultipleWins,
       redrawExcludedRedemptionIds
     );
-  }, [giveaway, redrawExcludedRedemptionIds]);
+  }, [giveaway, eligibleParticipants, redrawExcludedRedemptionIds]);
 
   const subscriberMultiplier = useMemo(
     () => normalizeChannelPointsMultiplier(giveaway?.subscriberMultiplier),
@@ -221,17 +234,22 @@ export function ChannelPointsGiveawayDetail() {
   const weightedEntries = useMemo(() => {
     if (!giveaway) return 0;
     return getWeightedEntryCount({
-      participants: giveaway.participants,
+      participants: eligibleParticipants,
       winners: giveaway.winners,
       allowMultipleWins: giveaway.allowMultipleWins,
       subscriberMultiplier,
       excludeRedemptionIds: redrawExcludedRedemptionIds,
     });
-  }, [giveaway, subscriberMultiplier, redrawExcludedRedemptionIds]);
+  }, [
+    giveaway,
+    eligibleParticipants,
+    subscriberMultiplier,
+    redrawExcludedRedemptionIds,
+  ]);
 
   const inventoryParticipants = useMemo(() => {
     const query = nameFilter.trim().toLowerCase();
-    return [...(giveaway?.participants ?? [])]
+    return [...eligibleParticipants]
       .filter((participant) => {
         if (!query) return true;
         return (
@@ -254,7 +272,7 @@ export function ChannelPointsGiveawayDetail() {
           mark: `×${participant.tickets.length * weight}`,
         };
       });
-  }, [giveaway?.participants, nameFilter, subscriberMultiplier]);
+  }, [eligibleParticipants, nameFilter, subscriberMultiplier]);
 
   const sortedWinners = useMemo(
     () => sortWinnersByDrawOrder(giveaway?.winners ?? []),
@@ -447,8 +465,15 @@ export function ChannelPointsGiveawayDetail() {
   const executeDraw = async (excludeRedemptionIds: string[]) => {
     if (!giveaway) return;
 
+    const latestExcluded = await refreshExclusions();
+    const participants = filterExcludedByUserId(
+      giveaway.participants,
+      latestExcluded,
+      (participant) => participant.userId,
+    );
+
     const result = drawChannelPointsWinner({
-      participants: giveaway.participants,
+      participants,
       winners: giveaway.winners,
       allowMultipleWins: giveaway.allowMultipleWins,
       subscriberMultiplier: giveaway.subscriberMultiplier,
@@ -463,7 +488,7 @@ export function ChannelPointsGiveawayDetail() {
     }
 
     const poolSize = getWeightedEntryCount({
-      participants: giveaway.participants,
+      participants,
       winners: giveaway.winners,
       allowMultipleWins: giveaway.allowMultipleWins,
       subscriberMultiplier: giveaway.subscriberMultiplier,
@@ -679,7 +704,7 @@ export function ChannelPointsGiveawayDetail() {
     );
   }
 
-  const totalParticipantTickets = giveaway.participants.reduce(
+  const totalParticipantTickets = eligibleParticipants.reduce(
     (sum, p) => sum + p.tickets.length,
     0
   );
@@ -849,7 +874,7 @@ export function ChannelPointsGiveawayDetail() {
           <>
             <div className="flex flex-wrap gap-3">
               <Stat
-                value={giveaway.participants.length}
+                value={eligibleParticipants.length}
                 label={t("CHANNEL_POINTS_GIVEAWAY_STAT_PARTICIPANTS")}
               />
               <Stat
@@ -880,24 +905,31 @@ export function ChannelPointsGiveawayDetail() {
                         <p>
                           {t("CHANNEL_POINTS_GIVEAWAY_FILTERED_COUNT", {
                             found: inventoryParticipants.length,
-                            total: giveaway.participants.length,
+                            total: eligibleParticipants.length,
                           })}
                         </p>
                         <p>{t("CHANNEL_POINTS_GIVEAWAY_FILTER_DRAW_HINT")}</p>
                       </>
                     ) : (
-                      <p>
-                        {t("CHANNEL_POINTS_GIVEAWAY_TICKETS_COUNT", {
-                          count: totalParticipantTickets,
-                        })}
-                        {weightedEntries !== availableTickets
-                          ? ` · ${t("CHANNEL_POINTS_GIVEAWAY_WEIGHTED_ENTRIES", {
+                      <>
+                        <p>
+                          {t("CHANNEL_POINTS_GIVEAWAY_TICKETS_COUNT", {
+                            count: totalParticipantTickets,
+                          })}
+                        </p>
+                        <p>
+                          {t("CHANNEL_POINTS_GIVEAWAY_AVAILABLE_TICKETS", {
+                            count: availableTickets,
+                          })}
+                        </p>
+                        {weightedEntries !== availableTickets ? (
+                          <p>
+                            {t("CHANNEL_POINTS_GIVEAWAY_WEIGHTED_ENTRIES", {
                               count: weightedEntries,
-                            })}`
-                          : ` · ${t("CHANNEL_POINTS_GIVEAWAY_AVAILABLE_TICKETS", {
-                              count: availableTickets,
-                            })}`}
-                      </p>
+                            })}
+                          </p>
+                        ) : null}
+                      </>
                     )}
                   </>
                 }
