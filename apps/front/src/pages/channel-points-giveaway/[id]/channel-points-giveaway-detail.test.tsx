@@ -21,6 +21,16 @@ import { ChannelPointsGiveawayDetail } from "./index";
 const sentChatMessages: string[] = [];
 const drawnPools: ChannelPointsParticipant[][] = [];
 const settleCalls: ChannelPointsParticipant[][] = [];
+const drawnCalls: Array<{
+  params: {
+    participants: ChannelPointsParticipant[];
+    excludeRedemptionIds?: string[];
+  };
+  result: {
+    participant: ChannelPointsParticipant;
+    redemptionId: string;
+  } | null;
+}> = [];
 
 vi.mock("@/pages/channel-points-giveaway/hooks/use-chat-messages", () => ({
   useChatMessages: () => ({
@@ -37,8 +47,16 @@ vi.mock("@/service/channel-points-giveaway", async (importOriginal) => {
     drawChannelPointsWinner: (
       params: Parameters<typeof actual.drawChannelPointsWinner>[0],
     ) => {
+      const result = actual.drawChannelPointsWinner(params);
       drawnPools.push(params.participants);
-      return actual.drawChannelPointsWinner(params);
+      drawnCalls.push({
+        params: {
+          participants: params.participants,
+          excludeRedemptionIds: params.excludeRedemptionIds,
+        },
+        result,
+      });
+      return result;
     },
   };
 });
@@ -243,6 +261,14 @@ function drawButton() {
   return screen.getByRole("button", { name: "Sortear Vencedor" });
 }
 
+async function flushFrames() {
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+  });
+}
+
 async function confirmWinner() {
   await screen.findByRole("button", { name: "Confirmar" }, { timeout: 4000 });
   await waitFor(() => {
@@ -260,6 +286,7 @@ describe("página do sorteio de Pontos", () => {
     await clearDatabase();
     sentChatMessages.length = 0;
     drawnPools.length = 0;
+    drawnCalls.length = 0;
     settleCalls.length = 0;
     vi.spyOn(Math, "random").mockReturnValue(0);
   });
@@ -331,20 +358,17 @@ describe("página do sorteio de Pontos", () => {
     await screen.findByText("Ana");
 
     fireEvent.click(drawButton());
-    const confirm = await screen.findByRole("button", { name: "Confirmar" }, {
+    await screen.findByRole("button", { name: "Confirmar" }, {
       timeout: 4000,
     });
-    expect(confirm.closest(".winner-card-shell")?.textContent).toContain("Ana");
+    expect(screen.getByRole("dialog").textContent).toContain("Ana");
 
     await addExclusion(exclusion("mira", "mira", "Mira"));
     vi.mocked(Math.random).mockReturnValue(0.999);
     fireEvent.click(screen.getByRole("button", { name: "Refazer" }));
 
     await waitFor(() => {
-      const card = screen
-        .getByRole("button", { name: "Confirmar" })
-        .closest(".winner-card-shell");
-      expect(card?.textContent).toContain("Bruno");
+      expect(screen.getByRole("dialog").textContent).toContain("Bruno");
     }, { timeout: 4000 });
 
     const pool = drawnPools.at(-1) ?? [];
@@ -616,5 +640,138 @@ describe("página do sorteio de Pontos", () => {
     } finally {
       tracker.restore();
     }
+  });
+
+  it("confirmar, cancelar e refazer seguem os handlers do sorteio", async () => {
+    const id = "pontos-palco";
+    const seeded = giveaway(id, [
+      participant("ana", "Ana"),
+      participant("bruno", "Bruno"),
+    ]);
+    await addChannelPointsGiveaway(seeded);
+    const tracker = trackStoreWrites();
+
+    try {
+      renderDetail(id);
+      expect(
+        await screen.findByRole("heading", { name: "Sorteio de Pontos" }),
+      ).toBeTruthy();
+
+      const before = drawnCalls.length;
+      fireEvent.click(drawButton());
+      await waitFor(() => {
+        expect(drawnCalls.length).toBe(before + 1);
+        expect(screen.getByRole("dialog")).toBeTruthy();
+      }, { timeout: 4000 });
+      await flushFrames();
+
+      const cancelled = drawnCalls[0]?.result;
+      expect(cancelled).toBeTruthy();
+      expect(drawnCalls[0]?.params.excludeRedemptionIds ?? []).toEqual([]);
+      expect(
+        screen.getByRole("dialog", { name: cancelled?.participant.displayName }),
+      ).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Cancelar" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Refazer" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Confirmar" })).toBeTruthy();
+
+      fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog")).toBeNull();
+      }, { timeout: 4000 });
+      expect(await getChannelPointsGiveaway(id)).toEqual(seeded);
+      expect(tracker.writes).toEqual([]);
+
+      fireEvent.click(drawButton());
+      await waitFor(() => {
+        expect(drawnCalls.length).toBe(before + 2);
+        expect(screen.getByRole("dialog")).toBeTruthy();
+      }, { timeout: 4000 });
+      await flushFrames();
+      const beforeRedraw = drawnCalls.at(-1);
+      expect(beforeRedraw?.result).toBeTruthy();
+
+      fireEvent.click(screen.getByRole("button", { name: "Refazer" }));
+      await waitFor(() => {
+        expect(drawnCalls.length).toBeGreaterThan(2);
+        expect(
+          screen.getByRole("dialog", {
+            name: drawnCalls.at(-1)?.result?.participant.displayName,
+          }),
+        ).toBeTruthy();
+      }, { timeout: 4000 });
+      const redraw = drawnCalls.at(-1);
+      expect(redraw?.params.excludeRedemptionIds).toContain(
+        beforeRedraw?.result?.redemptionId,
+      );
+      expect(redraw?.params.participants.map((item) => item.userId).sort()).toEqual([
+        "ana",
+        "bruno",
+      ]);
+      expect(await getChannelPointsGiveaway(id)).toEqual(seeded);
+
+      fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+
+      await waitFor(async () => {
+        const stored = await getChannelPointsGiveaway(id);
+        expect(stored?.winners).toHaveLength(1);
+      }, { timeout: 4000 });
+
+      const stored = await getChannelPointsGiveaway(id);
+      const winner = stored?.winners[0];
+      expect(winner?.userId).toBe(redraw?.result?.participant.userId);
+      expect(winner?.name).toBe(redraw?.result?.participant.displayName);
+      expect(winner?.avatar).toBe(redraw?.result?.participant.avatar);
+      expect(winner?.redemptionId).toBe(redraw?.result?.redemptionId);
+      expect(winner?.drawnAt).toBeTruthy();
+      expect(stored?.participants).toEqual(seeded.participants);
+      expect(
+        tracker.writes.filter((write) => write.store === "channel-points-giveaways"),
+      ).toEqual([{ op: "put", store: "channel-points-giveaways" }]);
+    } finally {
+      tracker.restore();
+    }
+  });
+
+  it("com o filtro ativo, o sorteio usa todos os elegíveis", async () => {
+    const id = "pontos-filtro";
+    await addChannelPointsGiveaway(
+      giveaway(id, [
+        participant("ana-1", "Ana Um"),
+        participant("ana-2", "Ana Dois"),
+        participant("bruno", "Bruno"),
+      ]),
+    );
+    renderDetail(id);
+    expect(
+      await screen.findByRole("heading", { name: "Sorteio de Pontos" }),
+    ).toBeTruthy();
+    expect(screen.getByText("Bruno")).toBeTruthy();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Filtrar por nome..." }), {
+      target: { value: "ana" },
+    });
+
+    expect(screen.getByText("2 encontrados (de 3 participantes)")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "O sorteio considera todos os elegíveis, não só os filtrados",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Ana Um")).toBeTruthy();
+    expect(screen.getByText("Ana Dois")).toBeTruthy();
+    expect(screen.queryByText("Bruno")).toBeNull();
+
+    fireEvent.click(drawButton());
+    await waitFor(() => {
+      expect(drawnCalls.length).toBe(1);
+    }, { timeout: 4000 });
+
+    expect(drawnCalls[0]?.params.participants.map((item) => item.userId)).toEqual([
+      "ana-1",
+      "ana-2",
+      "bruno",
+    ]);
+    expect(drawnCalls[0]?.params.excludeRedemptionIds ?? []).toEqual([]);
   });
 });

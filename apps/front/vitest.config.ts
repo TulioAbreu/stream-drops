@@ -6,6 +6,11 @@ import { playwright } from "@vitest/browser-playwright";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // canvas-confetti entra tarde (teste da roleta). Sem isto o Vite
+  // reotimiza no meio da suíte de browser e o reload derruba o arquivo seguinte.
+  optimizeDeps: {
+    include: ["canvas-confetti"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -28,6 +33,11 @@ export default defineConfig({
         },
       }),
       instances: [{ browser: "chromium" }],
+      commands: {
+        emitCiLog(_context, line: string) {
+          process.stdout.write(`${line}\n`);
+        },
+      },
     },
   },
 });

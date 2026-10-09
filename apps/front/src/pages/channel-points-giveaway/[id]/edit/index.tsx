@@ -5,6 +5,8 @@ import {
   type ChannelPointsGiveawayFormData,
 } from "@/database/ChannelPointsGiveaway";
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
 import { ChannelPointsGiveawayFormComponent } from "../../components/channel-points-giveaway-form";
 import { type ChannelPointsGiveawayForm } from "../../types";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
@@ -17,6 +19,8 @@ import {
   getChannelPointsAccessBlock,
 } from "@/lib/channel-points-access";
 import { ChannelPointsAccessBanner } from "../../components/channel-points-access-banner";
+import { redirectIfGiveawayDeleted } from "@/pages/giveaway-deleted";
+import { useRedirectWhenMissing } from "@/pages/use-redirect-when-missing";
 
 export function ChannelPointsGiveawayEdit() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +39,8 @@ export function ChannelPointsGiveawayEdit() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [missing, setMissing] = useState(false);
+  useRedirectWhenMissing(missing, "/dashboard/channel-points-giveaway");
 
   useEffect(() => {
     if (!id) return;
@@ -43,7 +49,7 @@ export function ChannelPointsGiveawayEdit() {
       try {
         const data = await getChannelPointsGiveaway(id);
         if (!data) {
-          navigate("/dashboard/channel-points-giveaway");
+          setMissing(true);
           return;
         }
 
@@ -116,7 +122,16 @@ export function ChannelPointsGiveawayEdit() {
         updatedAt: new Date().toISOString(),
       };
 
-      await updateChannelPointsGiveaway(updatedGiveaway);
+      const saved = await updateChannelPointsGiveaway(updatedGiveaway);
+      if (
+        redirectIfGiveawayDeleted(
+          saved,
+          navigate,
+          "/dashboard/channel-points-giveaway",
+        )
+      ) {
+        return;
+      }
       toast.success(t("CHANNEL_POINTS_GIVEAWAY_EDIT_SUCCESS"));
       navigate(`/dashboard/channel-points-giveaway/${giveaway.id}`);
     } catch (error) {
@@ -143,12 +158,18 @@ export function ChannelPointsGiveawayEdit() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-6">
-        {t("CHANNEL_POINTS_GIVEAWAY_EDIT_TITLE")}
-      </h1>
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY")}
+        title={t("CHANNEL_POINTS_GIVEAWAY_EDIT_TITLE")}
+      />
       {!canUseChannelPoints && accessBlock && (
         <ChannelPointsAccessBanner reason={accessBlock} className="mb-6" />
       )}
+      <InventoryPanel
+        title={t("CHANNEL_POINTS_GIVEAWAY_FORM_PANEL")}
+        className="max-w-3xl"
+      >
       <ChannelPointsGiveawayFormComponent
         defaultValues={{
           title: giveaway.title,
@@ -170,6 +191,7 @@ export function ChannelPointsGiveawayEdit() {
         isLoading={isSaving}
         disabled={!canUseChannelPoints}
       />
+      </InventoryPanel>
     </Layout>
   );
 }

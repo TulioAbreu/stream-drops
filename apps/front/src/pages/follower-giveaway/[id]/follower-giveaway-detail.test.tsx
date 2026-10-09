@@ -19,6 +19,7 @@ import { FollowerGiveawayId } from "./index";
 
 const sentChatMessages: string[] = [];
 const drawnPools: BroadcasterSubscriber[][] = [];
+const drawnResults: BroadcasterSubscriber[][] = [];
 
 vi.mock("@/service/giveaway", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/service/giveaway")>();
@@ -27,8 +28,10 @@ vi.mock("@/service/giveaway", async (importOriginal) => {
     getGiveawayResult: (
       params: Parameters<typeof actual.getGiveawayResult>[0],
     ) => {
+      const result = actual.getGiveawayResult(params);
       drawnPools.push(params.participants);
-      return actual.getGiveawayResult(params);
+      drawnResults.push(result);
+      return result;
     },
   };
 });
@@ -159,8 +162,8 @@ function dumpStorage(storage: Storage) {
 }
 
 function participantCountText() {
-  const label = screen.getByText("Total de Participantes");
-  const card = label.closest("[data-slot='card']");
+  const label = screen.getByText("Total de participantes");
+  const card = label.parentElement;
   if (!card) {
     throw new Error("card de participantes ausente");
   }
@@ -196,6 +199,7 @@ describe("página do sorteio de Subscribers", () => {
     await clearDatabase();
     sentChatMessages.length = 0;
     drawnPools.length = 0;
+    drawnResults.length = 0;
     vi.spyOn(Math, "random").mockReturnValue(0);
   });
 
@@ -311,10 +315,16 @@ describe("página do sorteio de Subscribers", () => {
       expect(after?.winners.map((item) => item.user_id)).toEqual(["ana"]);
       expect(after?.spreadsheetUrl).toBeNull();
       expect(after?.subscriptionRequirement).toBe(1000);
-      const { winners: winnersBefore, ...restBefore } = before ?? {
-        winners: [],
-      };
-      const { winners: winnersAfter, ...restAfter } = after ?? { winners: [] };
+      const {
+        winners: winnersBefore,
+        updatedAt: _updatedBefore,
+        ...restBefore
+      } = before ?? { winners: [] };
+      const {
+        winners: winnersAfter,
+        updatedAt: _updatedAfter,
+        ...restAfter
+      } = after ?? { winners: [] };
       expect(restAfter).toEqual(restBefore);
       expect(winnersBefore).toEqual([]);
       expect(winnersAfter.map((item) => item.user_id)).toEqual(["ana"]);
@@ -377,7 +387,7 @@ describe("página do sorteio de Subscribers", () => {
     try {
       renderDetail(id);
       expect((await screen.findAllByText("Ana")).length).toBeGreaterThan(0);
-      expect(screen.getAllByText("Bruno").length).toBeGreaterThan(0);
+      expect((await screen.findAllByText("Bruno")).length).toBeGreaterThan(0);
       const button = drawButton() as HTMLButtonElement;
       expect(button.disabled).toBe(false);
       consoleError.mockClear();
@@ -438,7 +448,7 @@ describe("página do sorteio de Subscribers", () => {
     try {
       renderDetail(id);
       expect(await screen.findByText("Ana")).toBeTruthy();
-      expect(screen.getByText("Bruno")).toBeTruthy();
+      expect(await screen.findByText("Bruno")).toBeTruthy();
       expect(participantCountText()).toContain("2");
 
       fireEvent.click(drawButton());
@@ -458,7 +468,83 @@ describe("página do sorteio de Subscribers", () => {
       const after = await getGiveaway(id);
       expect(after?.participants).toEqual(before?.participants);
       expect(after?.winners.map((item) => item.user_id)).toEqual(["ana"]);
-      expect({ ...after, winners: before?.winners }).toEqual(before);
+      expect({
+        ...after,
+        winners: before?.winners,
+        updatedAt: before?.updatedAt,
+      }).toEqual(before);
+      expect(tracker.giveawayWrites()).toEqual([
+        { op: "put", store: "giveaways" },
+      ]);
+    } finally {
+      tracker.restore();
+    }
+  });
+});
+
+describe("palco do sorteio de Subscribers", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("pt-BR");
+    await clearDatabase();
+    sentChatMessages.length = 0;
+    drawnPools.length = 0;
+    drawnResults.length = 0;
+  });
+
+  it("mostra o vencedor novo e Continuar só fecha", async () => {
+    const id = "subs-palco";
+    const previous = subscriber("velho", "Velho");
+    const nina = subscriber("nina", "Nina91");
+    const bruno = subscriber("bruno", "Bruno");
+    await addGiveaway(giveaway(id, [nina, bruno, previous], [previous]));
+    const tracker = trackStoreWrites();
+
+    try {
+      renderDetail(id);
+      expect(
+        await screen.findByRole("heading", { name: "Sorteio de Subscribers" }),
+      ).toBeTruthy();
+      expect(tracker.giveawayWrites()).toEqual([]);
+
+      fireEvent.click(screen.getByRole("button", { name: "Sortear" }));
+
+      const stage = await screen.findByRole("dialog", {}, { timeout: 4000 });
+      const newest = drawnResults.at(-1)?.[0];
+      expect(newest).toBeTruthy();
+      expect(newest?.user_id).not.toBe(previous.user_id);
+      expect(stage.getAttribute("aria-labelledby")).toBeTruthy();
+      expect(
+        screen.getByRole("dialog", { name: newest?.user_name }),
+      ).toBeTruthy();
+      expect(screen.queryByRole("button", { name: "Cancelar" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Refazer" })).toBeNull();
+      expect(screen.getByRole("button", { name: "Continuar" })).toBeTruthy();
+      expect(screen.getByText("Já salvo neste navegador")).toBeTruthy();
+      await act(async () => {
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+      });
+
+      await waitFor(async () => {
+        const stored = await getGiveaway(id);
+        expect(stored?.winners[0]?.user_id).toBe(newest?.user_id);
+      });
+      const saved = await getGiveaway(id);
+      expect(saved?.winners.map((winner) => winner.user_id)).toEqual([
+        newest?.user_id,
+        previous.user_id,
+      ]);
+      expect(tracker.giveawayWrites()).toEqual([
+        { op: "put", store: "giveaways" },
+      ]);
+
+      fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog")).toBeNull();
+      }, { timeout: 4000 });
+
+      expect(await getGiveaway(id)).toEqual(saved);
       expect(tracker.giveawayWrites()).toEqual([
         { op: "put", store: "giveaways" },
       ]);

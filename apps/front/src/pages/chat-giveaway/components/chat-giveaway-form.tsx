@@ -65,6 +65,7 @@ export function ChatGiveawayFormComponent({
         />
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
       <div className={FIELD_CONTAINER}>
         <Label>Tempo mínimo de inscrição (meses)</Label>
         <Input
@@ -90,6 +91,7 @@ export function ChatGiveawayFormComponent({
         <p className="text-sm text-muted-foreground">
           Subscribers terão este multiplicador aplicado às suas chances de ganhar (padrão: 1)
         </p>
+      </div>
       </div>
 
       <div className="flex items-center space-x-2">

@@ -1,207 +1,220 @@
-import {
-  UserRoundCheck,
-  Settings,
-  LogOutIcon,
-  MessageSquare,
-  Disc3,
-  Coins,
-  Timer,
-} from "lucide-react";
+import { BrowserChest } from "@/components/shell/browser-chest";
+import { LogoutDialog } from "@/components/logout-dialog";
+import { BrandLogo } from "@/components/brand-logo";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar"
-import { useTranslation } from "@/i18n";
-import { useLocation, Link } from "react-router";
+} from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTwitchApi } from "@/hooks/use-twitch-api";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Skeleton } from "./ui/skeleton";
-import { Button } from "./ui/button";
-import { Tooltip, TooltipContent } from "./ui/tooltip";
-import { TooltipTrigger } from "@radix-ui/react-tooltip";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
-import { useLoginStore } from "@/storage/login";
-import { BrandLogo } from "@/components/brand-logo";
+import { useTranslation } from "@/i18n";
+import { cn } from "@/lib/utils";
+import {
+  Coins,
+  Disc3,
+  LogOutIcon,
+  MessageSquare,
+  Settings,
+  Star,
+  Timer,
+  UserRoundCheck,
+  type LucideIcon,
+} from "lucide-react";
+import { Link, useLocation } from "react-router";
 
-interface NavbarItem {
+interface NavItem {
   title: string;
-  icon: React.ReactNode;
+  icon: LucideIcon;
   url: string;
-  badge?: string;
+  badge?: "beta";
+  match: "exact" | "prefix";
 }
 
-const items: NavbarItem[] = [
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+const homeItem: NavItem = {
+  title: "DASHBOARD_SIDEBAR_ITEM_HOME",
+  icon: Star,
+  url: "/dashboard",
+  match: "exact",
+};
+
+const sections: NavSection[] = [
   {
-    title: "DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY",
-    icon: <UserRoundCheck />,
-    url: "/dashboard/follower-giveaway",
+    label: "DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS",
+    items: [
+      {
+        title: "DASHBOARD_SIDEBAR_ITEM_FOLLOWER_GIVEAWAY",
+        icon: UserRoundCheck,
+        url: "/dashboard/follower-giveaway",
+        match: "prefix",
+      },
+      {
+        title: "DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY",
+        icon: MessageSquare,
+        url: "/dashboard/chat-giveaway",
+        match: "prefix",
+      },
+      {
+        title: "DASHBOARD_SIDEBAR_ITEM_ROULETTE",
+        icon: Disc3,
+        url: "/dashboard/roulette",
+        match: "prefix",
+      },
+      {
+        title: "DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY",
+        icon: Coins,
+        url: "/dashboard/channel-points-giveaway",
+        match: "prefix",
+      },
+    ],
   },
   {
-    title: "DASHBOARD_SIDEBAR_ITEM_CHAT_GIVEAWAY",
-    icon: <MessageSquare />,
-    url: "/dashboard/chat-giveaway",
+    label: "DASHBOARD_SIDEBAR_SECTION_LIVE",
+    items: [
+      {
+        title: "DASHBOARD_SIDEBAR_ITEM_SUBATHON",
+        icon: Timer,
+        url: "/dashboard/subathon",
+        match: "prefix",
+        badge: "beta",
+      },
+    ],
   },
   {
-    title: "DASHBOARD_SIDEBAR_ITEM_ROULETTE",
-    icon: <Disc3 />,
-    url: "/dashboard/roulette",
+    label: "DASHBOARD_SIDEBAR_SECTION_ACCOUNT",
+    items: [
+      {
+        title: "DASHBOARD_SIDEBAR_ITEM_SETTINGS",
+        icon: Settings,
+        url: "/dashboard/settings",
+        match: "prefix",
+      },
+    ],
   },
-  {
-    title: "DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY",
-    icon: <Coins />,
-    url: "/dashboard/channel-points-giveaway",
-  },
-  {
-    title: "DASHBOARD_SIDEBAR_ITEM_SUBATHON",
-    icon: <Timer />,
-    url: "/dashboard/subathon",
-    badge: "Beta",
-  },
-  // {
-  //     title: "DASHBOARD_SIDEBAR_ITEM_TICKET_GIVEAWAY",
-  //     icon: <Ticket />,
-  //     url: "/dashboard/",
-  // },
-  {
-    title: "DASHBOARD_SIDEBAR_ITEM_SETTINGS",
-    icon: <Settings />,
-    url: "/dashboard/settings",
-  }
-]
+];
+
+function isItemActive(pathname: string, item: NavItem): boolean {
+  if (item.match === "exact") return pathname === item.url;
+  return pathname === item.url || pathname.startsWith(`${item.url}/`);
+}
+
+function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const { t } = useTranslation();
+  const Icon = item.icon;
+
+  return (
+    <Link
+      to={item.url}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex h-[42px] items-center gap-2.5 rounded-[10px] px-2 text-sm font-semibold text-foreground/80 hover:bg-sidebar-accent",
+        active && "bg-primary/10 text-foreground",
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-[30px] shrink-0 items-center justify-center rounded-lg border border-border bg-[var(--sd-surface-3)]",
+          active &&
+            "border-primary text-[var(--sd-brand-amber-strong)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_18%,transparent),0_0_14px_color-mix(in_srgb,var(--primary)_35%,transparent)]",
+        )}
+      >
+        <Icon className="size-4" />
+      </span>
+      <span className="truncate">{t(item.title)}</span>
+      {item.badge === "beta" ? (
+        <span className="ml-auto rounded-[5px] border border-primary/40 px-1.5 py-0.5 font-mono text-[9.5px] font-bold tracking-wide text-[var(--sd-brand-amber-strong)] uppercase">
+          {t("SIDEBAR_BETA_BADGE")}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
 
 export function AppSidebar() {
   const { t } = useTranslation();
-  const { state } = useSidebar();
   const { userData } = useTwitchApi();
   const location = useLocation();
-  const [deleteLocalData, setDeleteLocalData] = useState(false);
-  const setTwitchAccessToken = useLoginStore((state) => state.setTwitchAccessToken);
-
-  const handleLogout = () => {
-    if (deleteLocalData) {
-      localStorage.clear();
-      indexedDB.databases().then((dbs) => {
-        dbs.forEach((db) => {
-          indexedDB.deleteDatabase(db.name!);
-        });
-      });
-    } else {
-      setTwitchAccessToken(null);
-    }
-    window.location.href = "/";
-  }
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4">
-        <div className="flex flex-row items-center gap-2">
-          <BrandLogo
-            variant={state === "collapsed" ? "symbol" : "horizontal"}
-            className="h-8 w-auto"
-          />
-        </div>
+      <SidebarHeader className="px-3 pt-4 pb-2">
+        <Link to="/dashboard" className="px-2" aria-label={t("APP_NAME")}>
+          <BrandLogo variant="horizontal" className="h-8 w-auto" />
+        </Link>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className={location.pathname === item.url ? "bg-neutral-800" : ""}>
-                    <Link to={item.url}>
-                      {item.icon}
-                      <span>{t(item.title)}</span>
-                      {item.badge ? (
-                        <Badge
-                          variant="outline"
-                          className="ml-auto border-cyan-500/40 bg-cyan-500/10 px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wide text-cyan-300"
-                        >
-                          {item.badge}
-                        </Badge>
-                      ) : null}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+      <SidebarContent className="px-3">
+        <nav className="flex flex-col gap-0.5" aria-label={t("APP_NAME")}>
+          <NavLink
+            item={homeItem}
+            active={isItemActive(location.pathname, homeItem)}
+          />
+          {sections.map((section) => (
+            <div key={section.label}>
+              <p className="px-2.5 pt-3.5 pb-1.5 text-[10.5px] font-bold tracking-[0.16em] text-muted-foreground uppercase">
+                {t(section.label)}
+              </p>
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.url}
+                  item={item}
+                  active={isItemActive(location.pathname, item)}
+                />
               ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter>
-        <div className="p-4 flex space-between items-center">
-          <div className="flex flex-row items-center w-full justify-between">
-            <div className="flex items-center gap-3">
-              {userData ? (
-                <>
-                  <Avatar>
-                    <AvatarImage src={userData.profileImageUrl} alt={userData.displayName} />
-                    <AvatarFallback>{userData.displayName.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="text-sm">{userData.displayName}</div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <Skeleton className="w-10 h-10 rounded-full" />
-                  <Skeleton className="w-24 h-4 rounded-md" />
-                </>
-              )}
             </div>
-            <Tooltip>
-              <TooltipTrigger>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <LogOutIcon className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogTitle>{t("SIDEBAR_LOGOUT_DIALOG_TITLE")}</DialogTitle>
-                    <DialogDescription>
-                      {t("SIDEBAR_LOGOUT_DIALOG_DESCRIPTION")}
-                    </DialogDescription>
-                    <div className="flex items-center space-x-2 py-4">
-                      <Checkbox
-                        id="delete-data"
-                        checked={deleteLocalData}
-                        onCheckedChange={(checked) => setDeleteLocalData(checked as boolean)}
-                      />
-                      <Label
-                        htmlFor="delete-data"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {t("SIDEBAR_LOGOUT_DELETE_DATA_LABEL")}
-                      </Label>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="destructive" onClick={handleLogout}>
-                        <LogOutIcon className="h-4 w-4" />
-                        {t("SIDEBAR_LOGOUT_BUTTON")}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {t("SIDEBAR_LOGOUT_BUTTON_TOOLTIP")}
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          ))}
+        </nav>
+      </SidebarContent>
+      <SidebarFooter className="gap-2 px-3 pt-2 pb-3">
+        <BrowserChest />
+        <div className="flex items-center gap-2.5 px-1 pt-1">
+          {userData ? (
+            <>
+              <Avatar className="size-8">
+                <AvatarImage
+                  src={userData.profileImageUrl}
+                  alt={userData.displayName}
+                />
+                <AvatarFallback>
+                  {userData.displayName.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <div className="truncate text-[13px] font-semibold">
+                  {userData.displayName}
+                </div>
+                <div className="text-[11px] font-medium text-muted-foreground">
+                  {t("SIDEBAR_ACCOUNT_CONNECTED")}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <Skeleton className="size-8 rounded-full" />
+              <Skeleton className="h-4 w-24" />
+            </>
+          )}
+          <LogoutDialog
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-auto size-8"
+                aria-label={t("SIDEBAR_LOGOUT_BUTTON_TOOLTIP")}
+              >
+                <LogOutIcon className="size-4" />
+              </Button>
+            }
+          />
         </div>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

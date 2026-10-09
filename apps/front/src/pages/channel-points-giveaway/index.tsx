@@ -1,15 +1,8 @@
 import { Layout } from "@/components/layout";
+import { InventoryPanel } from "@/components/shell/inventory-panel";
+import { ShellHeader } from "@/components/shell/shell-header";
+import { DeleteGiveawayDialog } from "@/components/delete-giveaway-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -86,6 +79,7 @@ export function ChannelPointsGiveawayPage() {
     getChannelPointsGiveaways,
     updateChannelPointsGiveaway,
     deleteChannelPointsGiveaway,
+    softDeleteChannelPointsGiveaway,
   } = useChannelPointsGiveawayDb();
   const { twitchApiClient, userData } = useTwitchApi();
   const accessBlock = getChannelPointsAccessBlock({
@@ -258,11 +252,16 @@ export function ChannelPointsGiveawayPage() {
     }
 
     try {
-      await updateChannelPointsGiveaway({
+      const saved = await updateChannelPointsGiveaway({
         ...giveaway,
         rewardEnabled: nextEnabled,
         updatedAt: new Date().toISOString(),
       });
+      if (saved === "deleted") {
+        toast.info(t("GIVEAWAY_DELETED_TOAST"));
+        await fetchGiveaways(false);
+        return;
+      }
       toast.success(t("CHANNEL_POINTS_GIVEAWAY_TOGGLE_SUCCESS"));
     } catch (error) {
       console.error(error);
@@ -283,7 +282,10 @@ export function ChannelPointsGiveawayPage() {
     }
   };
 
-  const onClickDelete = (giveaway: ChannelPointsGiveawayFormData) => {
+  const onClickDelete = (
+    giveaway: ChannelPointsGiveawayFormData,
+    hardDelete: boolean,
+  ) => {
     startDeleteTransition(async () => {
       try {
         if (
@@ -304,7 +306,11 @@ export function ChannelPointsGiveawayPage() {
           }
         }
 
-        await deleteChannelPointsGiveaway(giveaway.id);
+        if (hardDelete) {
+          await deleteChannelPointsGiveaway(giveaway.id);
+        } else {
+          await softDeleteChannelPointsGiveaway(giveaway.id);
+        }
         await fetchGiveaways(false);
         toast.success(t("CHANNEL_POINTS_GIVEAWAY_DELETE_SUCCESS"));
       } catch (error) {
@@ -316,33 +322,36 @@ export function ChannelPointsGiveawayPage() {
 
   return (
     <Layout>
-      <div className="flex flex-row justify-between items-center mb-6 gap-4 flex-wrap">
-        <h1 className="text-2xl font-bold">
-          {t("CHANNEL_POINTS_GIVEAWAY_TITLE")}
-        </h1>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span>
-                <Button
-                  onClick={() =>
-                    navigate("/dashboard/channel-points-giveaway/create")
-                  }
-                  disabled={!canUseChannelPoints}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {t("CHANNEL_POINTS_GIVEAWAY_CREATE_BUTTON")}
-                </Button>
-              </span>
-            </TooltipTrigger>
-            {!canUseChannelPoints && accessBlock && (
-              <TooltipContent>
-                <p>{t(channelPointsAccessBlockI18nKeys(accessBlock).toast)}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+      <ShellHeader
+        section={t("DASHBOARD_SIDEBAR_SECTION_GIVEAWAYS")}
+        page={t("DASHBOARD_SIDEBAR_ITEM_CHANNEL_POINTS_GIVEAWAY")}
+        title={t("CHANNEL_POINTS_GIVEAWAY_TITLE")}
+        actions={
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    onClick={() =>
+                      navigate("/dashboard/channel-points-giveaway/create")
+                    }
+                    disabled={!canUseChannelPoints}
+                    size="lg"
+                  >
+                    <Plus />
+                    {t("CHANNEL_POINTS_GIVEAWAY_CREATE_BUTTON")}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!canUseChannelPoints && accessBlock && (
+                <TooltipContent>
+                  <p>{t(channelPointsAccessBlockI18nKeys(accessBlock).toast)}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        }
+      />
 
       {accessBlock && (
         <ChannelPointsAccessBanner reason={accessBlock} className="mb-6" />
@@ -379,7 +388,11 @@ export function ChannelPointsGiveawayPage() {
           )}
         </Empty>
       ) : (
-        <>
+        <InventoryPanel
+          title={t("CHANNEL_POINTS_GIVEAWAY_LIST_PANEL")}
+          meta={String(giveaways.length)}
+          bodyClassName="flex flex-col gap-4 px-2"
+        >
           <Table>
             <TableHeader>
               <TableRow>
@@ -403,7 +416,14 @@ export function ChannelPointsGiveawayPage() {
             <TableBody>
               {currentGiveaways.map((giveaway) => (
                 <TableRow key={giveaway.id}>
-                  <TableCell className="font-medium">{giveaway.title}</TableCell>
+                  <TableCell>
+                    <a
+                      href={`/dashboard/channel-points-giveaway/${giveaway.id}`}
+                      className="font-semibold text-[var(--sd-brand-amber-strong)] hover:underline"
+                    >
+                      {giveaway.title}
+                    </a>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[giveaway.status]}>
                       {t(`CHANNEL_POINTS_GIVEAWAY_STATUS_${giveaway.status.toUpperCase()}`)}
@@ -473,15 +493,19 @@ export function ChannelPointsGiveawayPage() {
                         </Tooltip>
                       </TooltipProvider>
 
-                      <Dialog>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DialogTrigger asChild>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DeleteGiveawayDialog
+                            pending={isDeleting}
+                            onConfirm={(hardDelete) =>
+                              onClickDelete(giveaway, hardDelete)
+                            }
+                            trigger={
                               <DropdownMenuItem
                                 onSelect={(e) => e.preventDefault()}
                                 className="text-destructive focus:text-destructive"
@@ -491,38 +515,10 @@ export function ChannelPointsGiveawayPage() {
                                   "CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_DELETE"
                                 )}
                               </DropdownMenuItem>
-                            </DialogTrigger>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>
-                              {t(
-                                "CHANNEL_POINTS_GIVEAWAY_DELETE_DIALOG_TITLE"
-                              )}
-                            </DialogTitle>
-                            <DialogDescription>
-                              {t(
-                                "CHANNEL_POINTS_GIVEAWAY_DELETE_DIALOG_DESCRIPTION"
-                              )}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <DialogClose asChild>
-                              <Button variant="outline">{t("CANCEL")}</Button>
-                            </DialogClose>
-                            <Button
-                              variant="destructive"
-                              disabled={isDeleting}
-                              onClick={() => onClickDelete(giveaway)}
-                            >
-                              {t(
-                                "CHANNEL_POINTS_GIVEAWAY_TABLE_ACTIONS_DELETE"
-                              )}
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                            }
+                          />
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -553,7 +549,7 @@ export function ChannelPointsGiveawayPage() {
               </PaginationContent>
             </Pagination>
           )}
-        </>
+        </InventoryPanel>
       )}
 
     </Layout>
