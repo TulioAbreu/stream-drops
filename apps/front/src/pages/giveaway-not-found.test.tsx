@@ -255,7 +255,7 @@ describe("sorteio soft-deleted some das telas", () => {
 
       const chatDetail = renderAt("/dashboard/chat-giveaway/chat-apagado");
       await expectPath("/dashboard");
-      expect(await screen.findByRole("heading", { name: "Dashboard" })).toBeTruthy();
+      expect(await screen.findByRole("heading", { name: "Início" })).toBeTruthy();
       chatDetail.unmount();
 
       const chatActive = renderAt("/dashboard/chat-giveaway/chat-ativo");
