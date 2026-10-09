@@ -15,6 +15,8 @@ import { createWinnerIndexFromSource, type WinnerIndex } from "./win-index";
  * Este módulo não usa `persist`: não cria chave de storage.
  */
 
+export type { DisplaySelection };
+
 export type WinnerIndexStatus = "loading" | "ready" | "error";
 
 export type WinnerIndexLoadOptions = {
