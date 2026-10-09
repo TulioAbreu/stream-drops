@@ -58,7 +58,7 @@ function awardCopy(award: BadgeAward): {
   const short =
     award.count == null
       ? template
-      : template.replaceAll("{count}", String(award.count));
+      : template.replace(/\{count\}/g, String(award.count));
   return { name, short, emoji };
 }
 
@@ -235,7 +235,7 @@ function CardBadges({
               {previewLabel}
             </span>
           ) : null}
-          {selection.card.map((award, index) => (
+          {selection.card.map((award: BadgeAward, index: number) => (
             <BadgeChip
               key={award.id}
               award={award}
@@ -306,7 +306,7 @@ function LogBadges({
         aria-label={label}
         className="inline-flex h-4 shrink-0 items-center gap-1 rounded-sm outline-none focus-visible:shadow-[var(--sd-focus)]"
       >
-        {selection.log.map((award) => {
+        {selection.log.map((award: BadgeAward) => {
           const copy = awardCopy(award);
           return (
             <span
