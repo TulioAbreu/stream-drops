@@ -387,7 +387,7 @@ describe("página do sorteio de Subscribers", () => {
     try {
       renderDetail(id);
       expect((await screen.findAllByText("Ana")).length).toBeGreaterThan(0);
-      expect(screen.getAllByText("Bruno").length).toBeGreaterThan(0);
+      expect((await screen.findAllByText("Bruno")).length).toBeGreaterThan(0);
       const button = drawButton() as HTMLButtonElement;
       expect(button.disabled).toBe(false);
       consoleError.mockClear();
@@ -448,7 +448,7 @@ describe("página do sorteio de Subscribers", () => {
     try {
       renderDetail(id);
       expect(await screen.findByText("Ana")).toBeTruthy();
-      expect(screen.getByText("Bruno")).toBeTruthy();
+      expect(await screen.findByText("Bruno")).toBeTruthy();
       expect(participantCountText()).toContain("2");
 
       fireEvent.click(drawButton());
