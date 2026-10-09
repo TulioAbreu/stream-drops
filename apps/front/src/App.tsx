@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "./components/theme-provider"
 import { LoginPage } from "./pages/login"
 import { DashboardPage } from "./pages/dashboard"
+import { ViewerProfilePage } from "./pages/dashboard/viewer-page"
 import { FollowerGiveawayCreate } from "./pages/follower-giveaway/create"
 import { LoginRedirectPage } from "./pages/login-redirect"
 import { LoginRedirectDrivePage } from "./pages/login-redirect-drive"
@@ -55,6 +56,7 @@ export function App() {
             <Route path="/auth/drive" element={<LoginRedirectDrivePage />} />
             <Route path="/subathon-overlay" element={<SubathonOverlayPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard/viewer/:platform/:userId" element={<ViewerProfilePage />} />
             <Route path="/dashboard/settings" element={<SettingsPage />} />
             <Route path="/dashboard/follower-giveaway" element={<FollowerGiveaway />} />
             <Route path="/dashboard/follower-giveaway/create" element={<FollowerGiveawayCreate />} />

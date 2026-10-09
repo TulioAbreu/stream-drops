@@ -76,6 +76,28 @@ const storage: PersistStorage<PersistedSettings> = {
     return stored as StorageValue<PersistedSettings>;
   },
   setItem: (name, value) => {
+    const existing = parseStoredDocument(localStorage.getItem(name));
+    const incoming =
+      value?.state && typeof value.state === "object"
+        ? (value.state as Record<string, unknown>)
+        : {};
+    if (
+      existing &&
+      existing.version === SETTINGS_STORAGE_VERSION &&
+      existing.state &&
+      typeof existing.state === "object" &&
+      !Array.isArray(existing.state)
+    ) {
+      const merged = {
+        ...(existing.state as Record<string, unknown>),
+        ...incoming,
+      };
+      localStorage.setItem(
+        name,
+        JSON.stringify({ state: merged, version: value.version }),
+      );
+      return;
+    }
     localStorage.setItem(name, JSON.stringify(value));
   },
   removeItem: (name) => {
