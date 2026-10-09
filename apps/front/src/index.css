@@ -539,6 +539,14 @@
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
+  /*
+    O giro da lib anima transform no quadrado interno. Com overflow
+    visível, o retângulo do rotate entra e sai do scroll do documento
+    e a barra lateral pisca. O clip fica neste quadrado (antes do
+    rotate(-45°) do palco): a roda circular e o ponteiro continuam
+    visíveis, e o scroll da página não é travado.
+  */
+  overflow: clip;
 }
 
 .sd-roulette-stage {
